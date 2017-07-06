@@ -276,7 +276,7 @@ extern "C" {
  * ========================== */
 
 Bitmap::Bitmap(EPixelFormat pFormat, EComponentFormat cFormat,
-		const Vector2i &size, uint8_t channelCount, uint8_t *data) : m_pixelFormat(pFormat),
+		const Vector2i &size, size_t channelCount, uint8_t *data) : m_pixelFormat(pFormat),
 		m_componentFormat(cFormat), m_size(size), m_data(data), m_channelCount(channelCount), m_ownsData(false) {
 	AssertEx(size.x > 0 && size.y > 0, "Invalid bitmap size");
 
@@ -1594,10 +1594,12 @@ ref<Bitmap> Bitmap::convert(EPixelFormat pixelFormat,
 
 ref<Bitmap> Bitmap::convertMultiSpectrumAlphaWeight(const std::vector<EPixelFormat> &pixelFormats,
 		EComponentFormat componentFormat, const std::vector<std::string> &channelNames) const {
-	if (channelNames.size() > std::numeric_limits<uint8_t>::max())
-		Log(EError, "convertMultiSpectrumAlphaWeight(): excessive number of channels!");
+//	if (channelNames.size() > std::numeric_limits<uint8_t>::max())
+//		Log(EError, "convertMultiSpectrumAlphaWeight(): excessive number of channels!");
+//	ref<Bitmap> bitmap = new Bitmap(Bitmap::EMultiChannel, componentFormat,
+//			m_size, (uint8_t) channelNames.size());
 	ref<Bitmap> bitmap = new Bitmap(Bitmap::EMultiChannel, componentFormat,
-			m_size, (uint8_t) channelNames.size());
+			m_size, channelNames.size());
 	bitmap->setChannelNames(channelNames);
 	convertMultiSpectrumAlphaWeight(this, getUInt8Data(), bitmap,
 		bitmap->getUInt8Data(), pixelFormats, componentFormat,

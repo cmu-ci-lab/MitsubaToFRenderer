@@ -336,7 +336,7 @@ public:
 	 *    implementation will allocate memory itself.
 	 */
 	Bitmap(EPixelFormat pFmt, EComponentFormat cFmt, const Vector2i &size,
-		uint8_t channelCount = 0, uint8_t *data = NULL);
+		size_t channelCount = 0, uint8_t *data = NULL);
 
 	/**
 	 * \brief Load a bitmap from an arbitrary stream data source
@@ -1300,7 +1300,7 @@ protected:
 	Vector2i m_size;
 	uint8_t *m_data;
 	Float m_gamma;
-	uint8_t m_channelCount;
+	size_t m_channelCount;
 	bool m_ownsData;
 	Properties m_metadata;
 	std::vector<std::string> m_channelNames;

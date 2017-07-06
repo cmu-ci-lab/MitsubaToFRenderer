@@ -63,6 +63,11 @@ public:
 	}
 #endif
 
+	/// For decomposition bitmap
+	inline void putSample(const Point2 &sample, const Float *value) {
+		m_block->put(sample, value);
+	}
+
 	inline void putSample(const Point2 &sample, const Spectrum &spec) {
 		m_block->put(sample, spec, 1.0f);
 	}
@@ -78,6 +83,10 @@ public:
 	inline const ImageBlock *getLightImage() const {
 		return m_lightImage.get();
 	}
+
+	/// Return the number of channels stored by the image block
+	inline int getChannelCount() const { return m_block->getChannelCount(); }
+
 
 	inline void setSize(const Vector2i &size) {
 		m_block->setSize(size);
@@ -104,6 +113,12 @@ protected:
 	ref_vector<ImageBlock> m_debugBlocks;
 #endif
 	ref<ImageBlock> m_block, m_lightImage;
+public:
+	bool m_transient;
+	Float m_pathMax;
+	Float m_pathMin;
+	Float m_pathSample;
+	size_t m_frames;
 };
 
 MTS_NAMESPACE_END

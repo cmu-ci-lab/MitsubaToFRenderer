@@ -33,9 +33,21 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	if (blockSize == Vector2i(-1, -1))
 		blockSize = Vector2i(conf.blockSize, conf.blockSize);
 
-	m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
+	m_pathMax = conf.m_pathMax;
+	m_pathMin = conf.m_pathMin;
+	m_pathSample = conf.m_pathSample;
+	m_transient = conf.m_transient;
+	m_frames = conf.m_frames;
+
+	if(!conf.m_transient){
+		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
+	}else{
+		m_block = new ImageBlock(Bitmap::EMultiSpectrumAlphaWeight, blockSize,
+				rfilter, (int) (SPECTRUM_SAMPLES * m_frames + 2));
+	}
 	m_block->setOffset(Point2i(0, 0));
 	m_block->setSize(blockSize);
+
 
 	if (conf.lightImage) {
 		/* Stores the 'light image' -- every worker requires a

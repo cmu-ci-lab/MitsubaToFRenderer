@@ -21,6 +21,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/statistics.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp> // Added to cast integers to strings
 #include "banner.h"
 #include "annotations.h"
 
@@ -218,6 +219,21 @@ public:
 			props.getString("channelNames", ""), ", ");
 		std::string componentFormat = boost::to_lower_copy(
 			props.getString("componentFormat", "float16"));
+
+		if(m_transient){
+			if(pixelFormats.size() > 1){
+				Log(EError, "Pixel format should not be specified! RGB format is auto-applied to all Frames");
+			}
+			if(channelNames.size() >= 1){
+				Log(EError, "Channel names should not be specified! They will be equal to the number of Frames");
+			}
+			channelNames.push_back("1");
+			for (size_t i=1; i<m_frames; ++i) {
+				pixelFormats.push_back("rgb");
+				channelNames.push_back(boost::lexical_cast<std::string>(i+1));
+			}
+		}
+
 
 		if (fileFormat == "openexr") {
 			m_fileFormat = Bitmap::EOpenEXR;
@@ -594,6 +610,7 @@ protected:
 	bool m_attachLog;
 	fs::path m_destFile;
 	ref<ImageBlock> m_storage;
+
 };
 
 MTS_IMPLEMENT_CLASS_S(HDRFilm, false, Film)

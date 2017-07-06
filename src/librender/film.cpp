@@ -52,6 +52,12 @@ Film::Film(const Properties &props)
 	   quality at the edges especially with large reconstruction
 	   filters. */
 	m_highQualityEdges = props.getBoolean("highQualityEdges", false);
+
+	m_transient = props.getBoolean("transient",false);
+	m_pathMin = props.getFloat("pathMin", 0.0f);
+	m_pathMax = props.getFloat("pathMax", 0.0f);
+	m_pathSample = props.getFloat("pathSample", 1.0f);
+	m_frames = ceil((m_pathMax-m_pathMin)/m_pathSample);
 }
 
 Film::Film(Stream *stream, InstanceManager *manager)

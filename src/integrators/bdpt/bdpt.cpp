@@ -139,6 +139,12 @@ public:
 		m_config.lightImage = props.getBoolean("lightImage", true);
 		m_config.sampleDirect = props.getBoolean("sampleDirect", true);
 		m_config.showWeighted = props.getBoolean("showWeighted", false);
+// Do not read the transient related configurations from the xml file BDPT properties.
+// Instead read them from the Film (sensor) properties
+//		m_config.transient = props.getBoolean("transient", false);
+//		m_config.pathMin = props.getFloat("pathMin", 0.0f);
+//		m_config.pathMax = props.getFloat("pathMax", 0.0f);
+//		m_config.pathSample = props.getFloat("pathSample", 0.0f);
 
 		#if BDPT_DEBUG == 1
 		if (m_config.maxDepth == -1 || m_config.maxDepth > 6) {
@@ -198,6 +204,12 @@ public:
 		const Film *film = sensor->getFilm();
 		size_t sampleCount = scene->getSampler()->getSampleCount();
 		size_t nCores = scheduler->getCoreCount();
+
+		m_config.m_transient 	= film->isTransient();
+		m_config.m_pathMin 	= film->getPathMin();
+		m_config.m_pathMax 	= film->getPathMax();
+		m_config.m_pathSample = film->getPathSample();
+		m_config.m_frames = film->getFrames();
 
 		Log(EDebug, "Size of data structures: PathVertex=%i bytes, PathEdge=%i bytes",
 			(int) sizeof(PathVertex), (int) sizeof(PathEdge));

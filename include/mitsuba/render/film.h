@@ -63,6 +63,12 @@ public:
 	/// Develop the film and write the result to the previously specified filename
 	virtual void develop(const Scene *scene, Float renderTime) = 0;
 
+	inline bool isTransient() const {return m_transient; }
+	inline Float getPathMin() const {return m_pathMin; }
+	inline Float getPathMax() const {return m_pathMax; }
+	inline Float getPathSample() const {return m_pathSample; }
+	inline size_t getFrames() const {return m_frames; }
+
 	/**
 	 * \brief Develop the contents of a subregion of the film and store
 	 * it inside the given bitmap
@@ -131,6 +137,14 @@ protected:
 	Vector2i m_size, m_cropSize;
 	bool m_highQualityEdges;
 	ref<ReconstructionFilter> m_filter;
+
+protected:
+// For BDPT transient renderer:
+	bool m_transient;
+	Float m_pathMin;
+	Float m_pathMax;
+	Float m_pathSample;
+	size_t m_frames;
 };
 
 MTS_NAMESPACE_END
