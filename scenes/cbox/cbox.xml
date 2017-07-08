@@ -22,7 +22,7 @@
 		<film type="hdrfilm">
 			<integer name="height" value="512"/>
 			<integer name="width" value="512"/>
-			<boolean name="transient" value="false"/>
+			<boolean name="transient" value="true"/>
 			<float name="pathMin" value="0000"/>
 			<float name="pathMax" value="3000"/>
 			<float name="pathSample" value="10"/> 

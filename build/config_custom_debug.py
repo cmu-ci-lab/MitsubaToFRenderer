@@ -1,13 +1,13 @@
 import os, sys
 
-BUILDDIR       = '#build/release'
+BUILDDIR       = '#build/debug'
 DISTDIR        = '#dist'
 CXX            = 'g++'
 CC             = 'gcc'
-CXXFLAGS       = ['-O3', '-Wall', '-g', '-pipe', '-march=nocona', '-msse2', '-ftree-vectorize', '-mfpmath=sse', '-funsafe-math-optimizations', '-fno-rounding-math', '-fno-signaling-nans', '-fno-math-errno', '-fomit-frame-pointer', '-DMTS_DEBUG', '-DSINGLE_PRECISION', '-DSPECTRUM_SAMPLES=3', '-DMTS_SSE', '-DMTS_HAS_COHERENT_RT', '-fopenmp', '-fvisibility=hidden', '-mtls-dialect=gnu2']
+CXXFLAGS       = ['-O0', '-Wall', '-g', '-pipe', '-march=nocona', '-msse2', '-ftree-vectorize', '-mfpmath=sse', '-funsafe-math-optimizations', '-fno-rounding-math', '-fno-signaling-nans', '-fno-math-errno', '-fomit-frame-pointer', '-DMTS_DEBUG', '-DSINGLE_PRECISION', '-DSPECTRUM_SAMPLES=3', '-DMTS_SSE', '-DMTS_HAS_COHERENT_RT', '-fopenmp', '-fvisibility=hidden', '-mtls-dialect=gnu2']
 LINKFLAGS      = []
 SHLINKFLAGS    = ['-rdynamic', '-shared', '-fPIC', '-lstdc++']
-BASEINCLUDE    = ['#include', '/usr/include']
+BASEINCLUDE    = ['#include']
 BASELIB        = ['dl', 'm', 'pthread', 'gomp']
 EIGENINCLUDE   = ['/usr/include/eigen3']
 OEXRINCLUDE    = ['/usr/include/OpenEXR']
