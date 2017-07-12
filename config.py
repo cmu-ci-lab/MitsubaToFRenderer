@@ -1,1 +1,1 @@
-build/config_custom_debug.py
+build/config_custom_release.py

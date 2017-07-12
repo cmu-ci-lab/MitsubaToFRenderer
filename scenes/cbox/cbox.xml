@@ -2,7 +2,7 @@
 
 <scene version="0.5.0">
 	<integrator type="bdpt">
-		<integer name="maxDepth" value="5"/>
+		<integer name="maxDepth" value="30"/>
 	</integrator>
 	<sensor type="perspective">
 		<float name="farClip" value="2800"/>
@@ -22,10 +22,10 @@
 		<film type="hdrfilm">
 			<integer name="height" value="512"/>
 			<integer name="width" value="512"/>
-			<string name="decomposition" value="transient"/>
-			<float name="minBound" value="0000"/>
-			<float name="maxBound" value="3000"/>
-			<float name="binWidth" value="100"/> 
+			<string name="decomposition" value="bounce"/>
+			<float name="minBound" value="0"/>
+			<float name="maxBound" value="30"/>
+			<float name="binWidth" value="1"/> 
 
 			<rfilter type="gaussian"/>
 		</film>
