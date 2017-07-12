@@ -1,2 +1,2 @@
-# MitsubaRenderer
-Transient Mitsuba Renderer
+# mitsuba_clt
+Mitsuba Renderer with support for computational light transport techiques.
