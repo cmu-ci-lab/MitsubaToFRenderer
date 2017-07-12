@@ -2,7 +2,7 @@
 
 <scene version="0.5.0">
 	<integrator type="bdpt">
-		<integer name="maxDepth" value="30"/>
+		<integer name="maxDepth" value="40"/>
 	</integrator>
 	<sensor type="perspective">
 		<float name="farClip" value="2800"/>

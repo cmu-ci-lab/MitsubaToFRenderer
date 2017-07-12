@@ -211,6 +211,14 @@ public:
 		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();
 		m_config.m_frames = film->getFrames();
 
+		if (m_config.maxDepth!=-1 && m_config.m_decompositionType == Film::EBounce){
+			if (m_config.maxDepth > m_config.m_decompositionMaxBound)
+				m_config.maxDepth = m_config.m_decompositionMaxBound;
+			if (m_config.maxDepth < m_config.m_decompositionMinBound)
+				Log(EError, "maxDepth of BDPT is less than the minimum bound; Rendering is futile");
+		}
+
+
 		Log(EDebug, "Size of data structures: PathVertex=%i bytes, PathEdge=%i bytes",
 			(int) sizeof(PathVertex), (int) sizeof(PathEdge));
 

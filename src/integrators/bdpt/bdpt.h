@@ -69,6 +69,12 @@ struct BDPTConfiguration {
 		m_decompositionMinBound   = stream->readFloat();
 		m_decompositionMaxBound   = stream->readFloat();
 		m_decompositionBinWidth   = stream->readFloat();
+		if (maxDepth!=-1 && m_decompositionType == Film::EBounce){
+			if (maxDepth > m_decompositionMaxBound)
+				maxDepth = m_decompositionMaxBound;
+			if (maxDepth < m_decompositionMinBound)
+				SLog(EError, "maxDepth of BDPT is less than the minimum bound; Rendering is futile");
+		}
 	}
 
 	inline void serialize(Stream *stream) const {
