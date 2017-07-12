@@ -205,10 +205,10 @@ public:
 		size_t sampleCount = scene->getSampler()->getSampleCount();
 		size_t nCores = scheduler->getCoreCount();
 
-		m_config.m_transient 	= film->isTransient();
-		m_config.m_pathMin 	= film->getPathMin();
-		m_config.m_pathMax 	= film->getPathMax();
-		m_config.m_pathSample = film->getPathSample();
+		m_config.m_decompositionType 	    = film->getDecompositionType();
+		m_config.m_decompositionMinBound 	= film->getDecompositionMinBound();
+		m_config.m_decompositionMaxBound 	= film->getDecompositionMaxBound();
+		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();
 		m_config.m_frames = film->getFrames();
 
 		Log(EDebug, "Size of data structures: PathVertex=%i bytes, PathEdge=%i bytes",

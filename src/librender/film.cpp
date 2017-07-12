@@ -53,11 +53,24 @@ Film::Film(const Properties &props)
 	   filters. */
 	m_highQualityEdges = props.getBoolean("highQualityEdges", false);
 
-	m_transient = props.getBoolean("transient",false);
-	m_pathMin = props.getFloat("pathMin", 0.0f);
-	m_pathMax = props.getFloat("pathMax", 0.0f);
-	m_pathSample = props.getFloat("pathSample", 1.0f);
-	m_frames = ceil((m_pathMax-m_pathMin)/m_pathSample);
+	std::string decompositionType = boost::to_lower_copy(
+					props.getString("decomposition", "none"));
+
+	if (decompositionType == "none") {
+		m_decompositionType = ESteadyState;
+	} else if (decompositionType == "transient") {
+		m_decompositionType = ETransient;
+	} else if (decompositionType == "bounce") {
+		m_decompositionType = EBounce;
+	} else {
+		Log(EError, "The \"decomposition\" parameter must be equal to"
+			"either \"none\", \"transient\", or \"bounce\"!");
+	}
+
+	m_decompositionMinBound = props.getFloat("minBound", 0.0f);
+	m_decompositionMaxBound = props.getFloat("maxBound", 0.0f);
+	m_decompositionBinWidth = props.getFloat("binWidth", 1.0f);
+	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
 }
 
 Film::Film(Stream *stream, InstanceManager *manager)
@@ -66,6 +79,11 @@ Film::Film(Stream *stream, InstanceManager *manager)
 	m_cropOffset = Point2i(stream);
 	m_cropSize = Vector2i(stream);
 	m_highQualityEdges = stream->readBool();
+	m_decompositionType = (EDecompositionType) stream->readUInt();
+	m_decompositionMinBound = stream->readFloat();
+	m_decompositionMaxBound = stream->readFloat();
+	m_decompositionBinWidth = stream->readFloat();
+	m_frames = stream->readSize();
 	m_filter = static_cast<ReconstructionFilter *>(manager->getInstance(stream));
 }
 
@@ -77,6 +95,11 @@ void Film::serialize(Stream *stream, InstanceManager *manager) const {
 	m_cropOffset.serialize(stream);
 	m_cropSize.serialize(stream);
 	stream->writeBool(m_highQualityEdges);
+	stream->writeUInt(m_decompositionType);
+	stream->writeFloat(m_decompositionMinBound);
+	stream->writeFloat(m_decompositionMaxBound);
+	stream->writeFloat(m_decompositionBinWidth);
+	stream->writeSize(m_frames);
 	manager->serialize(stream, m_filter.get());
 }
 

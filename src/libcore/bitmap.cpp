@@ -408,7 +408,7 @@ size_t Bitmap::getBufferSize() const {
 	return bytesPerRow * (size_t) m_size.y;
 }
 
-std::string Bitmap::getChannelName(int idx) const {
+std::string Bitmap::getChannelName(size_t idx) const {
 	Assert(idx < m_channelCount);
 	char name = '\0';
 
@@ -718,7 +718,7 @@ Spectrum Bitmap::average() const {
 		case EFloat16: {
 				const half *ptr = getFloat16Data();
 				for (size_t i=0; i<pixelCount; ++i)
-					for (int ch=0; ch<m_channelCount; ++ch)
+					for (size_t ch=0; ch<m_channelCount; ++ch)
 						accum[ch] += (Float) *ptr++;
 			}
 			break;
@@ -726,7 +726,7 @@ Spectrum Bitmap::average() const {
 		case EFloat32: {
 				const float *ptr = getFloat32Data();
 				for (size_t i=0; i<pixelCount; ++i)
-					for (int ch=0; ch<m_channelCount; ++ch)
+					for (size_t ch=0; ch<m_channelCount; ++ch)
 						accum[ch] += (Float) *ptr++;
 			}
 			break;
@@ -734,7 +734,7 @@ Spectrum Bitmap::average() const {
 		case EFloat64: {
 				const double *ptr = getFloat64Data();
 				for (size_t i=0; i<pixelCount; ++i)
-					for (int ch=0; ch<m_channelCount; ++ch)
+					for (size_t ch=0; ch<m_channelCount; ++ch)
 						accum[ch] += (Float) *ptr++;
 			}
 			break;
@@ -743,7 +743,7 @@ Spectrum Bitmap::average() const {
 			Log(EError, "average(): Unsupported component format!");
 	}
 
-	for (int ch=0; ch<m_channelCount; ++ch)
+	for (size_t ch=0; ch<m_channelCount; ++ch)
 		accum[ch] /= pixelCount;
 
 	const FormatConverter *cvt = FormatConverter::getInstance(
@@ -774,7 +774,7 @@ void Bitmap::convolve(const Bitmap *_kernel) {
 	if (m_componentFormat != EFloat16 && m_componentFormat != EFloat32 && m_componentFormat != EFloat64)
 		Log(EError, "Bitmap::convolve(): unsupported component format! (must be float16/float32/float64)");
 
-	int channelCountKernel = _kernel->getChannelCount();
+	size_t channelCountKernel = _kernel->getChannelCount();
 
 	size_t kernelSize   = (size_t) _kernel->getWidth(),
 		   hKernelSize  = kernelSize / 2,
@@ -806,7 +806,7 @@ void Bitmap::convolve(const Bitmap *_kernel) {
 
 	memset(kernel, 0, sizeof(complex)*paddedSize);
 
-	for (int ch=0; ch<m_channelCount; ++ch) {
+	for (size_t ch=0; ch<m_channelCount; ++ch) {
 		memset(data, 0, sizeof(complex)*paddedSize);
 		switch (m_componentFormat) {
 			case EFloat16:

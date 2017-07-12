@@ -20,6 +20,7 @@
 #define __BDPT_H
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/render/film.h>
 
 /**
  * When the following is set to "1", the Bidirectional Path Tracer
@@ -47,10 +48,10 @@ struct BDPTConfiguration {
 	size_t sampleCount;
 	Vector2i cropSize;
 	int rrDepth;
-	bool m_transient;
-	float m_pathMin;
-	float m_pathMax;
-	float m_pathSample;
+	Film::EDecompositionType m_decompositionType;
+	Float m_decompositionMinBound;
+	Float m_decompositionMaxBound;
+	Float m_decompositionBinWidth;
 	size_t m_frames;
 
 	inline BDPTConfiguration() { }
@@ -64,10 +65,10 @@ struct BDPTConfiguration {
 		sampleCount = stream->readSize();
 		cropSize = Vector2i(stream);
 		rrDepth = stream->readInt();
-		m_transient = stream->readBool();
-		m_pathMin   = stream->readFloat();
-		m_pathMax   = stream->readFloat();
-		m_pathSample   = stream->readFloat();
+		m_decompositionType = (Film::EDecompositionType) stream->readUInt();
+		m_decompositionMinBound   = stream->readFloat();
+		m_decompositionMaxBound   = stream->readFloat();
+		m_decompositionBinWidth   = stream->readFloat();
 	}
 
 	inline void serialize(Stream *stream) const {
@@ -79,13 +80,23 @@ struct BDPTConfiguration {
 		stream->writeSize(sampleCount);
 		cropSize.serialize(stream);
 		stream->writeInt(rrDepth);
-		stream->writeBool(m_transient);
-		stream->writeFloat(m_pathMin);
-		stream->writeFloat(m_pathMax);
-		stream->writeFloat(m_pathSample);
+		stream->writeUInt(m_decompositionType);
+		stream->writeFloat(m_decompositionMinBound);
+		stream->writeFloat(m_decompositionMaxBound);
+		stream->writeFloat(m_decompositionBinWidth);
 	}
 
 	void dump() const {
+
+		std::string decompositionType;
+		if (m_decompositionType == Film::ESteadyState) {
+			decompositionType = "none";
+		} else if (m_decompositionType == Film::ETransient) {
+			decompositionType = "transient";
+		} else if (m_decompositionType == Film::EBounce) {
+					decompositionType = "bounce";
+		}
+
 		SLog(EDebug, "Bidirectional path tracer configuration:");
 		SLog(EDebug, "   Maximum path depth          : %i", maxDepth);
 		SLog(EDebug, "   Image size                  : %ix%i",
@@ -97,10 +108,10 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   Russian roulette depth      : %i", rrDepth);
 		SLog(EDebug, "   Block size                  : %i", blockSize);
 		SLog(EDebug, "   Number of samples           : " SIZE_T_FMT, sampleCount);
-		SLog(EDebug, "   Is transient enabled		 : %s", m_transient ? "yes" : "no");
-		SLog(EDebug, "   minimum Path sampled		 : %f", m_pathMin);
-		SLog(EDebug, "   maximum Path sampled		 : %f", m_pathMax);
-		SLog(EDebug, "   Bin width of Path sample 	 : %f", m_pathSample);
+		SLog(EDebug, "   decomposition type 		 : %s", decompositionType);
+		SLog(EDebug, "   decomposition min bound	 : %f", m_decompositionMinBound);
+		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
+		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
 		#if BDPT_DEBUG == 1
 			SLog(EDebug, "   Show weighted contributions : %s", showWeighted ? "yes" : "no");
 		#endif

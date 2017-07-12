@@ -400,7 +400,7 @@ public:
 	inline bool isSquare() const { return m_size.x == m_size.y; }
 
 	/// Return a string representation of the name of a channel
-	std::string getChannelName(int channelIndex) const;
+	std::string getChannelName(size_t channelIndex) const;
 
 	/// Return whether this image has an alpha channel
 	inline bool hasAlpha() const {

@@ -114,10 +114,10 @@ protected:
 #endif
 	ref<ImageBlock> m_block, m_lightImage;
 public:
-	bool m_transient;
-	Float m_pathMax;
-	Float m_pathMin;
-	Float m_pathSample;
+	Film::EDecompositionType m_decompositionType;
+	Float m_decompositionMinBound;
+	Float m_decompositionMaxBound;
+	Float m_decompositionBinWidth;
 	size_t m_frames;
 };
 
