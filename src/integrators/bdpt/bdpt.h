@@ -94,7 +94,7 @@ struct BDPTConfiguration {
 		} else if (m_decompositionType == Film::ETransient) {
 			decompositionType = "transient";
 		} else if (m_decompositionType == Film::EBounce) {
-					decompositionType = "bounce";
+			decompositionType = "bounce";
 		}
 
 		SLog(EDebug, "Bidirectional path tracer configuration:");

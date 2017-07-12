@@ -252,8 +252,7 @@ public:
 						vs->eval(scene, vsPred, vt, EImportance) *
 						vt->eval(scene, vtPred, vs, ERadiance);
 
-					if ((wr->m_decompositionType == Film::ETransient) &&
-							(wr->m_decompositionType == Film::EBounce)) {
+					if (wr->m_decompositionType != Film::ESteadyState) {
 						pathLength = sensorPathlength[t];
 					}
 				} else if (vt->isSensorSupernode()) {
@@ -269,8 +268,7 @@ public:
 						vs->eval(scene, vsPred, vt, EImportance) *
 						vt->eval(scene, vtPred, vs, ERadiance);
 
-					if ((wr->m_decompositionType == Film::ETransient) &&
-							(wr->m_decompositionType == Film::EBounce)) {
+					if (wr->m_decompositionType != Film::ESteadyState) {
 						pathLength = emitterPathlength[s];
 					}
 
@@ -283,8 +281,7 @@ public:
 						value = radianceWeights[t] * vt->sampleDirect(scene, m_sampler,
 							&tempEndpoint, &tempEdge, &tempSample, EImportance);
 
-						if ((wr->m_decompositionType == Film::ETransient) &&
-								(wr->m_decompositionType == Film::EBounce)) {
+						if (wr->m_decompositionType != Film::ESteadyState) {
 							pathLength = sensorPathlength[t];
 						}
 
@@ -307,8 +304,7 @@ public:
 						value = importanceWeights[s] * vs->sampleDirect(scene, m_sampler,
 							&tempEndpoint, &tempEdge, &tempSample, ERadiance);
 
-						if ((wr->m_decompositionType == Film::ETransient) &&
-								(wr->m_decompositionType == Film::EBounce)) {
+						if (wr->m_decompositionType != Film::ESteadyState) {
 							pathLength = emitterPathlength[s];
 						}
 
