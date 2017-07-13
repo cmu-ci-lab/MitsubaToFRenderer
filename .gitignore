@@ -47,3 +47,10 @@ mitsuba.*.log
 .settings
 .cproject
 .project
+
+# Project related output files 
+*.mexa64
+*.exr
+*.avi
+*.m~
+
