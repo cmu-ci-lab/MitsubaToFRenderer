@@ -116,10 +116,6 @@
 
 	<shape type="obj">
 		<string name="filename" value="meshes/cbox_back.obj"/>
-		<transform name="toWorld">
-			<rotate y="-1" angle="-45"/>
-                        <translate x="0" y="0" z="-000"/>
-                </transform>
 		<ref id="white"/>
 	</shape>
 
