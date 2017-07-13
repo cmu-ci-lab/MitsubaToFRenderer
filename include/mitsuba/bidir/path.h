@@ -23,6 +23,7 @@
 #include <mitsuba/bidir/vertex.h>
 #include <mitsuba/bidir/edge.h>
 #include <mitsuba/bidir/mempool.h>
+#include <../src/integrators/bdpt/bdpt_wr.h>
 
 MTS_NAMESPACE_BEGIN
 
@@ -172,7 +173,7 @@ public:
 	 *         on the emitter and sensor subpath, respectively.
 	 */
 	static std::pair<int, int> alternatingRandomWalkFromPixel(const Scene *scene,
-		Sampler *sampler, Path &emitterPath, int nEmitterSteps,
+		Sampler *sampler, BDPTWorkResult *wr, Path &emitterPath, int nEmitterSteps,
 		Path &sensorPath, int nSensorSteps, const Point2i &pixelPosition,
 		int rrStart, MemoryPool &pool);
 

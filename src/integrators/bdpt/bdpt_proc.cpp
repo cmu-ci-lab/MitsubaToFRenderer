@@ -110,7 +110,7 @@ public:
 				sensorSubpath.initialize(m_scene, time, ERadiance, m_pool);
 
 				/* Perform a random walk using alternating steps on each path */
-				Path::alternatingRandomWalkFromPixel(m_scene, m_sampler,
+				Path::alternatingRandomWalkFromPixel(m_scene, m_sampler,result,
 					emitterSubpath, emitterDepth, sensorSubpath,
 					sensorDepth, offset, m_config.rrDepth, m_pool);
 
@@ -151,15 +151,11 @@ public:
 			emitterPathlength[1] = sensorPathlength[1] = Float(0.0f);
 			if (wr->m_decompositionType == Film::ETransient) {
 				for (size_t i = 2; i < emitterSubpath.vertexCount(); ++i){
-					emitterPathlength[i] = emitterPathlength[i-1] +
-										distance(emitterSubpath.vertex(i)->getPosition(),
-												emitterSubpath.vertex(i - 1)->getPosition());
+					emitterPathlength[i] = emitterPathlength[i-1] + emitterSubpath.edge(i - 1)->length;
 				}
 
 				for (size_t i = 2; i < sensorSubpath.vertexCount(); ++i){
-					sensorPathlength[i] = sensorPathlength[i-1] +
-										distance(sensorSubpath.vertex(i)->getPosition(),
-												sensorSubpath.vertex(i - 1)->getPosition());
+					sensorPathlength[i] = sensorPathlength[i-1] + sensorSubpath.edge(i - 1)->length;
 				}
 			} else if (wr->m_decompositionType == Film::EBounce) {
 				for (size_t i = 2; i < emitterSubpath.vertexCount(); ++i){
