@@ -110,6 +110,10 @@ public:
 	/// Manually set the current sample index
 	virtual void setSampleIndex(size_t sampleIndex);
 
+	/* Return the next random Float value */
+	virtual Float nextFloat();
+
+
 	/// Retrieve the next component value from the current sample
 	virtual Float next1D() = 0;
 

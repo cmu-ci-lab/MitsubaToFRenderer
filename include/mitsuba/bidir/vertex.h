@@ -235,6 +235,16 @@ struct MTS_EXPORT_BIDIR PathVertex {
 	void makeEndpoint(const Scene *scene, Float time, ETransportMode mode);
 
 	/**
+	 * TODO: Write comments
+	 */
+
+	bool EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
+			const PathVertex *pred1, const PathEdge *predEdge1,
+			const PathVertex *pred2, const PathEdge *predEdge2,
+			PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float pathLengthTarget,
+			ETransportMode mode, bool russianRoulette, Spectrum *throughput);
+
+	/**
 	 * \brief Sample the next vertex in a random walk using the default
 	 * sampling technique implemented by the current vertex.
 	 *

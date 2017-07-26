@@ -585,6 +585,10 @@ template <typename T> inline T distanceSquared(const TPoint3<T> &p1, const TPoin
 	return (p1-p2).lengthSquared();
 }
 
+template <typename T> inline T lengthSquared(const TPoint3<T> &p) {
+	return p.x*p.x + p.y*p.y + p.z*p.z;
+}
+
 template <> inline TPoint3<int> TPoint3<int>::operator/(int s) const {
 #ifdef MTS_DEBUG
 	if (s == 0)

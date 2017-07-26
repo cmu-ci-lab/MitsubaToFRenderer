@@ -23,8 +23,8 @@
 			<integer name="height" value="512"/>
 			<integer name="width" value="512"/>
 			<string name="decomposition" value="transient"/>
-			<float name="minBound" value="0"/>
-			<float name="maxBound" value="3000"/>
+			<float name="minBound" value="0900"/>
+			<float name="maxBound" value="1100"/>
 			<float name="binWidth" value="10"/> 
 
 			<rfilter type="gaussian"/>

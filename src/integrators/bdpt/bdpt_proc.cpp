@@ -139,6 +139,14 @@ public:
 		PathVertex tempEndpoint, tempSample;
 		PathEdge tempEdge, connectionEdge;
 
+		/* For transient rendering */
+		PathEdge *connectionEdge1 = m_pool.allocEdge(),
+				 *connectionEdge2 = m_pool.allocEdge();
+		PathVertex *connectionVertex = m_pool.allocVertex();
+
+		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths */
+		Float pathLengthTarget = wr->m_decompositionMinBound+(wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*m_sampler->nextFloat();
+
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;
 		Float *sensorPathlength = NULL;
@@ -149,7 +157,7 @@ public:
 
 			emitterPathlength[0] = sensorPathlength[0] = Float(0.0f);
 			emitterPathlength[1] = sensorPathlength[1] = Float(0.0f);
-			if (wr->m_decompositionType == Film::ETransient) {
+			if (wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) {
 				for (size_t i = 2; i < emitterSubpath.vertexCount(); ++i){
 					emitterPathlength[i] = emitterPathlength[i-1] + emitterSubpath.edge(i - 1)->length;
 				}
@@ -286,7 +294,7 @@ public:
 						vs = &tempSample; vsPred = &tempEndpoint; vsEdge = &tempEdge;
 						value *= vt->eval(scene, vtPred, vs, ERadiance);
 
-						if (wr->m_decompositionType == Film::ETransient) {
+						if (wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) {
 							pathLength += distance(vs->getPosition(),vt->getPosition());
 						} else if (wr->m_decompositionType == Film::EBounce) {
 							pathLength += 1.0f;
@@ -309,7 +317,7 @@ public:
 						vt = &tempSample; vtPred = &tempEndpoint; vtEdge = &tempEdge;
 						value *= vs->eval(scene, vsPred, vt, EImportance);
 
-						if (wr->m_decompositionType == Film::ETransient) {
+						if (wr->m_decompositionType == Film::ETransient  || wr->m_decompositionType == Film::ETransientEllipse) {
 							pathLength += distance(vs->getPosition(),vt->getPosition());
 						} else if (wr->m_decompositionType == Film::EBounce) {
 							pathLength += 1.0f;
@@ -328,23 +336,42 @@ public:
 						vs->eval(scene, vsPred, vt, EImportance) *
 						vt->eval(scene, vtPred, vs, ERadiance);
 
-					if (wr->m_decompositionType == Film::ETransient) {
+
+					/* FIXME */
+					Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
+					// Currently making an ellipsoidal connection betweeen vs (end of emitter subpath) and vt (end of sensor sub path) from vs only (end of emitter path)
+					if(wr->m_decompositionType == Film::ETransientEllipse)
+						bool b = vs->EllipsoidalSampleBetween(scene, m_sampler,
+								vs, vsEdge,
+								vt, vtEdge,
+								connectionVertex, connectionEdge1, connectionEdge2, pathLengthTarget,
+								EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS);
+
+					if (wr->m_decompositionType == Film::ETransientEllipse) {
+						pathLength = emitterPathlength[s]+sensorPathlength[t]+connectionEdge1->length+connectionEdge2->length;
+					}else if (wr->m_decompositionType == Film::ETransient) {
 						pathLength = emitterPathlength[s]+sensorPathlength[t]+distance(vs->getPosition(),vt->getPosition());
-					} else if (wr->m_decompositionType == Film::EBounce) {
+					}else if (wr->m_decompositionType == Film::EBounce) {
 						pathLength = emitterPathlength[s]+sensorPathlength[t]+1.0f;
 					}
 
 					/* Temporarily force vertex measure to EArea. Needed to
 					   handle BSDFs with diffuse + specular components */
 					vs->measure = vt->measure = EArea;
+
 				}
 
 				/* Attempt to connect the two endpoints, which could result in
 				   the creation of additional vertices (index-matched boundaries etc.) */
 				int interactions = remaining; // backup
+
+				if(!m_config.m_decompositionType == Film::ETransientEllipse){
+
 				if (value.isZero() || !connectionEdge.pathConnectAndCollapse(
 						scene, vsEdge, vs, vt, vtEdge, interactions))
 					continue;
+
+
 
 				/* Account for the terms of the measurement contribution
 				   function that are coupled to the connection edge */
@@ -353,6 +380,8 @@ public:
 				else
 					value *= connectionEdge.evalCached(vs, vt, PathEdge::ETransmittance |
 							(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+
+				}
 
 				if (sampleDirect) {
 					/* A direct sampling strategy was used, which generated
@@ -413,6 +442,10 @@ public:
 			sampleDecompositionValue[wr->getChannelCount()-1]=1.0f;
 			wr->putSample(initialSamplePos, sampleDecompositionValue);
 		}
+
+		m_pool.release(connectionEdge1);
+		m_pool.release(connectionEdge2);
+		m_pool.release(connectionVertex);
 
 	}
 

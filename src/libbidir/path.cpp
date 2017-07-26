@@ -165,7 +165,7 @@ std::pair<int, int> Path::alternatingRandomWalkFromPixel(const Scene *scene, Sam
 					predEdgeT, succEdgeT, succVertexT, ERadiance,
 					rrStart != -1 && t >= rrStart, &throughputT)) {
 				cumSensorPathLength = cumSensorPathLength + succEdgeT->length;
-				if(!(wr->m_decompositionType == Film::ETransient) || !(cumSensorPathLength > wr->m_decompositionMaxBound)){
+				if(!(wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) || !(cumSensorPathLength > wr->m_decompositionMaxBound)){
 					sensorPath.append(succEdgeT, succVertexT);
 					predVertexT = curVertexT;
 					curVertexT = succVertexT;
@@ -193,7 +193,7 @@ std::pair<int, int> Path::alternatingRandomWalkFromPixel(const Scene *scene, Sam
 					predEdgeS, succEdgeS, succVertexS, EImportance,
 					rrStart != -1 && s >= rrStart, &throughputS)) {
 				cumEmitterPathLength = cumEmitterPathLength + succEdgeS->length;
-				if(!(wr->m_decompositionType == Film::ETransient) || !(cumEmitterPathLength > wr->m_decompositionMaxBound)){
+				if(!(wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) || !(cumEmitterPathLength > wr->m_decompositionMaxBound)){
 					emitterPath.append(succEdgeS, succVertexS);
 					predVertexS = curVertexS;
 					curVertexS = succVertexS;

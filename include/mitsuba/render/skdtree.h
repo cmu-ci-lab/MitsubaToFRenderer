@@ -23,6 +23,7 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/sahkdtree3.h>
 #include <mitsuba/render/triaccel.h>
+#include <mitsuba/render/sampler.h>
 
 #if defined(MTS_KD_CONSERVE_MEMORY)
 #if defined(MTS_HAS_COHERENT_RT)
@@ -74,6 +75,19 @@ class MTS_EXPORT_RENDER ShapeKDTree : public SAHKDTree3D<ShapeKDTree> {
 	friend class SingleScatter;
 
 public:
+
+	// Location of a point for the ellipsoidal intersection code
+	enum PLocation {
+		/// The point is inside the ellipsoid
+		EInside              = 0x00,
+
+		/// The point is outside the ellipsoid
+		EOutside                = 0x01,
+
+		/// To be determined of the point is inside or outside
+		ETBD                   = 0x02,
+	};
+
 	// =============================================================
 	//! @{ \name Initialization and tree construction
 	// =============================================================
@@ -99,6 +113,22 @@ public:
 
 	/// Build the kd-tree (needs to be called before tracing any rays)
 	void build();
+
+	/* comment appropriately*/
+	bool ellipsoidIntersect(const Ellipse &ellipse, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
+
+	bool recursiveEllipsoidIntersect(const KDNode* node, const Ellipse &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const;
+
+	bool isBoxCuttingEllipsoid(const Ellipse &e, const Float P[][3], PLocation L[]) const;
+
+
+	//direction=0 => Filling in the left one
+	//direction=1 => Filling in the right one
+	void fillPositionsAndLocations(const Float P[][3], const PLocation L[], Float PNew[][3], PLocation LNew[], const Float splitValue, const int axis, const bool direction) const;
+
+	//direction=0 => Filling from the left one to the right one
+	//direction=1 => Filling from the right one to the left one
+	void fillPositionsAndLocations(const Float P[][3], const PLocation L[], Float PNew[][3], PLocation LNew[], const int axis, const bool direction) const;
 
 	//! @}
 	// =============================================================
@@ -337,6 +367,95 @@ protected:
 	}
 
 	/**
+	 */
+	template<bool BarycentricPos> FINLINE void fillEllipticIntersectionRecord(Ray &ray, const void *temp, Intersection &its) const {
+		const IntersectionCache *cache = reinterpret_cast<const IntersectionCache *>(temp);
+		const Shape *shape = m_shapes[cache->shapeIndex];
+		if (m_triangleFlag[cache->shapeIndex]) {
+			const TriMesh *trimesh = static_cast<const TriMesh *>(shape);
+			const Triangle &tri = trimesh->getTriangles()[cache->primIndex];
+			const Point *vertexPositions = trimesh->getVertexPositions();
+			const Normal *vertexNormals = trimesh->getVertexNormals();
+			const Point2 *vertexTexcoords = trimesh->getVertexTexcoords();
+			const Color3 *vertexColors = trimesh->getVertexColors();
+			const TangentSpace *vertexTangents = trimesh->getUVTangents();
+			const Vector b(1 - cache->u - cache->v, cache->u, cache->v);
+
+			const uint32_t idx0 = tri.idx[0], idx1 = tri.idx[1], idx2 = tri.idx[2];
+			const Point &p0 = vertexPositions[idx0];
+			const Point &p1 = vertexPositions[idx1];
+			const Point &p2 = vertexPositions[idx2];
+
+			if (BarycentricPos)
+				its.p = p0 * b.x + p1 * b.y + p2 * b.z;
+			else
+				SLog(EError, "Only barycentric code works");
+
+			Vector side1(p1-p0), side2(p2-p0);
+			Normal faceNormal(cross(side1, side2));
+			Float length = faceNormal.length();
+			if (!faceNormal.isZero())
+				faceNormal /= length;
+
+			if (EXPECT_NOT_TAKEN(vertexTangents)) {
+				const TangentSpace &ts = vertexTangents[cache->primIndex];
+				its.dpdu = ts.dpdu;
+				its.dpdv = ts.dpdv;
+			} else {
+				its.dpdu = side1;
+				its.dpdv = side2;
+			}
+
+			if (EXPECT_TAKEN(vertexNormals)) {
+				const Normal
+					&n0 = vertexNormals[idx0],
+					&n1 = vertexNormals[idx1],
+					&n2 = vertexNormals[idx2];
+
+				its.shFrame.n = normalize(n0 * b.x + n1 * b.y + n2 * b.z);
+
+				/* Ensure that the geometric & shading normals face the same direction */
+				if (dot(faceNormal, its.shFrame.n) < 0)
+					faceNormal = -faceNormal;
+			} else {
+				its.shFrame.n = faceNormal;
+			}
+			its.geoFrame = Frame(faceNormal);
+
+			if (EXPECT_TAKEN(vertexTexcoords)) {
+				const Point2 &t0 = vertexTexcoords[idx0];
+				const Point2 &t1 = vertexTexcoords[idx1];
+				const Point2 &t2 = vertexTexcoords[idx2];
+				its.uv = t0 * b.x + t1 * b.y + t2 * b.z;
+			} else {
+				its.uv = Point2(b.y, b.z);
+			}
+
+			if (EXPECT_NOT_TAKEN(vertexColors)) {
+				const Color3 &c0 = vertexColors[idx0],
+							 &c1 = vertexColors[idx1],
+							 &c2 = vertexColors[idx2];
+				Color3 result(c0 * b.x + c1 * b.y + c2 * b.z);
+				its.color.fromLinearRGB(result[0], result[1],
+					result[2], Spectrum::EReflectance);
+			}
+
+			its.shape = trimesh;
+			its.hasUVPartials = false;
+			its.primIndex = cache->primIndex;
+			its.instance = NULL;
+	//		its.time = ray.time;
+		}else{
+			SLog(EError,"Not implemented error");
+		}
+
+		computeShadingFrame(its.shFrame.n, its.dpdu, its.shFrame);
+		ray.d = normalize(its.p - ray.o);
+		its.wi = its.toLocal(-ray.d);
+	}
+
+
+	/**
 	 * \brief After having found a unique intersection, fill a proper record
 	 * using the temporary information collected in \ref intersect()
 	 */
@@ -463,6 +582,7 @@ private:
 	std::vector<const Shape *> m_shapes;
 	std::vector<bool> m_triangleFlag;
 	std::vector<IndexType> m_shapeMap;
+
 #if !defined(MTS_KD_CONSERVE_MEMORY)
 	TriAccel *m_triAccel;
 #endif

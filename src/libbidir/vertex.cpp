@@ -18,6 +18,7 @@
 
 #include <mitsuba/bidir/path.h>
 #include <mitsuba/core/statistics.h>
+#include <mitsuba/core/ellipse.h> // To test ellipse code. FixMe to go throught the KDD tree
 
 MTS_NAMESPACE_BEGIN
 
@@ -31,6 +32,76 @@ void PathVertex::makeEndpoint(const Scene *scene, Float time, ETransportMode mod
 	degenerate = (mode == EImportance)
 		? scene->hasDegenerateEmitters() : scene->hasDegenerateSensor();
 }
+
+bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
+		const PathVertex *pred1, const PathEdge *predEdge1,
+		const PathVertex *pred2, const PathEdge *predEdge2,
+		PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float pathLengthTarget,
+		ETransportMode mode, bool russianRoulette, Spectrum *throughput) {
+
+	if(mode != EImportance)
+		SLog(EError, "Ellipsoidal intersection called with sensor path");
+
+	Ray ray;
+
+	memset(succEdge1, 0, sizeof(PathEdge));
+	memset(succ, 0, sizeof(PathVertex));
+	memset(succEdge2, 0, sizeof(PathEdge));
+
+	succEdge1->medium = (predEdge1 == NULL) ? NULL : predEdge1->medium;
+	rrWeight = 1.0f;
+
+	switch (type) {
+		case EEmitterSupernode: {
+			//TBD
+		}
+		break;
+		case ESensorSupernode: {
+			SLog(EError, "Ellipsoidal intersection called with sensor path");
+		}
+		break;
+		case EEmitterSample: {
+			//TBD
+		}
+		break;
+		case ESensorSample: {
+			SLog(EError, "Ellipsoidal intersection called with sensor path");
+		}
+		break;
+		case ESurfaceInteraction: {
+
+			Ellipse e(pred1->getPosition(), pred2->getPosition(), pathLengthTarget); // TODO: remove memory of ellipse
+
+			Float value = 0.0f;
+
+			ray.setOrigin(getIntersection().p);
+			Intersection &its = succ->getIntersection();
+
+			if(scene->ellipsoidIntersectAll(e, value, ray, its, sampler)){
+				succ->type = PathVertex::ESurfaceInteraction;
+				succ->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
+						its.shape->isEmitter() || its.shape->isSensor());
+				int interactions = 0; // FIXME: can we do better than this?
+				if(!succEdge1->pathConnectAndCollapse(scene, predEdge1, pred1, succ, NULL, interactions) || !succEdge2->pathConnectAndCollapse(scene, succEdge1, succ, pred2, predEdge2, interactions))
+					return false;
+			}else{
+				return false;
+			}
+			return true;
+		}
+		break;
+		case EMediumInteraction: {
+			SLog(EError, "Ellipsoidal intersection called with sensor path");
+		}
+		break;
+		default:
+			SLog(EError, "Ellipsoidal intersection encountered an "
+				"unsupported vertex type (%i)!", type);
+	}
+	return false;
+}
+
+
 
 bool PathVertex::sampleNext(const Scene *scene, Sampler *sampler,
 		const PathVertex *pred, const PathEdge *predEdge,

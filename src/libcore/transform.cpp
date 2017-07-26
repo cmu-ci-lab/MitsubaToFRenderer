@@ -96,6 +96,41 @@ Transform Transform::rotate(const Vector &axis, Float angle) {
 	return Transform(result, transp);
 }
 
+Transform Transform::rotateVector2Vector(const Vector &start, const Vector &final) {
+
+	Vector tempStart = start;
+	Vector tempFinal = final;
+
+
+	Transform R;
+	Float startLength = tempStart.length();
+	Float finalLength = tempFinal.length();
+
+	if(startLength == 0 || finalLength == 0)
+		return R;
+	tempStart/= startLength;
+	tempFinal/= finalLength;
+
+	Vector v = cross(tempStart,tempFinal);
+	Float s = v.length();
+	Float c = dot(tempStart,tempFinal);
+	if(s == 0)
+		return R;
+
+	Matrix4x4 vX(0, 	-v.z, 	v.y, 	0,
+				 v.z, 	   0,  -v.x,	0,
+				-v.y, 	 v.x, 	  0, 	0,
+				   0, 	   0, 	  0, 	1.0f);
+
+	R.m_transform = R.m_transform + vX + vX*vX*(1-c)/(s*s);
+	R.m_transform.m[3][3] = 1.0f;
+
+	Transform T(R.m_transform);
+
+	return T;
+}
+
+
 Transform Transform::perspective(Float fov, Float clipNear, Float clipFar) {
 	/* Project vectors in camera space onto a plane at z=1:
 	 *

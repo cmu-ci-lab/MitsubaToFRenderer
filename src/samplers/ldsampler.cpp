@@ -211,6 +211,11 @@ public:
 		m_dimension1DArray = m_dimension2DArray = 0;
 	}
 
+	/* Just return the next random Float value */
+	Float nextFloat() {
+		return m_random->nextFloat();
+	}
+
 	Float next1D() {
 		Assert(m_sampleIndex < m_sampleCount);
 		if (m_dimension1D < m_maxDimension)

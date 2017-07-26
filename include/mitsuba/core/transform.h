@@ -325,6 +325,9 @@ public:
 	/// Create a rotation transformation around an arbitrary axis. The angle is specified in degrees
 	static Transform rotate(const Vector &axis, Float angle);
 
+	/// Create a rotation transformation that rotates the vector start to final. The rotation matrix is not unique
+	static Transform rotateVector2Vector(const Vector &start, const Vector &final);
+
 	/// Create a scale transformation
 	static Transform scale(const Vector &v);
 

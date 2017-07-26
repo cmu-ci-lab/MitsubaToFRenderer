@@ -62,9 +62,11 @@ Film::Film(const Properties &props)
 		m_decompositionType = ETransient;
 	} else if (decompositionType == "bounce") {
 		m_decompositionType = EBounce;
+	} else if (decompositionType == "transientEllipse") {
+		m_decompositionType = ETransientEllipse;
 	} else {
 		Log(EError, "The \"decomposition\" parameter must be equal to"
-			"either \"none\", \"transient\", or \"bounce\"!");
+			"either \"none\", \"transient\", or \"bounce\", or \"transientEllipse\"!");
 	}
 
 	m_decompositionMinBound = props.getFloat("minBound", 0.0f);

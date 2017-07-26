@@ -49,6 +49,7 @@ set(HDRS
   ${INCLUDE_DIR}/quad.h
   ${INCLUDE_DIR}/quat.h
   ${INCLUDE_DIR}/random.h
+  ${INCLUDE_DIR}/ellipse.h
   ${INCLUDE_DIR}/ray.h
   ${INCLUDE_DIR}/ray_sse.h
   ${INCLUDE_DIR}/ref.h

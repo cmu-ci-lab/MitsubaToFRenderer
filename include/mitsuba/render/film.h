@@ -51,6 +51,10 @@ public:
 
 		/// Bounce light transport (decomposition by bounce order)
 		EBounce                   = 0x02,
+
+		/// Transient light transport (decomposition by pathlength with elliptic constraints)
+		ETransientEllipse		  = 0x03,
+
 	};
 
 	/// Ignoring the crop window, return the resolution of the underlying sensor

@@ -158,6 +158,8 @@ typedef TAABB<Point4>         AABB4;
 /// \ingroup libpython
 typedef TRay<Point, Vector>   Ray;
 typedef TRay<Point2, Vector2> Ray2;
+template <typename PointType, typename LengthType> struct TEllipse;
+typedef TEllipse<Point3f, float> Ellipse;
 struct RayPacket4;
 struct RayInterval4;
 struct Intersection4;

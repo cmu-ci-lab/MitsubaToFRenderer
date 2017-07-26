@@ -479,7 +479,10 @@ bool PathEdge::pathConnectAndCollapse(const Scene *scene, const PathEdge *predEd
 
 		Intersection its;
 		Float remaining = length;
-		medium = vt->getTargetMedium(succEdge, d);
+		if(succEdge != NULL)
+			medium = vt->getTargetMedium(succEdge, d);
+		else
+			medium = NULL;
 
 		while (true) {
 			bool surface = scene->rayIntersectAll(ray, its);
@@ -556,7 +559,7 @@ bool PathEdge::pathConnectAndCollapse(const Scene *scene, const PathEdge *predEd
 			}
 		}
 
-		if (medium != vs->getTargetMedium(predEdge, -d)) {
+		if ((medium!=NULL && predEdge==NULL) || medium != vs->getTargetMedium(predEdge, -d)) {
 			#if defined(MTS_BD_TRACE)
 				SLog(EWarn, "PathEdge::pathConnectAndCollapse(): attempted two connect "
 					"two vertices that disagree about the medium in between! "

@@ -69,6 +69,8 @@ void Sampler::setSampleIndex(size_t sampleIndex) {
 	m_dimension1DArray = m_dimension2DArray = 0;
 }
 
+Float Sampler::nextFloat(){return 0.0f;}
+
 void Sampler::request1DArray(size_t size) {
 	m_req1D.push_back(size);
 	m_sampleArrays1D.push_back(new Float[m_sampleCount * size]);
