@@ -101,7 +101,7 @@ struct BDPTConfiguration {
 			decompositionType = "transient";
 		} else if (m_decompositionType == Film::EBounce) {
 			decompositionType = "bounce";
-		} else if (m_decompositionType == Film::ETransientellipse) {
+		} else if (m_decompositionType == Film::ETransientEllipse) {
 			decompositionType = "transientellipse";
 		}
 

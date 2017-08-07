@@ -52,11 +52,11 @@ for i=1:Frames
    
    imshow(uint8( (Image*scaling).^1 ));
    title(strcat('Frame number:',num2str(i)));
-%    pause(.3);
+   pause(.2);
 end
 
 if(saveAvi)
-    Time = 5;% Total time of the final video in seconds. 
+    Time = 10;% Total time of the final video in seconds. 
     v = VideoWriter(strrep(file,'exr','avi'));
     v.FrameRate = (FrameMax - FrameMin)/Time ;v.Quality = 100;
     open(v);   

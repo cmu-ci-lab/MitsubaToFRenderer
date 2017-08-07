@@ -365,7 +365,7 @@ public:
 				   the creation of additional vertices (index-matched boundaries etc.) */
 				int interactions = remaining; // backup
 
-				if(!m_config.m_decompositionType == Film::ETransientEllipse){
+				if(!(m_config.m_decompositionType == Film::ETransientEllipse)){
 
 				if (value.isZero() || !connectionEdge.pathConnectAndCollapse(
 						scene, vsEdge, vs, vt, vtEdge, interactions))
@@ -422,7 +422,7 @@ public:
 
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if ((wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
+				if (t>=2 && (wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
 					value.toSRGB(temp[0],temp[1],temp[2]);
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
