@@ -294,7 +294,23 @@ public:
 						vs = &tempSample; vsPred = &tempEndpoint; vsEdge = &tempEdge;
 						value *= vt->eval(scene, vtPred, vs, ERadiance);
 
-						if (wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) {
+
+						/* FIXME */
+						Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
+
+						if(wr->m_decompositionType == Film::ETransientEllipse){
+							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
+							if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+																										   vt, vtEdge,
+																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+								continue;
+						}
+
+
+						if (wr->m_decompositionType == Film::ETransientEllipse) {
+							pathLength += connectionEdge1->length+connectionEdge2->length;
+						}else if (wr->m_decompositionType == Film::ETransient) {
 							pathLength += distance(vs->getPosition(),vt->getPosition());
 						} else if (wr->m_decompositionType == Film::EBounce) {
 							pathLength += 1.0f;
@@ -317,7 +333,22 @@ public:
 						vt = &tempSample; vtPred = &tempEndpoint; vtEdge = &tempEdge;
 						value *= vs->eval(scene, vsPred, vt, EImportance);
 
-						if (wr->m_decompositionType == Film::ETransient  || wr->m_decompositionType == Film::ETransientEllipse) {
+						/* FIXME */
+						Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
+
+						if(wr->m_decompositionType == Film::ETransientEllipse){
+							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
+							if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+																										   vt, vtEdge,
+																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+								continue;
+						}
+
+
+						if (wr->m_decompositionType == Film::ETransientEllipse) {
+							pathLength += connectionEdge1->length+connectionEdge2->length;
+						}else if (wr->m_decompositionType == Film::ETransient  || wr->m_decompositionType == Film::ETransientEllipse) {
 							pathLength += distance(vs->getPosition(),vt->getPosition());
 						} else if (wr->m_decompositionType == Film::EBounce) {
 							pathLength += 1.0f;
@@ -339,13 +370,16 @@ public:
 
 					/* FIXME */
 					Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
+
 					// Currently making an ellipsoidal connection betweeen vs (end of emitter subpath) and vt (end of sensor sub path) from vs only (end of emitter path)
-					if(wr->m_decompositionType == Film::ETransientEllipse)
-						bool b = vs->EllipsoidalSampleBetween(scene, m_sampler,
-								vs, vsEdge,
-								vt, vtEdge,
-								connectionVertex, connectionEdge1, connectionEdge2, pathLengthTarget,
-								EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS);
+					if(wr->m_decompositionType == Film::ETransientEllipse){
+						Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
+						if(value.isZero() || PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+																									   vt, vtEdge,
+																									   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+																									   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+							continue;
+					}
 
 					if (wr->m_decompositionType == Film::ETransientEllipse) {
 						pathLength = emitterPathlength[s]+sensorPathlength[t]+connectionEdge1->length+connectionEdge2->length;
@@ -365,22 +399,34 @@ public:
 				   the creation of additional vertices (index-matched boundaries etc.) */
 				int interactions = remaining; // backup
 
-				if(!(m_config.m_decompositionType == Film::ETransientEllipse)){
+				if(m_config.m_decompositionType != Film::ETransientEllipse){
 
-				if (value.isZero() || !connectionEdge.pathConnectAndCollapse(
-						scene, vsEdge, vs, vt, vtEdge, interactions))
-					continue;
+					if (value.isZero() || !connectionEdge.pathConnectAndCollapse(
+							scene, vsEdge, vs, vt, vtEdge, interactions))
+						continue;
 
 
 
-				/* Account for the terms of the measurement contribution
-				   function that are coupled to the connection edge */
-				if (!sampleDirect)
-					value *= connectionEdge.evalCached(vs, vt, PathEdge::EGeneralizedGeometricTerm);
-				else
-					value *= connectionEdge.evalCached(vs, vt, PathEdge::ETransmittance |
-							(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+					/* Account for the terms of the measurement contribution
+					   function that are coupled to the connection edge */
+					if (!sampleDirect)
+						value *= connectionEdge.evalCached(vs, vt, PathEdge::EGeneralizedGeometricTerm);
+					else
+						value *= connectionEdge.evalCached(vs, vt, PathEdge::ETransmittance |
+								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
 
+				}else{
+					//Make sure that the pathLength and pathLengthTarget match to some error bound
+					if(((pathLength-pathLengthTarget) > 1)|| pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
+						continue;
+					if (!sampleDirect) //FIXME: Understand this code. Currently written parallel to the normal code
+						value *= connectionEdge1->evalCached(vs, vt, PathEdge::EGeneralizedGeometricTerm)*
+									connectionEdge2->evalCached(vs, vt, PathEdge::EGeneralizedGeometricTerm);
+					else
+						value *= connectionEdge1->evalCached(vs, vt, PathEdge::ETransmittance |
+								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp)) *
+								connectionEdge2->evalCached(vs, vt, PathEdge::ETransmittance |
+										(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
 				}
 
 				if (sampleDirect) {

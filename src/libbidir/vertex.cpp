@@ -53,21 +53,20 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 	switch (type) {
 		case EEmitterSupernode: {
-			//TBD
+			SLog(EError, "Ellipsoidal intersection called at sensor supernode. We do not have space to create additional node");
 		}
 		break;
 		case ESensorSupernode: {
-			SLog(EError, "Ellipsoidal intersection called with sensor path");
-		}
-		break;
-		case EEmitterSample: {
-			//TBD
+			SLog(EError, "Ellipsoidal intersection called at sensor supernode. We do not have space to create additional node");
 		}
 		break;
 		case ESensorSample: {
-			SLog(EError, "Ellipsoidal intersection called with sensor path");
+			SLog(EError, "Ellipsoidal intersection called at sensor sample. We do not start from sensor path and should not have encountered this case");
 		}
 		break;
+		case EEmitterSample: {
+			//code me
+		}
 		case ESurfaceInteraction: {
 
 			Ellipse e(pred1->getPosition(), pred2->getPosition(), pathLengthTarget); // TODO: remove memory of ellipse
@@ -82,7 +81,8 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				succ->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
 						its.shape->isEmitter() || its.shape->isSensor());
 				int interactions = 0; // FIXME: can we do better than this?
-				if(!succEdge1->pathConnectAndCollapse(scene, predEdge1, pred1, succ, NULL, interactions) || !succEdge2->pathConnectAndCollapse(scene, succEdge1, succ, pred2, predEdge2, interactions))
+
+				if(!(succEdge1->pathConnectAndCollapse(scene, predEdge1, pred1, succ, NULL, interactions)) || !(succEdge2->pathConnectAndCollapse(scene, succEdge1, succ, pred2, predEdge2, interactions)))
 					return false;
 			}else{
 				return false;
@@ -91,7 +91,7 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		}
 		break;
 		case EMediumInteraction: {
-			SLog(EError, "Ellipsoidal intersection called with sensor path");
+			SLog(EError, "Ellipsoidal intersection called with Medium interaction, which is not handled today");
 		}
 		break;
 		default:

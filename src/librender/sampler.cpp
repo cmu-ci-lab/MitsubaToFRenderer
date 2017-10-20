@@ -71,6 +71,12 @@ void Sampler::setSampleIndex(size_t sampleIndex) {
 
 Float Sampler::nextFloat(){return 0.0f;}
 
+size_t Sampler::nextSize(size_t n){return 0;}
+
+template <typename Iterator> void Sampler::shuffle(Iterator it1, Iterator it2){
+	return;
+}
+
 void Sampler::request1DArray(size_t size) {
 	m_req1D.push_back(size);
 	m_sampleArrays1D.push_back(new Float[m_sampleCount * size]);

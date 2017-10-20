@@ -216,6 +216,15 @@ public:
 		return m_random->nextFloat();
 	}
 
+	/* Just return the next random Float value */
+	size_t nextSize(size_t n) {
+		return m_random->nextSize(n);
+	}
+
+	template <typename Iterator> void shuffle(Iterator it1, Iterator it2){
+		m_random->shuffle(it1, it2);
+	}
+
 	Float next1D() {
 		Assert(m_sampleIndex < m_sampleCount);
 		if (m_dimension1D < m_maxDimension)

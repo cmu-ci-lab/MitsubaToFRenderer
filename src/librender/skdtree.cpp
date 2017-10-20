@@ -18,6 +18,7 @@
 
 #include <mitsuba/render/skdtree.h>
 #include <mitsuba/core/statistics.h>
+#include <array>
 
 #if defined(MTS_SSE)
 #include <mitsuba/core/sse.h>
@@ -149,9 +150,27 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse 
 	if(node->isLeaf()){
 		// leaf handling code:
 		// FixMe: pick a random primitive
-		for (IndexType entry=node->getPrimStart(),
-							last = node->getPrimEnd(); entry != last; entry++) { // This should be random. Today it is deterministic. FIXME
-			const IndexType primIdx = m_indices[entry];
+		int l = (int)(node->getPrimStart());
+		int u = (int)(node->getPrimEnd());
+		std::vector<int> Permutation;
+		auto it = Permutation.begin();
+		for(int i = l;i < u; i++){
+			it = Permutation.insert(it, i);
+			it++;
+		}
+
+		auto it1 = Permutation.begin();
+		auto it2 = Permutation.end();
+//		sampler->shuffle(it1,it2);
+//		//FixME: sampler->shuffle(it1,it2) code is not compiling. Copy pasted the same code here.
+		for (it = it2 - 1; it > it1; --it)
+					std::iter_swap(it, it1 + sampler->nextSize((size_t) (it-it1)));
+
+		//		for (IndexType entry=node->getPrimStart(),
+		//							last = node->getPrimEnd(); entry != last; entry++) { // This should be random. Today it is deterministic. FIXME
+		//			const IndexType primIdx = m_indices[entry];
+		for (auto x: Permutation) {
+			const IndexType primIdx = m_indices[x];
 			const TriAccel &ta = m_triAccel[primIdx];
 			Float tempU;
 			Float tempV;
@@ -169,32 +188,36 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse 
 
 		const Float splitValue = (Float)node->getSplit();
 		const int axis = node->getAxis();
+
+		//FIXME: The below two variable are not needed anymore
 		Float PNew[8][3];
 		PLocation LNew[8];
 
 
-		if(sampler->nextFloat() < 0.5f){ // go left first and then right
+		if(sampler->nextFloat() < 0.5f){ // go left first and then right -- NOTE: Currently only going only one side
 			fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 0);
 			if(recursiveEllipsoidIntersect(node->getLeft(), e, value, PNew, LNew, sampler, temp)){
 				value *= 0.5f;
 				return true;
-			}else{
-				fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 1);
-				if(recursiveEllipsoidIntersect(node->getRight(), e, value, PNew, LNew, sampler, temp)){
-					return true;
-				}
 			}
+//			else{
+//				fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 1);
+//				if(recursiveEllipsoidIntersect(node->getRight(), e, value, PNew, LNew, sampler, temp)){
+//					return true;
+//				}
+//			}
 		}else{ // go right first and then left
 			fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 1);
 			if(recursiveEllipsoidIntersect(node->getRight(), e, value, PNew, LNew, sampler, temp)){
 				value *= 0.5f;
 				return true;
-			}else{
-				fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 0);
-				if(recursiveEllipsoidIntersect(node->getLeft(), e, value, PNew, LNew, sampler, temp)){
-					return true;
-				}
 			}
+//			else{
+//				fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 0);
+//				if(recursiveEllipsoidIntersect(node->getLeft(), e, value, PNew, LNew, sampler, temp)){
+//					return true;
+//				}
+//			}
 		}
 	}
 	return false;
@@ -249,37 +272,66 @@ void ShapeKDTree::fillPositionsAndLocations(const Float P[][3], const PLocation 
 }
 
 bool ShapeKDTree::isBoxCuttingEllipsoid(const Ellipse &e, const Float P[][3], PLocation L[]) const {
-	bool isAtleastOneInside  = false;
-	bool isAtleastOneOutside = false;
+// Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
+// Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
 
-	/* Check if we can determine the intersection with known locations */
-	for(size_t i=0;i<8;i++){
-		if(L[i] == ShapeKDTree::EInside){
-			isAtleastOneInside = true;
-		}else if(L[i] == ShapeKDTree::EOutside){
-			isAtleastOneOutside = true;
-		}
-		if(isAtleastOneInside && isAtleastOneOutside){
-			return true;
-		}
-	}
+    if (e.m_aabb.max.x < m_aabb.min.x) return false;
+    if (e.m_aabb.min.x > m_aabb.max.x) return false;
 
-	/* Determine the location of each corner, store, and determine if the ellipse intersects this box*/
-	for(size_t i=0;i<8;i++){
-		if(L[i] == ShapeKDTree::ETBD){
-			if(e.isInside(P[i][0], P[i][1], P[i][2])){
-				L[i] = ShapeKDTree::EInside;
-				isAtleastOneInside = true;
-			}else{
-				L[i] = ShapeKDTree::EOutside;
-				isAtleastOneOutside = true;
-			}
-			if(isAtleastOneInside && isAtleastOneOutside){
-				return true;
-			}
-		}
-	}
-	return false;
+    if (e.m_aabb.max.y < m_aabb.min.y) return false;
+    if (e.m_aabb.min.y > m_aabb.max.y) return false;
+
+    if (e.m_aabb.max.z < m_aabb.min.z) return false;
+    if (e.m_aabb.min.z > m_aabb.max.z) return false;
+
+// FIXME: Need to code this idea: If the entire node (AABB) is inside the ellipsoid, we need not check for the intersection
+
+    return true;
+
+
+// This algorithm is wrong; However, it can be re-purposed to check if the entire node is inside the ellipsoid.
+//	bool isAtleastOneInside  = false;
+//	bool isAtleastOneOutside = false;
+//
+//	/* Check if we can determine the intersection with known locations */
+//	for(size_t i=0;i<8;i++){
+//		if(L[i] == ShapeKDTree::EInside){
+//			isAtleastOneInside = true;
+//		}else if(L[i] == ShapeKDTree::EOutside){
+//			isAtleastOneOutside = true;
+//		}
+//		if(isAtleastOneInside && isAtleastOneOutside){
+//			return true;
+//		}
+//	}
+//
+//	/* Determine the location of each corner, store, and determine if the ellipse intersects this box*/
+//	for(size_t i=0;i<8;i++){
+//		if(L[i] == ShapeKDTree::ETBD){
+//			if(e.isInside(P[i][0], P[i][1], P[i][2])){
+//				L[i] = ShapeKDTree::EInside;
+//				isAtleastOneInside = true;
+//			}else{
+//				L[i] = ShapeKDTree::EOutside;
+//				isAtleastOneOutside = true;
+//			}
+//			if(isAtleastOneInside && isAtleastOneOutside){
+//				return true;
+//			}
+//		}
+//	}
+//
+//	if(isAtleastOneOutside){ // Entire Ellipsoid can be inside the box
+//		//Check if the center of the ellipse is inbetween the max and min points
+//		if( (m_aabb.min.x < e.C.x && e.C.x < m_aabb.max.x) &&
+//				(m_aabb.min.y < e.C.y && e.C.y < m_aabb.max.y) &&
+//				(m_aabb.min.z < e.C.z && e.C.z < m_aabb.max.z)){
+//			return true;
+//		}
+//
+//	}
+//
+//	return false;
 }
 
 bool ShapeKDTree::rayIntersect(const Ray &ray, Intersection &its) const {
