@@ -465,10 +465,10 @@ FINLINE int TriAccel::numberOfCircleLineIntersections(const Point &P1, const Poi
 }
 
 FINLINE Float TriAccel::circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const{
-	Float x1 = P1.x;
-	Float y1 = P1.y;
-	Float x2 = P2.x;
-	Float y2 = P2.y;
+	double x1 = (double)P1.x;
+	double y1 = (double)P1.y;
+	double x2 = (double)P2.x;
+	double y2 = (double)P2.y;
 
 	double dx = x1 - x2;
 	double dy = y1 - y2;
@@ -476,11 +476,9 @@ FINLINE Float TriAccel::circleLineIntersection(const Point &P1, const Point &P2,
 	double b  = 2*(dx*x2 + dy*y2);
 	double c  = x2*x2 + y2*y2 - r*r;
 
-	double det = (b*b-4*a*c);
+	double det = sqrt(b*b-4*a*c);
 	if(det < 0){ // To compensate for Float precision errors
-		det = 0;
-	}else{
-		det = sqrt(det);
+		SLog(EError,"Circle-Line intersection resulted in a possible float precision error or called without an intersection");
 	}
 
 	double alpha = (-b+det)/(2*a);
