@@ -37,12 +37,14 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		const PathVertex *pred1, const PathEdge *predEdge1,
 		const PathVertex *pred2, const PathEdge *predEdge2,
 		PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float pathLengthTarget,
+		Float &value,
 		ETransportMode mode, bool russianRoulette, Spectrum *throughput) {
 
 	if(mode != EImportance)
 		SLog(EError, "Ellipsoidal intersection called with sensor path");
 
 	Ray ray;
+	value = 1.0f;
 
 	memset(succEdge1, 0, sizeof(PathEdge));
 	memset(succ, 0, sizeof(PathVertex));
@@ -70,8 +72,6 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		case ESurfaceInteraction: {
 
 			Ellipse e(pred1->getPosition(), pred2->getPosition(), pathLengthTarget); // TODO: remove memory of ellipse
-
-			Float value = 0.0f;
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = succ->getIntersection();

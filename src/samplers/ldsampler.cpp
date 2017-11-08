@@ -216,7 +216,7 @@ public:
 		return m_random->nextFloat();
 	}
 
-	/* Just return the next random Float value */
+	/* Just return the next random size_t value */
 	size_t nextSize(size_t n) {
 		return m_random->nextSize(n);
 	}

@@ -242,6 +242,7 @@ struct MTS_EXPORT_BIDIR PathVertex {
 			const PathVertex *pred1, const PathEdge *predEdge1,
 			const PathVertex *pred2, const PathEdge *predEdge2,
 			PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float pathLengthTarget,
+			Float &value,
 			ETransportMode mode, bool russianRoulette, Spectrum *throughput);
 
 	/**

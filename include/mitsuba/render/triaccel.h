@@ -66,7 +66,7 @@ struct TriAccel {
 	/// For ellipsoidal intersection with triangle
 	FINLINE bool ellipseIntersectTriangle(const Ellipse &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
 
-	FINLINE bool circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle) const;
+	FINLINE bool circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const;
 	FINLINE int numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const;
 	FINLINE Float circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
 	FINLINE void Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
@@ -119,9 +119,6 @@ inline int TriAccel::load(const Point &A, const Point &B, const Point &C) {
 
 
 FINLINE bool TriAccel::ellipseIntersectTriangle(const Ellipse &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
-
-
-
 	Point SphereA;e.transformToSphere(A, SphereA);
 	Point SphereB;e.transformToSphere(B, SphereB);
 	Point SphereC;e.transformToSphere(C, SphereC);
@@ -154,7 +151,7 @@ FINLINE bool TriAccel::ellipseIntersectTriangle(const Ellipse &e, Float &value, 
 	Corners[2] = T3D2D(SphereC);
 
 	Float angle = 0.0f;
-	if(circlePolygonIntersection(Corners, R, sampler, angle)){
+	if(circlePolygonIntersection(Corners, R, sampler, angle, value)){
 		Point Projection(R*cos(angle), R*sin(angle), 0.0f), Original;
 		Projection = T3D2Dinv(Projection);
 		e.transformFromSphere(Projection, Original);
@@ -170,7 +167,6 @@ FINLINE bool TriAccel::ellipseIntersectTriangle(const Ellipse &e, Float &value, 
 
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
 		Barycentric(Original, A, B, C, u, v);
-		value = 1.0f;
 //		Point VerifyOriginal =(1-u-v)*A + u*B + v*C;
 
 		return true;
@@ -193,9 +189,10 @@ FINLINE void TriAccel::Barycentric(const Point &p, const Point &a, const Point &
     v = (d00 * d21 - d01 * d20) / denom;
 }
 
-FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle) const{
+FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const{
 	int noOfCorners = 3; // This code can be extended trivially to polygons of arbitrary size other than 3
 	Float norm_p[noOfCorners];
+	Float sampling = 1e-4;
 
 	Float temp;
 	std::vector<Float> thetas;
@@ -433,12 +430,12 @@ FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Fl
 		for(int i = 0; i < intersections/2; i++){
 			if(r < InsideAngles[i]){
 				angle = thetas[2*i - 1] + InsideAngles[i] - r;
+				value = value/InsideAngles[intersections/2-1]*sampling;
 				intersects = true;
 				break;
 			}
 		}
 	}
-
 
 
 	return intersects;

@@ -152,6 +152,10 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse 
 		// FixMe: pick a random primitive
 		int l = (int)(node->getPrimStart());
 		int u = (int)(node->getPrimEnd());
+
+		/*
+		 * checks all the triangles in a random permutation. However, this approach will bias the estimate. Hence, currently testing the first random triangle only and adjusting weight according to the intersection
+		 *
 		std::vector<int> Permutation;
 		auto it = Permutation.begin();
 		for(int i = l;i < u; i++){
@@ -161,14 +165,12 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse 
 
 		auto it1 = Permutation.begin();
 		auto it2 = Permutation.end();
+
 //		sampler->shuffle(it1,it2);
 //		//FixME: sampler->shuffle(it1,it2) code is not compiling. Copy pasted the same code here.
 		for (it = it2 - 1; it > it1; --it)
 					std::iter_swap(it, it1 + sampler->nextSize((size_t) (it-it1)));
 
-		//		for (IndexType entry=node->getPrimStart(),
-		//							last = node->getPrimEnd(); entry != last; entry++) { // This should be random. Today it is deterministic. FIXME
-		//			const IndexType primIdx = m_indices[entry];
 		for (auto x: Permutation) {
 			const IndexType primIdx = m_indices[x];
 			const TriAccel &ta = m_triAccel[primIdx];
@@ -183,6 +185,20 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse 
 			}
 
 		}
+		*/
+			int x = l+sampler->nextSize(u-l); //checkME
+			const IndexType primIdx = m_indices[x];
+			const TriAccel &ta = m_triAccel[primIdx];
+			Float tempU;
+			Float tempV;
+			if(ta.ellipseIntersectTriangle(e, value, tempU, tempV, sampler)){
+				cache->shapeIndex = ta.shapeIndex;
+				cache->primIndex = ta.primIndex;
+				cache->u = tempU;
+				cache->v = tempV;
+				return true;
+			}
+			value = value/(u-l);
 		return false;
 	}else{
 

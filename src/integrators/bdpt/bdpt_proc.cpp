@@ -143,7 +143,9 @@ public:
 		PathEdge *connectionEdge1 = m_pool.allocEdge(),
 				 *connectionEdge2 = m_pool.allocEdge();
 		PathVertex *connectionVertex = m_pool.allocVertex();
+		Float EllipticPathWeight; // only for the transientEllipse case
 
+		bool combine = false; // combine Ellipsoidal and BDPT?
 		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths */
 		Float pathLengthTarget = wr->m_decompositionMinBound+(wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*m_sampler->nextFloat();
 
@@ -226,6 +228,7 @@ public:
 					*vsEdge = emitterSubpath.edgeOrNull(s-1),
 					*vtEdge = sensorSubpath.edgeOrNull(t-1);
 
+				Film::EDecompositionType currentDecompositionType = wr->m_decompositionType;
 
 				RestoreMeasureHelper rmh0(vs), rmh1(vt);
 
@@ -244,6 +247,7 @@ public:
 
 				/* Total path length of this particular (s, t)-connection */
 				Float pathLength = 0.0f;
+				Float tempPathLength = 0.0f;
 
 				/* Account for the terms of the measurement contribution
 				   function that are coupled to the connection endpoints */
@@ -256,8 +260,11 @@ public:
 						vs->eval(scene, vsPred, vt, EImportance) *
 						vt->eval(scene, vtPred, vs, ERadiance);
 
-					if (wr->m_decompositionType != Film::ESteadyState) {
+					if (currentDecompositionType != Film::ESteadyState) {
 						pathLength = sensorPathlength[t];
+						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (pathLength >= wr->m_decompositionMinBound) && (pathLength <= wr->m_decompositionMaxBound)){
+							currentDecompositionType = Film::ETransient;
+						}
 					}
 				} else if (vt->isSensorSupernode()) {
 					/* If possible, convert 'vs' into an sensor sample */
@@ -272,8 +279,11 @@ public:
 						vs->eval(scene, vsPred, vt, EImportance) *
 						vt->eval(scene, vtPred, vs, ERadiance);
 
-					if (wr->m_decompositionType != Film::ESteadyState) {
+					if (currentDecompositionType != Film::ESteadyState) {
 						pathLength = emitterPathlength[s];
+						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (pathLength >= wr->m_decompositionMinBound) && (pathLength <= wr->m_decompositionMaxBound)){
+							currentDecompositionType = Film::ETransient;
+						}
 					}
 
 				} else if (m_config.sampleDirect && ((t == 1 && s > 1) || (s == 1 && t > 1))) {
@@ -285,7 +295,7 @@ public:
 						value = radianceWeights[t] * vt->sampleDirect(scene, m_sampler,
 							&tempEndpoint, &tempEdge, &tempSample, EImportance);
 
-						if (wr->m_decompositionType != Film::ESteadyState) {
+						if (currentDecompositionType != Film::ESteadyState) {
 							pathLength = sensorPathlength[t];
 						}
 
@@ -298,21 +308,34 @@ public:
 						/* FIXME */
 						Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
 
-						if(wr->m_decompositionType == Film::ETransientEllipse){
-							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
-							if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
-																										   vt, vtEdge,
-																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
-																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+						if(currentDecompositionType == Film::ETransient || currentDecompositionType == Film::ETransientEllipse){
+							tempPathLength = pathLength + distance(vs->getPosition(),vt->getPosition());
+						}
+
+						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (tempPathLength >= wr->m_decompositionMinBound) && (tempPathLength <= wr->m_decompositionMaxBound)){
+							currentDecompositionType = Film::ETransient;
+						}
+
+						if(currentDecompositionType == Film::ETransientEllipse){
+							if(!combine || tempPathLength <= wr->m_decompositionMinBound){// Adding additional vertex can only increase path length
+								Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
+								if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+																											   vt, vtEdge,
+																											   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+																											   EllipticPathWeight,
+																											   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+									continue;
+							}
+							else
 								continue;
 						}
 
-
-						if (wr->m_decompositionType == Film::ETransientEllipse) {
+						if (currentDecompositionType == Film::ETransientEllipse) {
 							pathLength += connectionEdge1->length+connectionEdge2->length;
-						}else if (wr->m_decompositionType == Film::ETransient) {
-							pathLength += distance(vs->getPosition(),vt->getPosition());
-						} else if (wr->m_decompositionType == Film::EBounce) {
+						}else if (currentDecompositionType == Film::ETransient) {
+						//	pathLength += distance(vs->getPosition(),vt->getPosition());
+							pathLength = tempPathLength;
+						} else if (currentDecompositionType == Film::EBounce) {
 							pathLength += 1.0f;
 						}
 
@@ -324,7 +347,7 @@ public:
 						value = importanceWeights[s] * vs->sampleDirect(scene, m_sampler,
 							&tempEndpoint, &tempEdge, &tempSample, ERadiance);
 
-						if (wr->m_decompositionType != Film::ESteadyState) {
+						if (currentDecompositionType != Film::ESteadyState) {
 							pathLength = emitterPathlength[s];
 						}
 
@@ -336,21 +359,34 @@ public:
 						/* FIXME */
 						Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
 
-						if(wr->m_decompositionType == Film::ETransientEllipse){
-							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
-							if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
-																										   vt, vtEdge,
-																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
-																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+						if(currentDecompositionType == Film::ETransient || currentDecompositionType == Film::ETransientEllipse){
+							tempPathLength = pathLength + distance(vs->getPosition(),vt->getPosition());
+						}
+
+						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (tempPathLength >= wr->m_decompositionMinBound) && (tempPathLength <= wr->m_decompositionMaxBound)){
+							currentDecompositionType = Film::ETransient;
+						}
+
+						if(currentDecompositionType == Film::ETransientEllipse){
+							if(!combine || tempPathLength <= wr->m_decompositionMinBound){ // Adding additional vertex can only increase path length
+								Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
+								if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+																											   vt, vtEdge,
+																											   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+																											   EllipticPathWeight,
+																											   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+									continue;
+							}else
 								continue;
 						}
 
 
-						if (wr->m_decompositionType == Film::ETransientEllipse) {
+						if (currentDecompositionType == Film::ETransientEllipse) {
 							pathLength += connectionEdge1->length+connectionEdge2->length;
-						}else if (wr->m_decompositionType == Film::ETransient  || wr->m_decompositionType == Film::ETransientEllipse) {
-							pathLength += distance(vs->getPosition(),vt->getPosition());
-						} else if (wr->m_decompositionType == Film::EBounce) {
+						}else if (currentDecompositionType == Film::ETransient) {
+							//	pathLength += distance(vs->getPosition(),vt->getPosition());
+								pathLength = tempPathLength;
+						} else if (currentDecompositionType == Film::EBounce) {
 							pathLength += 1.0f;
 						}
 
@@ -363,29 +399,48 @@ public:
 					if (vs->isDegenerate() || vt->isDegenerate())
 						continue;
 
-					value = importanceWeights[s] * radianceWeights[t] *
-						vs->eval(scene, vsPred, vt, EImportance) *
-						vt->eval(scene, vtPred, vs, ERadiance);
 
+					if(currentDecompositionType == Film::ETransient || currentDecompositionType == Film::ETransientEllipse){
+						tempPathLength = emitterPathlength[s]+sensorPathlength[t]+distance(vs->getPosition(),vt->getPosition());
+					}
+
+					if( combine && (currentDecompositionType == Film::ETransientEllipse) && (tempPathLength >= wr->m_decompositionMinBound) && (tempPathLength <= wr->m_decompositionMaxBound)){
+						currentDecompositionType = Film::ETransient;
+					}
+
+					if(currentDecompositionType != Film::ETransientEllipse)
+						value = importanceWeights[s] * radianceWeights[t] *
+							vs->eval(scene, vsPred, vt, EImportance) *
+							vt->eval(scene, vtPred, vs, ERadiance);
+					else
+						value = importanceWeights[s] * radianceWeights[t];
 
 					/* FIXME */
 					Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
 
-					// Currently making an ellipsoidal connection betweeen vs (end of emitter subpath) and vt (end of sensor sub path) from vs only (end of emitter path)
-					if(wr->m_decompositionType == Film::ETransientEllipse){
-						Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
-						if(value.isZero() || PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
-																									   vt, vtEdge,
-																									   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
-																									   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+					if(currentDecompositionType == Film::ETransientEllipse){ // Adding additional vertex can only increase path length
+						if(!combine || tempPathLength <= wr->m_decompositionMinBound){
+							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
+							if(value.isZero() || PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+																										   vt, vtEdge,
+																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+																										   EllipticPathWeight,
+																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+								continue;
+							else
+								value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+										connectionVertex->eval(scene, vs, vt, EImportance) *
+										vt->eval(scene, vtPred, connectionVertex, ERadiance); // FIXME: Verify and also multiply with the probability of choosing this vertex
+						}else
 							continue;
 					}
 
-					if (wr->m_decompositionType == Film::ETransientEllipse) {
+					if (currentDecompositionType == Film::ETransientEllipse) {
 						pathLength = emitterPathlength[s]+sensorPathlength[t]+connectionEdge1->length+connectionEdge2->length;
-					}else if (wr->m_decompositionType == Film::ETransient) {
-						pathLength = emitterPathlength[s]+sensorPathlength[t]+distance(vs->getPosition(),vt->getPosition());
-					}else if (wr->m_decompositionType == Film::EBounce) {
+					}else if (currentDecompositionType == Film::ETransient) {
+//						pathLength = emitterPathlength[s]+sensorPathlength[t]+distance(vs->getPosition(),vt->getPosition());
+						pathLength = tempPathLength;
+					}else if (currentDecompositionType == Film::EBounce) {
 						pathLength = emitterPathlength[s]+sensorPathlength[t]+1.0f;
 					}
 
@@ -399,7 +454,7 @@ public:
 				   the creation of additional vertices (index-matched boundaries etc.) */
 				int interactions = remaining; // backup
 
-				if(m_config.m_decompositionType != Film::ETransientEllipse){
+				if(currentDecompositionType != Film::ETransientEllipse){
 
 					if (value.isZero() || !connectionEdge.pathConnectAndCollapse(
 							scene, vsEdge, vs, vt, vtEdge, interactions))
@@ -419,14 +474,16 @@ public:
 					//Make sure that the pathLength and pathLengthTarget match to some error bound
 					if(((pathLength-pathLengthTarget) > 1)|| pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
 						continue;
-					if (!sampleDirect) //FIXME: Understand this code. Currently written parallel to the normal code
-						value *= connectionEdge1->evalCached(vs, vt, PathEdge::EGeneralizedGeometricTerm)*
-									connectionEdge2->evalCached(vs, vt, PathEdge::EGeneralizedGeometricTerm);
+					if (!sampleDirect) //FIXME: Understand this code. Currently written parallel to the normal code also understand pathConnectAndCollapse equivalent for connectionEdge1 and connectionEdge2
+						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
+									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
 					else
-						value *= connectionEdge1->evalCached(vs, vt, PathEdge::ETransmittance |
+						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
 								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp)) *
-								connectionEdge2->evalCached(vs, vt, PathEdge::ETransmittance |
+								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::ETransmittance |
 										(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+					if(t<2 || value.isZero())
+						continue;
 				}
 
 				if (sampleDirect) {
@@ -468,8 +525,10 @@ public:
 
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if (t>=2 && (wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
+				if (t>=2 && (currentDecompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
 					value.toSRGB(temp[0],temp[1],temp[2]);
+					if(currentDecompositionType == Film::ETransientEllipse)
+						miWeight /= EllipticPathWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
@@ -478,7 +537,7 @@ public:
 				if (t >= 2)
 					sampleValue += value * miWeight;
 				else
-					wr->putLightSample(samplePos, value * miWeight);
+					wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
 			}
 		}
 		if (wr->m_decompositionType == Film::ESteadyState) {
