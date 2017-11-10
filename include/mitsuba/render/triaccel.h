@@ -192,7 +192,6 @@ FINLINE void TriAccel::Barycentric(const Point &p, const Point &a, const Point &
 FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const{
 	int noOfCorners = 3; // This code can be extended trivially to polygons of arbitrary size other than 3
 	Float norm_p[noOfCorners];
-	Float sampling = 1e-4;
 
 	Float temp;
 	std::vector<Float> thetas;
@@ -406,6 +405,7 @@ FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Fl
 		for(int i = 0; i < intersections/2; i++){
 			if(r < InsideAngles[i]){
 				angle = thetas[2*i] + InsideAngles[i] - r;
+				value = value/InsideAngles[intersections/2-1];
 				intersects = true;
 				break;
 			}
@@ -430,7 +430,7 @@ FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Fl
 		for(int i = 0; i < intersections/2; i++){
 			if(r < InsideAngles[i]){
 				angle = thetas[2*i - 1] + InsideAngles[i] - r;
-				value = value/InsideAngles[intersections/2-1]*sampling;
+				value = value/InsideAngles[intersections/2-1];
 				intersects = true;
 				break;
 			}
@@ -478,7 +478,12 @@ FINLINE Float TriAccel::circleLineIntersection(const Point &P1, const Point &P2,
 
 	double det = sqrt(b*b-4*a*c);
 	if(det < 0){ // To compensate for Float precision errors
-		SLog(EError,"Circle-Line intersection resulted in a possible float precision error or called without an intersection");
+		SLog(EError,"Circle-Line intersection resulted in a possible float precision error or called without an intersection -- Debug values: P1(%f, %f, %f), P2(%f, %f, %f), r(%f),"
+				"																					  x1(%f), y1(%f), x2(%f), y2(%f),"
+				"																					  dx(%f), dy(%f), a(%f), b(%f), c(%f), det(%f);",
+																										P1.x, P1.y, P1.z, P2.x, P2.y, P2.z,
+																										x1, y1, x2, y2,
+																										dx, dy, a, b, c, det);
 	}
 
 	double alpha = (-b+det)/(2*a);
@@ -495,7 +500,12 @@ FINLINE Float TriAccel::circleLineIntersection(const Point &P1, const Point &P2,
 			x = alpha * x1 + (1-alpha) * x2;
 			y = alpha * y1 + (1-alpha) * y2;
 		}else{
-			SLog(EError,"Circle-Line intersection called with out an actual intersection");
+			SLog(EError,"Circle-Line intersection called with out an actual intersection -- Debug values: P1(%f, %f, %f), P2(%f, %f, %f), r(%f),"
+					"																					  x1(%f), y1(%f), x2(%f), y2(%f),"
+					"																					  dx(%f), dy(%f), a(%f), b(%f), c(%f), det(%f);",
+																											P1.x, P1.y, P1.z, P2.x, P2.y, P2.z,
+																											x1, y1, x2, y2,
+																											dx, dy, a, b, c, det);
 		}
 	}
 
