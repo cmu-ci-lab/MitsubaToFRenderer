@@ -478,10 +478,10 @@ FINLINE Float TriAccel::circleLineIntersection(const Point &P1, const Point &P2,
 
 	double det = sqrt(b*b-4*a*c);
 	if(det < 0){ // To compensate for Float precision errors
-		SLog(EError,"Circle-Line intersection resulted in a possible float precision error or called without an intersection -- Debug values: P1(%f, %f, %f), P2(%f, %f, %f), r(%f),"
-				"																					  x1(%f), y1(%f), x2(%f), y2(%f),"
-				"																					  dx(%f), dy(%f), a(%f), b(%f), c(%f), det(%f);",
-																										P1.x, P1.y, P1.z, P2.x, P2.y, P2.z,
+		SLog(EError,"Circle-Line intersection resulted in a possible float precision error or called without an intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
+				"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
+				"																					  dx(%lf), dy(%lf), a(%lf), b(%lf), c(%lf), det(%lf);",
+																										P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, r,
 																										x1, y1, x2, y2,
 																										dx, dy, a, b, c, det);
 	}
@@ -500,10 +500,10 @@ FINLINE Float TriAccel::circleLineIntersection(const Point &P1, const Point &P2,
 			x = alpha * x1 + (1-alpha) * x2;
 			y = alpha * y1 + (1-alpha) * y2;
 		}else{
-			SLog(EError,"Circle-Line intersection called with out an actual intersection -- Debug values: P1(%f, %f, %f), P2(%f, %f, %f), r(%f),"
-					"																					  x1(%f), y1(%f), x2(%f), y2(%f),"
-					"																					  dx(%f), dy(%f), a(%f), b(%f), c(%f), det(%f);",
-																											P1.x, P1.y, P1.z, P2.x, P2.y, P2.z,
+			SLog(EError,"Circle-Line intersection called with out an actual intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
+					"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
+					"																					  dx(%lf), dy(%lf), a(%lf), b(%lf), c(%lf), det(%lf);",
+																											P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, r,
 																											x1, y1, x2, y2,
 																											dx, dy, a, b, c, det);
 		}
