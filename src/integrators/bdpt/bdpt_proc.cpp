@@ -474,14 +474,20 @@ public:
 					//Make sure that the pathLength and pathLengthTarget match to some error bound
 					if(((pathLength-pathLengthTarget) > 1)|| pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
 						continue;
-					if (!sampleDirect) //FIXME: Understand this code. Currently written parallel to the normal code also understand pathConnectAndCollapse equivalent for connectionEdge1 and connectionEdge2
+					if (!sampleDirect) //FIXME: code not valid when one or more of succeeding/preciding vertices are source/detector vertices
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
-									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
+									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::ECosine);
 					else
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
-								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp)) *
-								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::ETransmittance |
-										(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+//					if (!sampleDirect) //FIXME: Understand this code. Currently written parallel to the normal code also understand pathConnectAndCollapse equivalent for connectionEdge1 and connectionEdge2
+//						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
+//									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
+//					else
+//						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
+//								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp)) *
+//								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::ETransmittance |
+//										(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
 					if(t<2 || value.isZero())
 						continue;
 				}
