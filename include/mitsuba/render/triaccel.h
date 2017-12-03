@@ -21,7 +21,7 @@
 #define __MITSUBA_RENDER_TRIACCEL_H_
 
 #include <mitsuba/render/trimesh.h>
-#include <mitsuba/core/ellipse.h>
+#include <mitsuba/core/ellipsoid.h>
 #include <mitsuba/render/sampler.h>
 #include <vector>
 #include <math.h>
@@ -64,12 +64,20 @@ struct TriAccel {
 	inline int load(const Point &A, const Point &B, const Point &C);
 
 	/// For ellipsoidal intersection with triangle
-	FINLINE bool ellipseIntersectTriangle(const Ellipse &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
+	FINLINE bool ellipsoidIntersectTriangle(const Ellipsoid &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
 
-	FINLINE bool circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const;
+	FINLINE bool circlePolygonIntersectionAngles(Float thetaMin[], Float thetaMax[], size_t &indices, const Point Corners[], const Float &r) const;
+//	FINLINE bool circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const;
 	FINLINE int numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const;
 	FINLINE Float circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
 	FINLINE void Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
+
+	FINLINE Float ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const;
+
+	//For weighted innerproduct -- Need a better place for this code
+	FINLINE Float weightedIP(Vector &A, Vector &B, Float a, Float b, Float c) const{
+		return (A[0]*B[0]/(a*a) + A[1]*B[1]/(b*b) + A[2]*B[2]/(c*c));
+	}
 
 	/// Fast ray-triangle intersection test
 	FINLINE bool rayIntersect(const Ray &ray, Float mint, Float maxt,
@@ -118,7 +126,9 @@ inline int TriAccel::load(const Point &A, const Point &B, const Point &C) {
 }
 
 
-FINLINE bool TriAccel::ellipseIntersectTriangle(const Ellipse &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
+FINLINE bool TriAccel::ellipsoidIntersectTriangle(const Ellipsoid &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
+
+	//Compute the center of the ellipse (resulting from ellipsoid-plane intersection)
 	Point SphereA;e.transformToSphere(A, SphereA);
 	Point SphereB;e.transformToSphere(B, SphereB);
 	Point SphereC;e.transformToSphere(C, SphereC);
@@ -129,48 +139,98 @@ FINLINE bool TriAccel::ellipseIntersectTriangle(const Ellipse &e, Float &value, 
 
 	Vector Center = dot(N,SphereA-Origin)*N;
 
+	Vector O(Center[0]*e.a, Center[1]*e.b, Center[2]*e.b); // Note that O is position vector of the center of the ellipse
+
 	Float d = Center.lengthSquared();
 
-	if(d > 1){ // ellipse does not intersecti the plane
+	if(d > 1){ // ellipsoid does not intersect the plane
 		return false;
 	}
 
-	float R = sqrt(1-d);
+	//Compute the angle of the ellipse with T
+	Point EllipsoidA;e.transformToEllipsoid(A, EllipsoidA);
+	Point EllipsoidB;e.transformToEllipsoid(B, EllipsoidB);
+	Point EllipsoidC;e.transformToEllipsoid(C, EllipsoidC);
 
-	Vector Z(0.0f, 0.0f, 1.0f);
-	Transform T3D2D, T3D2Dinv;
-	Transform temp;
-	T3D2D = temp.rotateVector2Vector(N, Z)*temp.translate(-Center);
+	Vector T = EllipsoidB - EllipsoidA;T = normalize(T);
+	N = cross(T, EllipsoidC-EllipsoidA); N = normalize(N);
+	Vector U = cross(N, T);
 
-	T3D2Dinv = T3D2D.inverse();
+	Float TTD = weightedIP(T, T, e.a, e.b, e.b);
+	Float TUD = weightedIP(T, U, e.a, e.b, e.b);
+	Float UUD = weightedIP(U, U, e.a, e.b, e.b);
+	Float OOD = weightedIP(O, O, e.a, e.b, e.b);
+
+	Float theta = 0.5 * atan2(2*TUD, UUD-TTD);
+
+	Vector NewX = T*cos(theta) - U*sin(theta);
+	Vector NewY = T*sin(theta) + U*cos(theta);
+
+	// Compute the transform to shift axis of ellipsoid to ellipse
+	Transform invEllipsoid2Ellipse(Matrix4x4({NewX[0], NewY[0], N[0], 0.0f,
+												 NewX[1], NewY[1], N[1], 0.0f,
+												 NewX[2], NewY[2], N[2], 0.0f,
+												 0.0f, 0.0f, 0.0f, 1.0f
+												}));
+	Transform Ellipsoid2Ellipse = invEllipsoid2Ellipse.inverse();
+
+	// Compute major and minor axis
+	Float det 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
+	Float m1 	= sqrt(2 * (1-OOD)/(TTD+UUD-det)); // Major axis
+	Float m2 	= sqrt(2 * (1-OOD)/(TTD+UUD+det)); // Minor axis
+	Float k  	= sqrt(1-m2*m2/(m1*m1)); // eccentricity
+
+	// Compute transform to scale ellipse to circle
+
+	Transform Ellipse2Circle = Transform::scale(Vector(1, m1/m2, 1));
+	Transform Ellipsoid2Circle = Ellipsoid2Ellipse*Ellipse2Circle;
 
 	Point Corners[3];
+	Corners[0] = Ellipsoid2Circle(EllipsoidA);
+	Corners[1] = Ellipsoid2Circle(EllipsoidB);
+	Corners[2] = Ellipsoid2Circle(EllipsoidC);
 
-	Corners[0] = T3D2D(SphereA);
-	Corners[1] = T3D2D(SphereB);
-	Corners[2] = T3D2D(SphereC);
+	// Circle Triangle Intersection to get all the angles
+	Float thetaMin[4];
+	Float thetaMax[4];
+	size_t indices;
 
-	Float angle = 0.0f;
-	if(circlePolygonIntersection(Corners, R, sampler, angle, value)){
-		Point Projection(R*cos(angle), R*sin(angle), 0.0f), Original;
-		Projection = T3D2Dinv(Projection);
-		e.transformFromSphere(Projection, Original);
-
-		//Verify that original satisfies the elliptic constraint
-//		Float EllipticDistance = e.length(Original);
-
-
-		//Verify that original is in the plane of Triangle ABC
-//		Point Origin(0.0f, 0.0f, 0.0f);
-//		Float NonPlaneError  = dot(Original-A, cross(Original-B, Original-C))/(Original-Origin).length();
-
-
+	if(circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, Corners, m1)){
+		// Sample an angle using elliptic sampling algorithm
+		Float angle = ellipticCurveSampling(k, thetaMin, thetaMax, indices, sampler);
+		Point Projection(m1*cos(angle), m2*sin(angle), 0.0f), Original;
+		Projection = invEllipsoid2Ellipse(Projection);
+		e.transformFromEllipsoid(Projection, Original);
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
 		Barycentric(Original, A, B, C, u, v);
-//		Point VerifyOriginal =(1-u-v)*A + u*B + v*C;
-
 		return true;
 	}
+//Old algorithm that is no longer relevant
+//	float R = sqrt(1-d);
+//
+//	Vector Z(0.0f, 0.0f, 1.0f);
+//	Transform T3D2D, T3D2Dinv;
+//	Transform temp;
+//	T3D2D = temp.rotateVector2Vector(N, Z)*temp.translate(-Center);
+//
+//	T3D2Dinv = T3D2D.inverse();
+//
+//	Point Corners[3];
+//
+//	Corners[0] = T3D2D(SphereA);
+//	Corners[1] = T3D2D(SphereB);
+//	Corners[2] = T3D2D(SphereC);
+//
+//	Float angle = 0.0f;
+//	if(circlePolygonIntersection(Corners, R, sampler, angle, value)){
+//		Point Projection(R*cos(angle), R*sin(angle), 0.0f), Original;
+//		Projection = T3D2Dinv(Projection);
+//		e.transformFromSphere(Projection, Original);
+//		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
+//		Barycentric(Original, A, B, C, u, v);
+//
+//		return true;
+//	}
 
 	return false;
 }
@@ -189,7 +249,32 @@ FINLINE void TriAccel::Barycentric(const Point &p, const Point &a, const Point &
     v = (d00 * d21 - d01 * d20) / denom;
 }
 
-FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const{
+FINLINE Float TriAccel::ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const{
+	Float cumsum[4];
+	cumsum[0] = thetaMax[0] - thetaMin[0];
+
+	for(size_t i=2; i < indices; i++){
+		cumsum[i] = cumsum[i - 1] + (thetaMax[i] - thetaMin[i]);
+	}
+
+	while(1){
+		Float theta_s = cumsum[indices-1] * sampler->nextFloat(), theta;
+		if(theta_s < cumsum[0])
+			theta = theta_s + thetaMin[0];
+		for(size_t i = 2;i < indices; i++){
+			if(theta_s < cumsum[i]){
+				theta = theta_s -cumsum[i-1] + thetaMin[i];
+			}
+		}
+		Float r = sampler->nextFloat();
+		if(r < sqrt(1 - pow(k*cos(theta),2))){
+			return theta;
+		}
+	}
+}
+
+
+FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float thetaMax[], size_t &indices, const Point Corners[], const Float &r) const{
 	int noOfCorners = 3; // This code can be extended trivially to polygons of arbitrary size other than 3
 	Float norm_p[noOfCorners];
 
@@ -330,9 +415,19 @@ FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Fl
 	}
 
 	if(intersections == 0){
+		Vector2 v0(Corners[0].x, Corners[0].y);
+		Vector2 v1(Corners[1].x-Corners[0].x, Corners[1].y-Corners[0].y);
+		Vector2 v2(Corners[2].x-Corners[0].x, Corners[2].y-Corners[0].y);
+
+	    Float a = -det(v0, v2)/det(v1, v2);
+	    Float b =  det(v0, v1)/det(v1, v2);
+		if(a>0 && b>0 && (a+b)<1){
+			thetaMin[0]=0;
+			thetaMax[0]=2*M_PI;
+			return true;
+		}
 		return false;
 	}
-
 
 	// Consolidate non-unique thetas by merging the repeats (for points lying on the circle)
 	std::vector<int> deleteIndices;
@@ -368,78 +463,281 @@ FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Fl
 
 	Vector N  = cross(Corners[1]-Corners[0], Corners[2]-Corners[0]);
 
-	if(N.z < 0){ // flip the theta and direction arrays
-		Float ftemp;
-		bool btemp;
-		for(int i = 0; i < intersections/2; i++){
-			ftemp = thetas[i];
-			thetas[i] = thetas[intersections-1-i];
-			thetas[intersections-1-i] = ftemp;
+	size_t start = 0;
+	if( (directionOutside[0] > 0) ^ (N.z > 0) )
+		start = 1;
 
-			btemp = directionOutside[i];
-			directionOutside[i] = directionOutside[intersections-1-i];
-			directionOutside[intersections-1-i] = btemp;
+	size_t index = 0;
+	size_t j;
+	for(size_t i = start; i < thetas.size(); i++){
+		thetaMin[index] = thetas[i];
+		j = i +1;
+		if(j>thetas.size())
+			j = 1;
+		thetaMax[index] = thetas[j];
+		if(thetaMax[index] < thetaMin[index]){
+			thetaMax[index + 1] = thetaMax[index];
+			thetaMax[index] = 2*M_PI;
+			thetaMin[index + 1] = 0;
+			index++;
 		}
+		index++;
 	}
-
-	Float InsideAngles[intersections/2] = {0.0f};
-	Float thetaDiff = 0.0f;
-
-	bool intersects = false;
-	if(directionOutside[0]){
-		thetaDiff = thetas[1] - thetas[0];
-		if(thetaDiff < 0){
-			thetaDiff += 2*M_PI;
-		}
-		InsideAngles[0] = thetaDiff;
-
-		for(int i = 1; i < intersections/2; i++){
-			thetaDiff = thetas[2*i+1] - thetas[2*i];
-			if(thetaDiff < 0){
-				thetaDiff += 2*M_PI;
-			}
-			InsideAngles[i] = InsideAngles[i - 1] + thetaDiff;
-		}
-
-		Float r = InsideAngles[intersections/2-1]*sampler->nextFloat();
-		for(int i = 0; i < intersections/2; i++){
-			if(r < InsideAngles[i]){
-				angle = thetas[2*i] + InsideAngles[i] - r;
-				value = value/InsideAngles[intersections/2-1];
-				intersects = true;
-				break;
-			}
-		}
-	}
-	else{
-		thetaDiff = thetas[0] - thetas[intersections-1];
-		if(thetaDiff < 0){
-			thetaDiff += 2*M_PI;
-		}
-		InsideAngles[0] = thetaDiff;
-
-		for(int i = 1; i < intersections/2; i++){
-			thetaDiff = thetas[2*i] - thetas[2*i-1];
-			if(thetaDiff < 0){
-				thetaDiff += 2*M_PI;
-			}
-			InsideAngles[i] = InsideAngles[i - 1] + thetaDiff;
-		}
-
-		Float r = InsideAngles[intersections/2-1]*sampler->nextFloat();
-		for(int i = 0; i < intersections/2; i++){
-			if(r < InsideAngles[i]){
-				angle = thetas[2*i - 1] + InsideAngles[i] - r;
-				value = value/InsideAngles[intersections/2-1];
-				intersects = true;
-				break;
-			}
-		}
-	}
-
-
-	return intersects;
+	indices = index-1;
+	return true;
 }
+
+//FINLINE bool TriAccel::circlePolygonIntersection(const Point Corners[], const Float &r, ref<Sampler> sampler, Float &angle, Float &value) const{
+//	int noOfCorners = 3; // This code can be extended trivially to polygons of arbitrary size other than 3
+//	Float norm_p[noOfCorners];
+//
+//	Float temp;
+//	std::vector<Float> thetas;
+//	std::vector<bool> directionOutside;
+//
+//	int intersections = 0;
+//
+//	for(int i = 0; i < noOfCorners; i++){
+//		norm_p[i] = sqrt( Corners[i].x*Corners[i].x + Corners[i].y*Corners[i].y );
+//	}
+//
+//	/* Determine the intersection first */
+//	for(int i = 0; i < noOfCorners; i++){
+//		int j = i + 1;
+//		if(j == noOfCorners){
+//			j=0;
+//		}
+//		// both points are inside, do nothing
+//		if(norm_p[i] < r && norm_p[j] < r)
+//			continue;
+//
+//		// One of them is inside
+//		if(norm_p[i] < r && norm_p[j] > r){
+//			intersections++;
+//			directionOutside.push_back(true);
+//			temp = circleLineIntersection(Corners[i], Corners[j], r);
+//			thetas.push_back(temp);
+//			continue;
+//		}
+//		if(norm_p[i] < r && norm_p[j] == r){
+//			intersections++;
+//			directionOutside.push_back(true);
+//			temp = atan2(Corners[j].y, Corners[j].x);
+//			thetas.push_back(temp);
+//			continue;
+//		}
+//		if(norm_p[i] > r && norm_p[j] < r){
+//			intersections++;
+//			directionOutside.push_back(false);
+//			temp = circleLineIntersection(Corners[i], Corners[j], r);
+//			thetas.push_back(temp);
+//			continue;
+//		}
+//		if(norm_p[i] == r && norm_p[j] < r){
+//			intersections++;
+//			directionOutside.push_back(false);
+//			temp = atan2(Corners[i].y, Corners[i].x);
+//			thetas.push_back(temp);
+//			continue;
+//		}
+//		if(norm_p[i] == r && norm_p[j] > r){
+//			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
+//				intersections++;
+//				directionOutside.push_back(false);
+//				temp = atan2(Corners[i].y, Corners[i].x);
+//				thetas.push_back(temp);
+//
+//				intersections++;
+//				directionOutside.push_back(true);
+//				temp = circleLineIntersection(Corners[i], Corners[j], r);
+//				thetas.push_back(temp);
+//			}else{
+//				intersections++;
+//				directionOutside.push_back(true);
+//				temp = atan2(Corners[i].y, Corners[i].x);
+//				thetas.push_back(temp);
+//			}
+//			continue;
+//		}
+//		if(norm_p[i] > r && norm_p[j] == r){
+//			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
+//				intersections++;
+//				directionOutside.push_back(false);
+//				temp = circleLineIntersection(Corners[i], Corners[j], r);
+//				thetas.push_back(temp);
+//
+//				intersections++;
+//				directionOutside.push_back(true);
+//				temp = atan2(Corners[j].y, Corners[j].x);
+//				thetas.push_back(temp);
+//			}else{
+//				intersections++;
+//				directionOutside.push_back(false);
+//				temp = atan2(Corners[j].y, Corners[j].x);
+//				thetas.push_back(temp);
+//			}
+//			continue;
+//		}
+//
+//		// both points are on the circle
+//		if(norm_p[i] == r && norm_p[j] == r){
+//			intersections++;
+//			directionOutside.push_back(false);
+//			temp = atan2(Corners[i].y, Corners[i].x);
+//			thetas.push_back(temp);
+//			intersections++;
+//			directionOutside.push_back(true);
+//			temp = atan2(Corners[j].y, Corners[j].x);
+//			thetas.push_back(temp);
+//			continue;
+//		}
+//
+//		// both points are outside, can intersect in zero points or 2 points
+//		if(norm_p[i] > r && norm_p[j] > r){
+//			Vector2 n(Corners[j].y-Corners[i].y, Corners[i].x-Corners[j].x);
+//			n = normalize(n);
+//			Float dotP = (n.x*Corners[i].x + n.y*Corners[i].y);
+//			Point P_O(dotP*n.x, dotP*n.y, 0.0f);
+//
+//			// If projection is not in the circle, the line-segment is completely outside circle
+//			if(P_O.x*P_O.x + P_O.y*P_O.y >= r*r){
+//				continue;
+//			}
+//
+//			Float alpha = -1.0f;
+//	        // Compute where the projection is, with respect to the line joining p[i] and p[j]
+//			if (Corners[i].x != Corners[j].x)
+//				alpha = (P_O.x-Corners[j].x)/(Corners[i].x-Corners[j].x);
+//			else
+//				alpha = (P_O.y-Corners[j].y)/(Corners[i].y-Corners[j].y);
+//
+//			if(alpha <= 0 || alpha >= 1)
+//				continue;
+//
+//			intersections++;
+//			directionOutside.push_back(false);
+//			temp = circleLineIntersection(Corners[i], P_O, r);
+//			thetas.push_back(temp);
+//
+//			intersections++;
+//			directionOutside.push_back(true);
+//			temp = circleLineIntersection(P_O, Corners[j], r);
+//			thetas.push_back(temp);
+//			continue;
+//		}
+//	}
+//
+//	if(intersections == 0){
+//		return false;
+//	}
+//
+//
+//	// Consolidate non-unique thetas by merging the repeats (for points lying on the circle)
+//	std::vector<int> deleteIndices;
+//	size_t size = thetas.size();
+//	if(size == 2)
+//		size = 1; // For size=2, checking the last value of theta is redundancy
+//	for(size_t i = 0; i < size; i++){
+//		size_t j = (i+1)%thetas.size();
+//		if(thetas[i] == thetas[j]){
+//			if(directionOutside[i] == directionOutside[j])
+//				deleteIndices.push_back(i);
+//			else{
+//				deleteIndices.push_back(i);
+//				if(j != 0) // To maintain deleteIndices as ascending array
+//					deleteIndices.push_back(j);
+//				else
+//					deleteIndices.insert(deleteIndices.begin(), j);
+//			}
+//			i++;
+//		}
+//	}
+//	for(auto rit = deleteIndices.rbegin();rit != deleteIndices.rend(); rit++){
+//		thetas.erase(thetas.begin() + *rit);
+//		directionOutside.erase(directionOutside.begin() + *rit);
+//	}
+//
+//
+//	// Remaining intersections must be even
+//	if(thetas.size()%2 == 1){
+//		SLog(EError,"Odd number of intersection in ellipse triangle intersection: radius: %f, corner-1 (%f, %f, %f), corner-2 (%f, %f, %f), corner-3 (%f, %f, %f)", r, Corners[0].x, Corners[0].y, Corners[0].z, Corners[1].x, Corners[1].y, Corners[1].z, Corners[2].x, Corners[2].y, Corners[2].z);
+//	}
+//
+//
+//	Vector N  = cross(Corners[1]-Corners[0], Corners[2]-Corners[0]);
+//
+//	if(N.z < 0){ // flip the theta and direction arrays
+//		Float ftemp;
+//		bool btemp;
+//		for(int i = 0; i < intersections/2; i++){
+//			ftemp = thetas[i];
+//			thetas[i] = thetas[intersections-1-i];
+//			thetas[intersections-1-i] = ftemp;
+//
+//			btemp = directionOutside[i];
+//			directionOutside[i] = directionOutside[intersections-1-i];
+//			directionOutside[intersections-1-i] = btemp;
+//		}
+//	}
+//
+//	Float InsideAngles[intersections/2] = {0.0f};
+//	Float thetaDiff = 0.0f;
+//
+//	bool intersects = false;
+//	if(directionOutside[0]){
+//		thetaDiff = thetas[1] - thetas[0];
+//		if(thetaDiff < 0){
+//			thetaDiff += 2*M_PI;
+//		}
+//		InsideAngles[0] = thetaDiff;
+//
+//		for(int i = 1; i < intersections/2; i++){
+//			thetaDiff = thetas[2*i+1] - thetas[2*i];
+//			if(thetaDiff < 0){
+//				thetaDiff += 2*M_PI;
+//			}
+//			InsideAngles[i] = InsideAngles[i - 1] + thetaDiff;
+//		}
+//
+//		Float r = InsideAngles[intersections/2-1]*sampler->nextFloat();
+//		for(int i = 0; i < intersections/2; i++){
+//			if(r < InsideAngles[i]){
+//				angle = thetas[2*i] + InsideAngles[i] - r;
+//				value = value/InsideAngles[intersections/2-1];
+//				intersects = true;
+//				break;
+//			}
+//		}
+//	}
+//	else{
+//		thetaDiff = thetas[0] - thetas[intersections-1];
+//		if(thetaDiff < 0){
+//			thetaDiff += 2*M_PI;
+//		}
+//		InsideAngles[0] = thetaDiff;
+//
+//		for(int i = 1; i < intersections/2; i++){
+//			thetaDiff = thetas[2*i] - thetas[2*i-1];
+//			if(thetaDiff < 0){
+//				thetaDiff += 2*M_PI;
+//			}
+//			InsideAngles[i] = InsideAngles[i - 1] + thetaDiff;
+//		}
+//
+//		Float r = InsideAngles[intersections/2-1]*sampler->nextFloat();
+//		for(int i = 0; i < intersections/2; i++){
+//			if(r < InsideAngles[i]){
+//				angle = thetas[2*i - 1] + InsideAngles[i] - r;
+//				value = value/InsideAngles[intersections/2-1];
+//				intersects = true;
+//				break;
+//			}
+//		}
+//	}
+//
+//
+//	return intersects;
+//}
 
 FINLINE int TriAccel::numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const{
 	Float x1 = P1.x;

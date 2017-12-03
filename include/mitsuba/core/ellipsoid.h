@@ -12,7 +12,7 @@
 
 MTS_NAMESPACE_BEGIN
 
-template <typename _PointType, typename _LengthType> struct TEllipse{
+template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	typedef _PointType                  PointType;
 	typedef _LengthType                 LengthType;
 	
@@ -25,36 +25,43 @@ template <typename _PointType, typename _LengthType> struct TEllipse{
 
 	LengthType Tau;
 	
-	bool degenerateEllipse;
+	/* Major and minor axis lengths */
+	LengthType a, b;
 
-	Transform T3D3D;
-	Transform T3D3Dinv;
-	Transform T3D2D;
+	bool degenerateEllipsoid;
+
+	Transform T3D2Ellipsoid;
+	Transform invT3D2Ellipsoid;
+	Transform T3D2Sphere;
+	Transform invT3D2Sphere;
 	
 	struct BoundingBox{
 		PointType min;
 		PointType max;
 	}m_aabb;
 
-	/// Construct a new ellipse
-	inline TEllipse(const PointType p1, const PointType p2, const LengthType tau):
+	/// Construct a new ellipsoid
+	inline TEllipsoid(const PointType p1, const PointType p2, const LengthType tau):
 			f1(p1), f2(p2), Tau(tau){
 		// Algorithm to compute the T3D3D
-		LengthType a = tau/2.0f;
+		a = tau/2.0f;
 		C = (f1 + f2) * 0.5f;
-		LengthType b = (a*a-distanceSquared(C, f1));
+		b = (a*a-distanceSquared(C, f1));
 		if(b < 0)
-			degenerateEllipse = true;
+			degenerateEllipsoid = true;
 		else
-			degenerateEllipse = false;
+			degenerateEllipsoid = false;
 		b = sqrt(b);
 		TVector3<LengthType> D = f2-f1;
 		TVector3<LengthType> Scale(1/a, 1/b, 1/b);
 		TVector3<LengthType> Rot(1.0f, 0.0f, 0.0f);
 		TVector3<LengthType> Cv(-C);
 		
-		T3D3D = Transform::scale(Scale)*Transform::rotateVector2Vector(D, Rot)*Transform::translate(Cv);
-		T3D3Dinv = T3D3D.inverse();
+		T3D2Ellipsoid 	 = Transform::rotateVector2Vector(D, Rot)*Transform::translate(Cv);
+		invT3D2Ellipsoid = T3D2Ellipsoid.inverse();
+
+		T3D2Sphere 	  = Transform::scale(Scale)*T3D2Ellipsoid;
+		invT3D2Sphere = T3D2Sphere.inverse();
 		
 		/*compute bounding box for the arbitrary oriented ellipse*/
 		Matrix4x4 S(TVector4<LengthType>(1.0f, 0.0f, 0.0f, 0.0f),
@@ -62,7 +69,7 @@ template <typename _PointType, typename _LengthType> struct TEllipse{
 					TVector4<LengthType>(0.0f, 0.0f, 1.0f, 0.0f),
 					TVector4<LengthType>(0.0f, 0.0f, 0.0f,-1.0f)
 								);
-		Matrix4x4 MT, M = T3D3Dinv.getMatrix();
+		Matrix4x4 MT, M = invT3D2Sphere.getMatrix();
 		M.transpose(MT);
 		Matrix4x4 R = M*S*MT;
 
@@ -97,34 +104,45 @@ template <typename _PointType, typename _LengthType> struct TEllipse{
 
 	}
 	
-	inline bool isDegenerate() const { return degenerateEllipse; }
+	inline bool isDegenerate() const { return degenerateEllipsoid; }
 		
+	inline void transformToEllipsoid(const Point &A, Point &B) const{
+		B = T3D2Ellipsoid(A);
+		return;
+	}
+
+	inline void transformFromEllipsoid(const Point &A, Point &B) const{
+		B = invT3D2Ellipsoid(A);
+		return;
+	}
+
+
 	inline void transformToSphere(const Point &A, Point &B) const{
-		B = T3D3D(A);
+		B = T3D2Sphere(A);
 		return;
 	}
 
 	inline void transformFromSphere(const Point &A, Point &B) const{
-		B = T3D3Dinv(A);
+		B = invT3D2Sphere(A);
 		return;
 	}
 
-	inline bool isInside(float x, float y, float z) const{
-		Point P(x, y, z);
-		if(lengthSquared(T3D3D(P)) < 1)
-			return true;
-		return false;
-	}
-
-	inline bool isInside(Point P) const{
-		if(lengthSquared(T3D3D(P)) < 1)
-			return true;
-		return false;
-	}
+//	inline bool isInside(float x, float y, float z) const{
+//		Point P(x, y, z);
+//		if(lengthSquared(T3D2Sphere(P)) < 1)
+//			return true;
+//		return false;
+//	}
+//
+//	inline bool isInside(Point P) const{
+//		if(lengthSquared(T3D2Sphere(P)) < 1)
+//			return true;
+//		return false;
+//	}
 	
-	inline Float length(Point P) const{
-		return (P-f1).length() + (P-f2).length();
-	}
+//	inline Float length(Point P) const{
+//		return (P-f1).length() + (P-f2).length();
+//	}
 //
 //	inline bool isEllipticPoint(Point P) const{
 //		return ((P-f1).length + (P-f2).length - Tau) < 0.01f);

@@ -18,7 +18,7 @@
 
 #include <mitsuba/bidir/path.h>
 #include <mitsuba/core/statistics.h>
-#include <mitsuba/core/ellipse.h> // To test ellipse code. FixMe to go throught the KDD tree
+#include <mitsuba/core/ellipsoid.h> // To test ellipse code. FixMe to go throught the KDD tree
 
 MTS_NAMESPACE_BEGIN
 
@@ -71,7 +71,7 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		}
 		case ESurfaceInteraction: {
 
-			Ellipse e(pred1->getPosition(), pred2->getPosition(), pathLengthTarget); // TODO: remove memory of ellipse
+			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pathLengthTarget); // TODO: remove memory of ellipse
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = succ->getIntersection();

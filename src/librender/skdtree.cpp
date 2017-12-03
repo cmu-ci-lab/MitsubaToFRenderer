@@ -111,7 +111,7 @@ void ShapeKDTree::build() {
 }
 
 /* Search the KD tree recursively starting from root. If both children are a hit, check both the children randomly */
-bool ShapeKDTree::ellipsoidIntersect(const Ellipse &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
+bool ShapeKDTree::ellipsoidIntersect(const Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
 	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
 
 	Float positions[8][3] =		{m_aabb.min.x, m_aabb.min.y, m_aabb.min.z,
@@ -138,7 +138,7 @@ bool ShapeKDTree::ellipsoidIntersect(const Ellipse &e, Float &value, Ray &ray, I
 	return false;
 }
 
-bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const{
+bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoid &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const{
 
 	IntersectionCache *cache =
 		static_cast<IntersectionCache *>(temp);
@@ -191,7 +191,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipse 
 			const TriAccel &ta = m_triAccel[primIdx];
 			Float tempU;
 			Float tempV;
-			if(ta.ellipseIntersectTriangle(e, value, tempU, tempV, sampler)){
+			if(ta.ellipsoidIntersectTriangle(e, value, tempU, tempV, sampler)){
 				cache->shapeIndex = ta.shapeIndex;
 				cache->primIndex = ta.primIndex;
 				cache->u = tempU;
@@ -287,7 +287,7 @@ void ShapeKDTree::fillPositionsAndLocations(const Float P[][3], const PLocation 
 	SLog(EError,"Fill position optimization is not implemented");
 }
 
-bool ShapeKDTree::isBoxCuttingEllipsoid(const Ellipse &e, const Float P[][3], PLocation L[]) const {
+bool ShapeKDTree::isBoxCuttingEllipsoid(const Ellipsoid &e, const Float P[][3], PLocation L[]) const {
 // Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
 // Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
 
@@ -321,7 +321,7 @@ bool ShapeKDTree::isBoxCuttingEllipsoid(const Ellipse &e, const Float P[][3], PL
 //		}
 //	}
 //
-//	/* Determine the location of each corner, store, and determine if the ellipse intersects this box*/
+//	/* Determine the location of each corner, store, and determine if the ellipsoid intersects this box*/
 //	for(size_t i=0;i<8;i++){
 //		if(L[i] == ShapeKDTree::ETBD){
 //			if(e.isInside(P[i][0], P[i][1], P[i][2])){
@@ -338,7 +338,7 @@ bool ShapeKDTree::isBoxCuttingEllipsoid(const Ellipse &e, const Float P[][3], PL
 //	}
 //
 //	if(isAtleastOneOutside){ // Entire Ellipsoid can be inside the box
-//		//Check if the center of the ellipse is inbetween the max and min points
+//		//Check if the center of the ellipsoid is inbetween the max and min points
 //		if( (m_aabb.min.x < e.C.x && e.C.x < m_aabb.max.x) &&
 //				(m_aabb.min.y < e.C.y && e.C.y < m_aabb.max.y) &&
 //				(m_aabb.min.z < e.C.z && e.C.z < m_aabb.max.z)){
