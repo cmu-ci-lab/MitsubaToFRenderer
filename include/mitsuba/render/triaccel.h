@@ -172,7 +172,8 @@ FINLINE bool TriAccel::ellipsoidIntersectTriangle(const Ellipsoid &e, Float &val
 												 NewX[2], NewY[2], N[2], 0.0f,
 												 0.0f, 0.0f, 0.0f, 1.0f
 												}));
-	Transform Ellipsoid2Ellipse = invEllipsoid2Ellipse.inverse();
+	Transform Ellipsoid2Ellipse = invEllipsoid2Ellipse.inverse()*Transform::translate(-O);
+	invEllipsoid2Ellipse = Ellipsoid2Ellipse.inverse();
 
 	// Compute major and minor axis
 	Float det 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
@@ -183,7 +184,7 @@ FINLINE bool TriAccel::ellipsoidIntersectTriangle(const Ellipsoid &e, Float &val
 	// Compute transform to scale ellipse to circle
 
 	Transform Ellipse2Circle = Transform::scale(Vector(1, m1/m2, 1));
-	Transform Ellipsoid2Circle = Ellipsoid2Ellipse*Ellipse2Circle;
+	Transform Ellipsoid2Circle = Ellipse2Circle*Ellipsoid2Ellipse;
 
 	Point Corners[3];
 	Corners[0] = Ellipsoid2Circle(EllipsoidA);
@@ -277,11 +278,21 @@ FINLINE Float TriAccel::ellipticCurveSampling(Float k, Float thetaMin[], Float t
 FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float thetaMax[], size_t &indices, const Point Corners[], const Float &r) const{
 	int noOfCorners = 3; // This code can be extended trivially to polygons of arbitrary size other than 3
 	Float norm_p[noOfCorners];
+	indices = 0;
 
 	Float temp;
-	std::vector<Float> thetas;
-	std::vector<bool> directionOutside;
-
+	struct IntersectionRecord{
+		Float theta;
+		bool directionOutside;
+		IntersectionRecord(Float theta, bool directionOutside){
+			this->theta = theta;
+			this->directionOutside = directionOutside;
+		}
+		static bool compare(IntersectionRecord I1, IntersectionRecord I2){
+			return (I1.theta < I2.theta);
+		}
+	};
+	std::vector<IntersectionRecord> intersectionRecord;
 	int intersections = 0;
 
 	for(int i = 0; i < noOfCorners; i++){
@@ -301,67 +312,57 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 		// One of them is inside
 		if(norm_p[i] < r && norm_p[j] > r){
 			intersections++;
-			directionOutside.push_back(true);
 			temp = circleLineIntersection(Corners[i], Corners[j], r);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
 		if(norm_p[i] < r && norm_p[j] == r){
 			intersections++;
-			directionOutside.push_back(true);
 			temp = atan2(Corners[j].y, Corners[j].x);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
 		if(norm_p[i] > r && norm_p[j] < r){
 			intersections++;
-			directionOutside.push_back(false);
 			temp = circleLineIntersection(Corners[i], Corners[j], r);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,false));
 			continue;
 		}
 		if(norm_p[i] == r && norm_p[j] < r){
 			intersections++;
-			directionOutside.push_back(false);
 			temp = atan2(Corners[i].y, Corners[i].x);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,false));
 			continue;
 		}
 		if(norm_p[i] == r && norm_p[j] > r){
 			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
 				intersections++;
-				directionOutside.push_back(false);
 				temp = atan2(Corners[i].y, Corners[i].x);
-				thetas.push_back(temp);
+				intersectionRecord.push_back(IntersectionRecord(temp,false));
 
 				intersections++;
-				directionOutside.push_back(true);
 				temp = circleLineIntersection(Corners[i], Corners[j], r);
-				thetas.push_back(temp);
+				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}else{
 				intersections++;
-				directionOutside.push_back(true);
 				temp = atan2(Corners[i].y, Corners[i].x);
-				thetas.push_back(temp);
+				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}
 			continue;
 		}
 		if(norm_p[i] > r && norm_p[j] == r){
 			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
 				intersections++;
-				directionOutside.push_back(false);
 				temp = circleLineIntersection(Corners[i], Corners[j], r);
-				thetas.push_back(temp);
+				intersectionRecord.push_back(IntersectionRecord(temp,false));
 
 				intersections++;
-				directionOutside.push_back(true);
 				temp = atan2(Corners[j].y, Corners[j].x);
-				thetas.push_back(temp);
+				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}else{
 				intersections++;
-				directionOutside.push_back(false);
 				temp = atan2(Corners[j].y, Corners[j].x);
-				thetas.push_back(temp);
+				intersectionRecord.push_back(IntersectionRecord(temp,false));
 			}
 			continue;
 		}
@@ -369,13 +370,12 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 		// both points are on the circle
 		if(norm_p[i] == r && norm_p[j] == r){
 			intersections++;
-			directionOutside.push_back(false);
 			temp = atan2(Corners[i].y, Corners[i].x);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,false));
+
 			intersections++;
-			directionOutside.push_back(true);
 			temp = atan2(Corners[j].y, Corners[j].x);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
 
@@ -402,14 +402,12 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 				continue;
 
 			intersections++;
-			directionOutside.push_back(false);
 			temp = circleLineIntersection(Corners[i], P_O, r);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,false));
 
 			intersections++;
-			directionOutside.push_back(true);
 			temp = circleLineIntersection(P_O, Corners[j], r);
-			thetas.push_back(temp);
+			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
 	}
@@ -424,6 +422,7 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 		if(a>0 && b>0 && (a+b)<1){
 			thetaMin[0]=0;
 			thetaMax[0]=2*M_PI;
+			indices = 1;
 			return true;
 		}
 		return false;
@@ -431,13 +430,13 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 
 	// Consolidate non-unique thetas by merging the repeats (for points lying on the circle)
 	std::vector<int> deleteIndices;
-	size_t size = thetas.size();
+	size_t size = intersectionRecord.size();
 	if(size == 2)
 		size = 1; // For size=2, checking the last value of theta is redundancy
 	for(size_t i = 0; i < size; i++){
-		size_t j = (i+1)%thetas.size();
-		if(thetas[i] == thetas[j]){
-			if(directionOutside[i] == directionOutside[j])
+		size_t j = (i+1)%intersectionRecord.size();
+		if(intersectionRecord[i].theta == intersectionRecord[j].theta){
+			if(intersectionRecord[i].directionOutside == intersectionRecord[j].directionOutside)
 				deleteIndices.push_back(i);
 			else{
 				deleteIndices.push_back(i);
@@ -449,14 +448,19 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 			i++;
 		}
 	}
-	for(auto rit = deleteIndices.rbegin();rit != deleteIndices.rend(); rit++){
-		thetas.erase(thetas.begin() + *rit);
-		directionOutside.erase(directionOutside.begin() + *rit);
-	}
+	for(auto rit = deleteIndices.rbegin();rit != deleteIndices.rend(); rit++)
+		intersectionRecord.erase(intersectionRecord.begin() + *rit);
+
+	std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ x.theta = fmod(x.theta, 2*M_PI);
+																	if (x.theta < 0)
+																		x.theta += 2*M_PI;
+																	return x; });
+
+	std::sort(intersectionRecord.begin(), intersectionRecord.end(), IntersectionRecord::compare);
 
 
 	// Remaining intersections must be even
-	if(thetas.size()%2 == 1){
+	if(intersectionRecord.size()%2 == 1){
 		SLog(EError,"Odd number of intersection in ellipse triangle intersection: radius: %f, corner-1 (%f, %f, %f), corner-2 (%f, %f, %f), corner-3 (%f, %f, %f)", r, Corners[0].x, Corners[0].y, Corners[0].z, Corners[1].x, Corners[1].y, Corners[1].z, Corners[2].x, Corners[2].y, Corners[2].z);
 	}
 
@@ -464,26 +468,24 @@ FINLINE bool TriAccel::circlePolygonIntersectionAngles(Float thetaMin[], Float t
 	Vector N  = cross(Corners[1]-Corners[0], Corners[2]-Corners[0]);
 
 	size_t start = 0;
-	if( (directionOutside[0] > 0) ^ (N.z > 0) )
+	if( intersectionRecord[0].directionOutside ^ (N.z > 0) )
 		start = 1;
 
-	size_t index = 0;
 	size_t j;
-	for(size_t i = start; i < thetas.size(); i++){
-		thetaMin[index] = thetas[i];
-		j = i +1;
-		if(j>thetas.size())
+	for(size_t i = start; i < intersectionRecord.size(); i+=2){
+		thetaMin[indices] = intersectionRecord[i].theta;
+		j = i + 1;
+		if(j == intersectionRecord.size())
 			j = 1;
-		thetaMax[index] = thetas[j];
-		if(thetaMax[index] < thetaMin[index]){
-			thetaMax[index + 1] = thetaMax[index];
-			thetaMax[index] = 2*M_PI;
-			thetaMin[index + 1] = 0;
-			index++;
+		thetaMax[indices] = intersectionRecord[j].theta;
+		if(thetaMax[indices] < thetaMin[indices]){
+			thetaMax[indices + 1] = thetaMax[indices];
+			thetaMax[indices] = 2*M_PI;
+			thetaMin[indices + 1] = 0;
+			indices++;
 		}
-		index++;
+		indices++;
 	}
-	indices = index-1;
 	return true;
 }
 
