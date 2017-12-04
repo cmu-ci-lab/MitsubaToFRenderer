@@ -18,7 +18,7 @@
 
 #include <mitsuba/bidir/path.h>
 #include <mitsuba/core/statistics.h>
-#include <mitsuba/core/ellipsoid.h> // To test ellipse code. FixMe to go throught the KDD tree
+#include "../../include/mitsuba/render/ellipsoid.h" // To test ellipse code. FixMe to go throught the KDD tree
 
 MTS_NAMESPACE_BEGIN
 

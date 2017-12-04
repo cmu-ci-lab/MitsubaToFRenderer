@@ -191,7 +191,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 			const TriAccel &ta = m_triAccel[primIdx];
 			Float tempU;
 			Float tempV;
-			if(ta.ellipsoidIntersectTriangle(e, value, tempU, tempV, sampler)){
+			if(ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
 				cache->shapeIndex = ta.shapeIndex;
 				cache->primIndex = ta.primIndex;
 				cache->u = tempU;
