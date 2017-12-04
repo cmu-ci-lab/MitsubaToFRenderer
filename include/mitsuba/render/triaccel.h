@@ -23,6 +23,7 @@
 #include <mitsuba/render/trimesh.h>
 #include <mitsuba/core/ellipsoid.h>
 #include <mitsuba/render/sampler.h>
+#include <boost/math/special_functions/ellint_2.hpp>
 #include <vector>
 #include <math.h>
 
@@ -73,6 +74,7 @@ struct TriAccel {
 	FINLINE void Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
 
 	FINLINE Float ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const;
+	FINLINE Float ellipticSampleWeight(Float k, Float thetaMin[], Float thetaMax[],size_t &indices) const;
 
 	//For weighted innerproduct -- Need a better place for this code
 	FINLINE Float weightedIP(Vector &A, Vector &B, Float a, Float b, Float c) const{
@@ -195,13 +197,14 @@ FINLINE bool TriAccel::ellipsoidIntersectTriangle(const Ellipsoid &e, Float &val
 	Float thetaMin[4];
 	Float thetaMax[4];
 	size_t indices;
-
+	value = 0;
 	if(circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, Corners, m1)){
 		// Sample an angle using elliptic sampling algorithm
 		Float angle = ellipticCurveSampling(k, thetaMin, thetaMax, indices, sampler);
 		Point Projection(m1*cos(angle), m2*sin(angle), 0.0f), Original;
 		Projection = invEllipsoid2Ellipse(Projection);
 		e.transformFromEllipsoid(Projection, Original);
+		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices)/m1;
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
 		Barycentric(Original, A, B, C, u, v);
 		return true;
@@ -272,6 +275,14 @@ FINLINE Float TriAccel::ellipticCurveSampling(Float k, Float thetaMin[], Float t
 			return theta;
 		}
 	}
+}
+
+FINLINE Float TriAccel::ellipticSampleWeight(Float k, Float thetaMin[], Float thetaMax[],size_t &indices) const{
+	Float arcLength = 0;
+	for(size_t i = 0; i < indices; i++){
+		arcLength += boost::math::ellint_2(k, thetaMax[i]) - boost::math::ellint_2(k, thetaMin[i]);
+	}
+	return arcLength;
 }
 
 
