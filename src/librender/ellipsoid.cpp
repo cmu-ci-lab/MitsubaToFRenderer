@@ -2,70 +2,6 @@
 
 MTS_NAMESPACE_BEGIN
 
-// Construct a new ellipsoid
-template <typename PointType, typename LengthType>
-TEllipsoid<PointType, LengthType>::TEllipsoid(const PointType p1, const PointType p2, const LengthType tau):
-		f1(p1), f2(p2), Tau(tau){
-	// Algorithm to compute the T3D3D
-	a = tau/2.0f;
-	C = (f1 + f2) * 0.5f;
-	b = (a*a-distanceSquared(C, f1));
-	if(b < 0)
-		degenerateEllipsoid = true;
-	else
-		degenerateEllipsoid = false;
-	b = sqrt(b);
-	TVector3<LengthType> D = f2-f1;
-	TVector3<LengthType> Scale(1/a, 1/b, 1/b);
-	TVector3<LengthType> Rot(1.0f, 0.0f, 0.0f);
-	TVector3<LengthType> Cv(-C);
-
-	T3D2Ellipsoid 	 = Transform::rotateVector2Vector(D, Rot)*Transform::translate(Cv);
-	invT3D2Ellipsoid = T3D2Ellipsoid.inverse();
-
-	T3D2Sphere 	  = Transform::scale(Scale)*T3D2Ellipsoid;
-	invT3D2Sphere = T3D2Sphere.inverse();
-
-	/*compute bounding box for the arbitrary oriented ellipse*/
-	Matrix4x4 S(TVector4<LengthType>(1.0f, 0.0f, 0.0f, 0.0f),
-				TVector4<LengthType>(0.0f, 1.0f, 0.0f, 0.0f),
-				TVector4<LengthType>(0.0f, 0.0f, 1.0f, 0.0f),
-				TVector4<LengthType>(0.0f, 0.0f, 0.0f,-1.0f)
-							);
-	Matrix4x4 MT, M = invT3D2Sphere.getMatrix();
-	M.transpose(MT);
-	Matrix4x4 R = M*S*MT;
-
-	Float temp1, temp2;
-	if(R.m[3][3] < 0){
-		temp1 = 1/R.m[3][3];
-		temp2 = sqrt(R.m[3][2]*R.m[3][2] - (R.m[3][3]*R.m[2][2]));
-		m_aabb.max.z = temp1*(R.m[3][2] - temp2);
-		m_aabb.min.z = temp1*(R.m[3][2] + temp2);
-
-		temp2 = sqrt(R.m[3][1]*R.m[3][1] - (R.m[3][3]*R.m[1][1]));
-		m_aabb.max.y = temp1*(R.m[3][1] - temp2);
-		m_aabb.min.y = temp1*(R.m[3][1] + temp2);
-
-		temp2 = sqrt(R.m[3][0]*R.m[3][0] - (R.m[3][3]*R.m[0][0]));
-		m_aabb.max.x = temp1*(R.m[3][0] - temp2);
-		m_aabb.min.x = temp1*(R.m[3][0] + temp2);
-	}else{
-		temp1 = 1/R.m[3][3];
-		temp2 = sqrt(R.m[3][2]*R.m[3][2] - (R.m[3][3]*R.m[2][2]));
-		m_aabb.max.z = temp1*(R.m[3][2] + temp2);
-		m_aabb.min.z = temp1*(R.m[3][2] - temp2);
-
-		temp2 = sqrt(R.m[3][1]*R.m[3][1] - (R.m[3][3]*R.m[1][1]));
-		m_aabb.max.y = temp1*(R.m[3][1] + temp2);
-		m_aabb.min.y = temp1*(R.m[3][1] - temp2);
-
-		temp2 = sqrt(R.m[3][0]*R.m[3][0] - (R.m[3][3]*R.m[0][0]));
-		m_aabb.max.x = temp1*(R.m[3][0] + temp2);
-		m_aabb.min.x = temp1*(R.m[3][0] - temp2);
-	}
-}
-
 template <typename PointType, typename LengthType>
 void TEllipsoid<PointType, LengthType>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const
 {
@@ -519,8 +455,6 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 
 	return false;
 }
-
-template TEllipsoid<Point3f, float>::TEllipsoid(const PointType p1, const PointType p2, const LengthType tau);
 
 template void TEllipsoid<Point3f, float>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
 
