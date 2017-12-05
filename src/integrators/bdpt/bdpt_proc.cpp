@@ -476,7 +476,7 @@ public:
 						continue;
 					if (!sampleDirect) //FIXME: code not valid when one or more of succeeding/preciding vertices are source/detector vertices
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
-									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::ECosine);
+									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
 					else
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
 								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));

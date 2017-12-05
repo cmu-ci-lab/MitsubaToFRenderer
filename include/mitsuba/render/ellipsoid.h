@@ -48,7 +48,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		a = tau/2.0f;
 		C = (f1 + f2) * 0.5f;
 		b = (a*a-distanceSquared(C, f1));
-		if(b < 0)
+		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex.
 			degenerateEllipsoid = true;
 		else
 			degenerateEllipsoid = false;

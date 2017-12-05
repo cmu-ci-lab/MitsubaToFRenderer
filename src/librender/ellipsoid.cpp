@@ -375,7 +375,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 
 	Float theta = 0.5 * atan2(2*TUD, UUD-TTD);
 	if(std::isnan(theta) || std::isinf(theta)){
-		SLog(EError,"Theta is not valid; TUD: %f, UUD: %f, TTD: %f; \n", TUD, UUD, TTD);
+		SLog(EError,"Theta is not valid; TUD: %f, UUD: %f, TTD: %f; T: (%f, %f, %f); a:%f, b:%f\n", TUD, UUD, TTD, T[0], T[1], T[2], a, b);
 	}
 
 	Vector NewX = T*cos(theta) - U*sin(theta);
