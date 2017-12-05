@@ -149,9 +149,9 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	Float circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
 
-	Float ellipticSampleWeight(Float k, Float thetaMin[], Float thetaMax[],size_t &indices) const;
+	Float ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const;
 
-	Float ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const;
+	Float ellipticCurveSampling(const Float k, const Float thetaMin[], const Float thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
 
 	//	inline bool isInside(float x, float y, float z) const{
 	//		Point P(x, y, z);

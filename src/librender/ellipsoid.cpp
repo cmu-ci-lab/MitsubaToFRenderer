@@ -154,33 +154,34 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 		}
 	}
 
-	if(intersections == 0){
-		Vector2 v0(Corners[0].x, Corners[0].y);
-		Vector2 v1(Corners[1].x-Corners[0].x, Corners[1].y-Corners[0].y);
-		Vector2 v2(Corners[2].x-Corners[0].x, Corners[2].y-Corners[0].y);
+	// wrap angles to [0,2*pi]
+	std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ x.theta = fmod(x.theta, 2*M_PI);
+																	if (x.theta < 0)
+																		x.theta += 2*M_PI;
+																	return x; });
 
-	    Float a = -det(v0, v2)/det(v1, v2);
-	    Float b =  det(v0, v1)/det(v1, v2);
-		if(a>0 && b>0 && (a+b)<1){
-			thetaMin[0]=0;
-			thetaMax[0]=2*M_PI;
-			indices = 1;
-			return true;
-		}
-		return false;
-	}
+	//sort the thetas
+	std::sort(intersectionRecord.begin(), intersectionRecord.end(), IntersectionRecord::compare);
+
+
 
 	// Consolidate non-unique thetas by merging the repeats (for points lying on the circle)
 	std::vector<int> deleteIndices;
 	size_t size = intersectionRecord.size();
 	if(size == 2)
 		size = 1; // For size=2, checking the last value of theta is redundancy
+
+	bool debug_entered_for_deletionTheta = false;
+	bool debug_entered_for_deletiondirectionOutside = false;
+
 	for(size_t i = 0; i < size; i++){
 		size_t j = (i+1)%intersectionRecord.size();
 		if(intersectionRecord[i].theta == intersectionRecord[j].theta){
+			debug_entered_for_deletionTheta = true;
 			if(intersectionRecord[i].directionOutside == intersectionRecord[j].directionOutside)
 				deleteIndices.push_back(i);
 			else{
+				debug_entered_for_deletiondirectionOutside = true;
 				deleteIndices.push_back(i);
 				if(j != 0) // To maintain deleteIndices as ascending array
 					deleteIndices.push_back(j);
@@ -193,19 +194,35 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 	for(auto rit = deleteIndices.rbegin();rit != deleteIndices.rend(); rit++)
 		intersectionRecord.erase(intersectionRecord.begin() + *rit);
 
-	std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ x.theta = fmod(x.theta, 2*M_PI);
-																	if (x.theta < 0)
-																		x.theta += 2*M_PI;
-																	return x; });
-
-	std::sort(intersectionRecord.begin(), intersectionRecord.end(), IntersectionRecord::compare);
-
-
 	// Remaining intersections must be even
 	if(intersectionRecord.size()%2 == 1){
 		SLog(EError,"Odd number of intersection in ellipse triangle intersection: radius: %f, corner-1 (%f, %f, %f), corner-2 (%f, %f, %f), corner-3 (%f, %f, %f)", r, Corners[0].x, Corners[0].y, Corners[0].z, Corners[1].x, Corners[1].y, Corners[1].z, Corners[2].x, Corners[2].y, Corners[2].z);
 	}
 
+	/* special case when the circle is completely inside the triangle*/
+	if(intersectionRecord.size() == 0){
+		/* check that all the points are outside the circle */
+		if(norm_p[0] < r || norm_p[1] < r || norm_p[2] < r)
+				return false;
+
+		/* check that a center of circle is inside the triangle */
+		Vector2 v0(Corners[0].x, Corners[0].y);
+		Vector2 v1(Corners[1].x-Corners[0].x, Corners[1].y-Corners[0].y);
+		Vector2 v2(Corners[2].x-Corners[0].x, Corners[2].y-Corners[0].y);
+
+	    Float a = -det(v0, v2)/det(v1, v2);
+	    Float b =  det(v0, v1)/det(v1, v2);
+		if(a>0 && b>0 && (a+b)<1){
+			thetaMin[0]=0;
+			thetaMax[0]=2*M_PI;
+			indices = 1;
+			//Sanitycheck --> All the triangle vertices must be outside the circle
+			if(!(norm_p[0] > r && norm_p[1] > r && norm_p[2] > r))
+				SLog(EError, "Circle-Triangle intersection is returning illegally that the circle is completely inside triangle\n");
+			return true;
+		}
+		return false;
+	}
 
 	Vector N  = cross(Corners[1]-Corners[0], Corners[2]-Corners[0]);
 
@@ -218,7 +235,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 		thetaMin[indices] = intersectionRecord[i].theta;
 		j = i + 1;
 		if(j == intersectionRecord.size())
-			j = 1;
+			j = 0;
 		thetaMax[indices] = intersectionRecord[j].theta;
 		if(thetaMax[indices] < thetaMin[indices]){
 			thetaMax[indices + 1] = thetaMax[indices];
@@ -227,6 +244,30 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			indices++;
 		}
 		indices++;
+	}
+	if(indices == 0)
+		SLog(EError, "Circle triangle intersection returning true with out any intersections \n");
+	for(size_t i= 0;i<indices;i++){
+		if(thetaMin[i] == thetaMax[i] && (thetaMax[i]!=2*M_PI)){
+			for(size_t j=0;j<indices;j++)
+				std::cout<<"thetas: ("<<thetaMin[j]<<","<<thetaMax[j]<<")\n";
+
+			std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ std::cout<<"Intersection: ("<<x.theta<<","<<x.directionOutside<<")\n" ;});
+			std::cout<<"Intersection record size:"<<intersectionRecord.size();
+
+			for(size_t j=0;j<3;j++)
+				std::cout<<"Corners["<<j<<"]:("<<Corners[j].x<<","<<Corners[j].y<<","<<Corners[j].z<<")\n";
+			std::cout<<"radius:"<<r<<std::endl;
+
+			std::cout<<"Debug flags -- theta:"<<debug_entered_for_deletionTheta<<";direction"<<debug_entered_for_deletiondirectionOutside<<"\n";
+
+			std::cout<<"Delete Indices("<<deleteIndices.size()<<"):";
+			for(size_t j=0;j<deleteIndices.size();j++)
+				std::cout<<deleteIndices[j]<<" ";
+			std::cout<<std::endl;
+
+			SLog(EError, "Circle triangle intersection has duplicates that are not eliminated properly \n");
+		}
 	}
 	return true;
 }
@@ -305,16 +346,18 @@ Float TEllipsoid<PointType, LengthType>::circleLineIntersection(const Point &P1,
 }
 
 template <typename PointType, typename LengthType>
-Float TEllipsoid<PointType, LengthType>::ellipticSampleWeight(Float k, Float thetaMin[], Float thetaMax[],size_t &indices) const{
+Float TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const{
 	Float arcLength = 0;
 	for(size_t i = 0; i < indices; i++){
 		arcLength += boost::math::ellint_2(k, thetaMax[i]) - boost::math::ellint_2(k, thetaMin[i]);
 	}
-	return arcLength;
+	if(arcLength == 0)
+		SLog(EError, "Arc length of the ellipse is zero; Total indices: %d, k: %f, first angle range: (%f, %f)", indices, k, thetaMin[0], thetaMax[0]);
+	return (1/arcLength);
 }
 
 template <typename PointType, typename LengthType>
-Float TEllipsoid<PointType, LengthType>::ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const{
+Float TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const Float k, const Float thetaMin[], const Float thetaMax[], const size_t &indices, ref<Sampler> sampler) const{
 	Float cumsum[4];
 	cumsum[0] = thetaMax[0] - thetaMin[0];
 
@@ -417,6 +460,8 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 	value = 0;
 	if(circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, Corners, m1)){
 		// Sample an angle using elliptic sampling algorithm
+		if(indices == 0)
+			SLog(EError, "Circle polygon intersection returned true without any intersection");
 		Float angle = ellipticCurveSampling(k, thetaMin, thetaMax, indices, sampler);
 		Point Projection(m1*cos(angle), m2*sin(angle), 0.0f), Original;
 		Projection = invEllipsoid2Ellipse(Projection);
@@ -464,9 +509,9 @@ template int TEllipsoid<Point3f, float>::numberOfCircleLineIntersections(const P
 
 template Float TEllipsoid<Point3f, float>::circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
 
-template Float TEllipsoid<Point3f, float>::ellipticSampleWeight(Float k, Float thetaMin[], Float thetaMax[],size_t &indices) const;
+template Float TEllipsoid<Point3f, float>::ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const;
 
-template Float TEllipsoid<Point3f, float>::ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const;
+template Float TEllipsoid<Point3f, float>::ellipticCurveSampling(const Float k, const Float thetaMin[], const Float thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
 
 template struct TEllipsoid<Point3f, float>;
 
