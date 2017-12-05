@@ -64,7 +64,6 @@ TEllipsoid<PointType, LengthType>::TEllipsoid(const PointType p1, const PointTyp
 		m_aabb.max.x = temp1*(R.m[3][0] + temp2);
 		m_aabb.min.x = temp1*(R.m[3][0] - temp2);
 	}
-
 }
 
 template <typename PointType, typename LengthType>
@@ -521,6 +520,21 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 	return false;
 }
 
-template struct TEllipsoid<Point, Float>;
+template TEllipsoid<Point3f, float>::TEllipsoid(const PointType p1, const PointType p2, const LengthType tau);
+
+template void TEllipsoid<Point3f, float>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
+
+template bool TEllipsoid<Point3f, float>::circlePolygonIntersectionAngles(Float thetaMin[], Float thetaMax[], size_t &indices, const Point Corners[], const Float &r) const;
+
+template int TEllipsoid<Point3f, float>::numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const;
+
+template Float TEllipsoid<Point3f, float>::circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
+
+template Float TEllipsoid<Point3f, float>::ellipticSampleWeight(Float k, Float thetaMin[], Float thetaMax[],size_t &indices) const;
+
+template Float TEllipsoid<Point3f, float>::ellipticCurveSampling(Float k, Float thetaMin[], Float thetaMax[], size_t &indices, ref<Sampler> sampler) const;
+
+template struct TEllipsoid<Point3f, float>;
+
 
 MTS_NAMESPACE_END
