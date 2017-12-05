@@ -21,7 +21,7 @@
 #define __MITSUBA_CORE_AABB_H_
 
 #include <mitsuba/core/bsphere.h>
-#include "../render/ellipsoid.h"
+#include <mitsuba/render/ellipsoid.h>
 
 MTS_NAMESPACE_BEGIN
 

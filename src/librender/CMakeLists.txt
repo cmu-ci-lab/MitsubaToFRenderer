@@ -7,6 +7,7 @@ set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/mitsuba/render)
 set(HDRS
   ${INCLUDE_DIR}/bsdf.h
   ${INCLUDE_DIR}/common.h
+  ${INCLUDE_DIR}/ellipsoid.h
   ${INCLUDE_DIR}/emitter.h
   ${INCLUDE_DIR}/film.h
   ${INCLUDE_DIR}/fwd.h
@@ -53,6 +54,7 @@ set(HDRS
 set(SRCS
   bsdf.cpp
   common.cpp
+  ellipsoid.cpp
   emitter.cpp
   film.cpp
   gatherproc.cpp
