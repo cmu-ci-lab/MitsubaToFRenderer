@@ -175,6 +175,19 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	//	}
 };
 
+struct IntersectionRecord{
+	Float theta;
+	bool directionOutside;
+	IntersectionRecord(Float theta, bool directionOutside){
+		this->theta = theta;
+		this->directionOutside = directionOutside;
+	}
+	static bool compare(IntersectionRecord I1, IntersectionRecord I2){
+		return (I1.theta < I2.theta);
+	}
+};
+
+
 MTS_NAMESPACE_END
 
 #endif /* __MITSUBA_CORE_RAY_H_ */

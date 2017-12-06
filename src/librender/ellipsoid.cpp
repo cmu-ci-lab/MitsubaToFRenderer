@@ -23,19 +23,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 	indices = 0;
 
 	Float temp;
-	struct IntersectionRecord{
-		Float theta;
-		bool directionOutside;
-		IntersectionRecord(Float theta, bool directionOutside){
-			this->theta = theta;
-			this->directionOutside = directionOutside;
-		}
-		static bool compare(IntersectionRecord I1, IntersectionRecord I2){
-			return (I1.theta < I2.theta);
-		}
-	};
 	std::vector<IntersectionRecord> intersectionRecord;
-	int intersections = 0;
 
 	for(int i = 0; i < noOfCorners; i++){
 		norm_p[i] = sqrt( Corners[i].x*Corners[i].x + Corners[i].y*Corners[i].y );
@@ -53,40 +41,33 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 
 		// One of them is inside
 		if(norm_p[i] < r && norm_p[j] > r){
-			intersections++;
 			temp = circleLineIntersection(Corners[i], Corners[j], r);
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
 		if(norm_p[i] < r && norm_p[j] == r){
-			intersections++;
 			temp = atan2(Corners[j].y, Corners[j].x);
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
 		if(norm_p[i] > r && norm_p[j] < r){
-			intersections++;
 			temp = circleLineIntersection(Corners[i], Corners[j], r);
 			intersectionRecord.push_back(IntersectionRecord(temp,false));
 			continue;
 		}
 		if(norm_p[i] == r && norm_p[j] < r){
-			intersections++;
 			temp = atan2(Corners[i].y, Corners[i].x);
 			intersectionRecord.push_back(IntersectionRecord(temp,false));
 			continue;
 		}
 		if(norm_p[i] == r && norm_p[j] > r){
 			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
-				intersections++;
 				temp = atan2(Corners[i].y, Corners[i].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,false));
 
-				intersections++;
 				temp = circleLineIntersection(Corners[i], Corners[j], r);
 				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}else{
-				intersections++;
 				temp = atan2(Corners[i].y, Corners[i].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}
@@ -94,15 +75,12 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 		}
 		if(norm_p[i] > r && norm_p[j] == r){
 			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
-				intersections++;
 				temp = circleLineIntersection(Corners[i], Corners[j], r);
 				intersectionRecord.push_back(IntersectionRecord(temp,false));
 
-				intersections++;
 				temp = atan2(Corners[j].y, Corners[j].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}else{
-				intersections++;
 				temp = atan2(Corners[j].y, Corners[j].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,false));
 			}
@@ -111,11 +89,9 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 
 		// both points are on the circle
 		if(norm_p[i] == r && norm_p[j] == r){
-			intersections++;
 			temp = atan2(Corners[i].y, Corners[i].x);
 			intersectionRecord.push_back(IntersectionRecord(temp,false));
 
-			intersections++;
 			temp = atan2(Corners[j].y, Corners[j].x);
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
@@ -143,11 +119,9 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			if(alpha <= 0 || alpha >= 1)
 				continue;
 
-			intersections++;
 			temp = circleLineIntersection(Corners[i], P_O, r);
 			intersectionRecord.push_back(IntersectionRecord(temp,false));
 
-			intersections++;
 			temp = circleLineIntersection(P_O, Corners[j], r);
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
@@ -218,7 +192,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			indices = 1;
 			//Sanitycheck --> All the triangle vertices must be outside the circle
 			if(!(norm_p[0] > r && norm_p[1] > r && norm_p[2] > r))
-				SLog(EError, "Circle-Triangle intersection is returning illegally that the circle is completely inside triangle\n");
+				SLog(EError, "Circle-Triangle intersection is returning illegally that the circle is completely inside triangle. intersectionRecord size: %d; deleteIndices size: %d\n", intersectionRecord.size(), deleteIndices.size());
 			return true;
 		}
 		return false;
@@ -247,6 +221,8 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 	}
 	if(indices == 0)
 		SLog(EError, "Circle triangle intersection returning true with out any intersections \n");
+	if(indices > 4)
+		SLog(EError, "Circle triangle intersection has more sets of angles (%d) than max permissive 4\n",indices);
 	for(size_t i= 0;i<indices;i++){
 		if(thetaMin[i] == thetaMax[i] && (thetaMax[i]!=2*M_PI)){
 			for(size_t j=0;j<indices;j++)
@@ -458,6 +434,15 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 	Float thetaMax[4];
 	size_t indices;
 	value = 0;
+
+	/*Testing the code with Matlab equivalent on corner cases */
+//	Point TestCorners[3];
+//	TestCorners[0].x = -174.649; TestCorners[0].y = 39.8256; TestCorners[0].z = 0;
+//	TestCorners[1].x = -49.9041; TestCorners[1].y = -174.457; TestCorners[1].z = 0;
+//	TestCorners[2].x = 106.425; TestCorners[2].y = -3.46693; TestCorners[2].z = 0;
+//	Float Test_m1 = 106.481;
+//	circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, TestCorners, Test_m1);
+
 	if(circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, Corners, m1)){
 		// Sample an angle using elliptic sampling algorithm
 		if(indices == 0)
