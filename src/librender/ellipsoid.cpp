@@ -191,8 +191,13 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			thetaMax[0]=2*M_PI;
 			indices = 1;
 			//Sanitycheck --> All the triangle vertices must be outside the circle
-			if(!(norm_p[0] > r && norm_p[1] > r && norm_p[2] > r))
+			if(!(norm_p[0] > r && norm_p[1] > r && norm_p[2] > r)){
+				for(size_t j = 0; j < 3; j++)
+					std::cout<<"Corners["<<j<<"];"<<Corners[j].x<<","<<Corners[j].y<<","<<Corners[j].z<<std::endl;
+				std::cout<<"radius:"<<r<<std::endl;
+				std::cout<<"norms:"<<norm_p[0]<<","<<norm_p[1]<<","<<norm_p[2]<<std::endl;
 				SLog(EError, "Circle-Triangle intersection is returning illegally that the circle is completely inside triangle. intersectionRecord size: %d; deleteIndices size: %d\n", intersectionRecord.size(), deleteIndices.size());
+			}
 			return true;
 		}
 		return false;
