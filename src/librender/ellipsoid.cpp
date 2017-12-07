@@ -536,11 +536,12 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 		// Adjust corner misses. Note that this biases the measurements
 		if(u < 0 && u > -1e-3){u = 0;}
 		if(v < 0 && v > -1e-3){v = 0;}
-		if(u > 1 && u < 1+1e-3){u = 1;}
-		if(v < 0 && v > -1e-3){v = 1;}
+		if(u > 1 && u < (1+1e-3)){u = 1;}
+		if(v < 0 && v > (1+1e-3)){v = 1;}
 
 		if(u < 0 || u > 1 || v < 0 || v > 1){
-			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting");
+			cout<<"triA:("<<triA.x<<","<<triA.y<<","<<triA.z<<","<<"), "<<"triA:("<<triB.x<<","<<triB.y<<","<<triB.z<<","<<"), "<<"triA:("<<triC.x<<","<<triC.y<<","<<triC.z<<","<<");"<<"Point:("<<Original.x<<","<<Original.y<<","<<Original.z<<","<<");";
+			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting; u:%f, v:%f", u, v);
 			return false;
 		}
 		return true;
