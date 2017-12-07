@@ -342,7 +342,7 @@ Float TEllipsoid<PointType, LengthType>::circleLineIntersection(const Point &P1,
 			x = alpha * x1 + (1-alpha) * x2;
 			y = alpha * y1 + (1-alpha) * y2;
 		}else{
-			alpha = (-b-det)/(2*a);
+			alpha = (-b+det)/(2*a);
 			if(alpha >= 0 && alpha <= 1){
 				x = alpha * x1 + (1-alpha) * x2;
 				y = alpha * y1 + (1-alpha) * y2;
@@ -533,6 +533,12 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices)/m1;
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
 		Barycentric(Original, triA, triB, triC, u, v);
+		// Adjust corner misses. Note that this biases the measurements
+		if(u < 0 && u > -1e-3){u = 0;}
+		if(v < 0 && v > -1e-3){v = 0;}
+		if(u > 1 && u < 1+1e-3){u = 1;}
+		if(v < 0 && v > -1e-3){v = 1;}
+
 		if(u < 0 || u > 1 || v < 0 || v > 1){
 			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting");
 			return false;
