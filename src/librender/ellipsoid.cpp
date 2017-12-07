@@ -61,22 +61,33 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			continue;
 		}
 		if(norm_p[i] == r && norm_p[j] > r){
-			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
+			Float temp2;
+			if(specialCircleLineIntersection(Corners[i], Corners[j], r, 2, temp2) == 2){
 				temp = atan2(Corners[i].y, Corners[i].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,false));
 
-				temp = circleLineIntersection(Corners[i], Corners[j], r);
-				intersectionRecord.push_back(IntersectionRecord(temp,true));
+				intersectionRecord.push_back(IntersectionRecord(temp2,true));
 			}else{
 				temp = atan2(Corners[i].y, Corners[i].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}
+
+//			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
+//				temp = atan2(Corners[i].y, Corners[i].x);
+//				intersectionRecord.push_back(IntersectionRecord(temp,false));
+//
+//				temp = circleLineIntersection(Corners[i], Corners[j], r);
+//				intersectionRecord.push_back(IntersectionRecord(temp,true));
+//			}else{
+//				temp = atan2(Corners[i].y, Corners[i].x);
+//				intersectionRecord.push_back(IntersectionRecord(temp,true));
+//			}
 			continue;
 		}
 		if(norm_p[i] > r && norm_p[j] == r){
-			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
-				temp = circleLineIntersection(Corners[i], Corners[j], r);
-				intersectionRecord.push_back(IntersectionRecord(temp,false));
+			Float temp2;
+			if(specialCircleLineIntersection(Corners[i], Corners[j], r, 1, temp2) == 2){
+				intersectionRecord.push_back(IntersectionRecord(temp2,false));
 
 				temp = atan2(Corners[j].y, Corners[j].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,true));
@@ -290,41 +301,104 @@ Float TEllipsoid<PointType, LengthType>::circleLineIntersection(const Point &P1,
 	double b  = 2*(dx*x2 + dy*y2);
 	double c  = x2*x2 + y2*y2 - r*r;
 
-	double det = sqrt(b*b-4*a*c);
+	double det = (b*b-4*a*c);
 	if(det < 0){ // To compensate for Float precision errors
-		SLog(EError,"Circle-Line intersection resulted in a possible float precision error or called without an intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
+		SLog(EWarn,"Circle-Line intersection resulted in a possible float precision error or called without an intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
 				"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
 				"																					  dx(%lf), dy(%lf), a(%lf), b(%lf), c(%lf), det(%lf);",
 																										P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, r,
 																										x1, y1, x2, y2,
 																										dx, dy, a, b, c, det);
+		det = 0;
 	}
-
-	double alpha = (-b+det)/(2*a);
+	det = sqrt(det);
+	double alpha;
 
 	double x = 0;
 	double y = std::numeric_limits<Float>::min();
 
-	if(alpha >= 0 && alpha <= 1){
-		x = alpha * x1 + (1-alpha) * x2;
-		y = alpha * y1 + (1-alpha) * y2;
-	}else{
+	if(b >= 0){
 		alpha = (-b-det)/(2*a);
-		if(alpha >= 0 && alpha <= 1){
+		if(alpha >=0 && alpha <= 1){
 			x = alpha * x1 + (1-alpha) * x2;
 			y = alpha * y1 + (1-alpha) * y2;
 		}else{
-			SLog(EError,"Circle-Line intersection called with out an actual intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
-					"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
-					"																					  dx(%lf), dy(%lf), a(%lf), b(%lf), c(%lf), det(%lf);",
-																											P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, r,
-																											x1, y1, x2, y2,
-																											dx, dy, a, b, c, det);
+			alpha = (2*c)/(-b-det);
+			if(alpha >= 0 && alpha <= 1){
+				x = alpha * x1 + (1-alpha) * x2;
+				y = alpha * y1 + (1-alpha) * y2;
+			}else{
+				SLog(EWarn,"Circle-Line intersection called with out an actual intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
+						"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
+						"																					  dx(%lf), dy(%lf), a(%lf), b(%lf), c(%lf), det(%lf);",
+																												P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, r,
+																												x1, y1, x2, y2,
+																												dx, dy, a, b, c, det);
+			}
+		}
+	}else{
+		alpha = (2*c)/(-b+det);
+		if(alpha >=0 && alpha <= 1){
+			x = alpha * x1 + (1-alpha) * x2;
+			y = alpha * y1 + (1-alpha) * y2;
+		}else{
+			alpha = (-b-det)/(2*a);
+			if(alpha >= 0 && alpha <= 1){
+				x = alpha * x1 + (1-alpha) * x2;
+				y = alpha * y1 + (1-alpha) * y2;
+			}else{
+				SLog(EWarn,"Circle-Line intersection called with out an actual intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
+						"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
+						"																					  dx(%lf), dy(%lf), a(%lf), b(%lf), c(%lf), det(%lf);",
+																												P1.x, P1.y, P1.z, P2.x, P2.y, P2.z, r,
+																												x1, y1, x2, y2,
+																												dx, dy, a, b, c, det);
+			}
 		}
 	}
 
 	return (Float)atan2(y, x);
 }
+
+template <typename PointType, typename LengthType>
+int TEllipsoid<PointType, LengthType>::specialCircleLineIntersection(const Point &P1, const Point &P2, const Float &r, const int &specialCase, Float &angle) const{
+	double x1 = (double)P1.x;
+	double y1 = (double)P1.y;
+	double x2 = (double)P2.x;
+	double y2 = (double)P2.y;
+
+	double dx;
+	double dy;
+	double a;
+	double b;
+	double alpha;
+
+	int noOfSols = 1;
+	if(specialCase == 1){
+	    dx = x1 - x2;
+	    dy = y1 - y2;
+	    a = dx*dx + dy*dy;
+	    b = 2*(dx*x2+dy*y2);
+
+	    alpha = -b/a;
+	    if(alpha >= 0 && alpha <= 1)
+	        noOfSols++;
+	}else{
+	    dx = x2 - x1;
+	    dy = y2 - y1;
+	    a = dx*dx + dy*dy;
+	    b = 2*(dx*x1+dy*y1);
+
+	    alpha = 1+b/a; //(1-alpha)
+	    if(alpha >= 0 && alpha <= 1)
+	        noOfSols = noOfSols + 1;
+	}
+
+	angle = atan2(alpha*y1+(1-alpha)*y2, alpha*x1+(1-alpha)*x2);
+	return noOfSols;
+}
+
+
 
 template <typename PointType, typename LengthType>
 Float TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const{
@@ -459,6 +533,10 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices)/m1;
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
 		Barycentric(Original, triA, triB, triC, u, v);
+		if(u < 0 || u > 1 || v < 0 || v > 1){
+			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting");
+			return false;
+		}
 		return true;
 	}
 //Old algorithm that is no longer relevant
@@ -498,6 +576,8 @@ template bool TEllipsoid<Point3f, float>::circlePolygonIntersectionAngles(Float 
 template int TEllipsoid<Point3f, float>::numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const;
 
 template Float TEllipsoid<Point3f, float>::circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
+
+template int TEllipsoid<Point3f, float>::specialCircleLineIntersection(const Point &P1, const Point &P2, const Float &r, const int &specialCase, Float &angle) const;
 
 template Float TEllipsoid<Point3f, float>::ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const;
 
