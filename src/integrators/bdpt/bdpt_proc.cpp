@@ -395,6 +395,11 @@ public:
 
 					sampleDirect = true;
 				} else {
+
+					//FIXME: Adithya --> Even if sample direct is false, we can reach this part of code. So avoid t==1, t==2 and s==1 paths for all renderers so that we can compare them. Remove me in the future
+					if(s == 1 || t < 2)
+						continue;
+
 					/* Can't connect degenerate endpoints */
 					if (vs->isDegenerate() || vt->isDegenerate())
 						continue;

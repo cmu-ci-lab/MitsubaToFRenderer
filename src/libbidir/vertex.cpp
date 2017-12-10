@@ -40,6 +40,9 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		Float &value,
 		ETransportMode mode, bool russianRoulette, Spectrum *throughput) {
 
+	if(pred2->type != mitsuba::PathVertex::ESurfaceInteraction)
+		return false;
+
 	if(mode != EImportance)
 		SLog(EError, "Ellipsoidal intersection called with sensor path");
 
@@ -72,7 +75,7 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		break;
 		case ESurfaceInteraction: {
 
-			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pathLengthTarget); // TODO: remove memory of ellipse
+			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pred1->getShadingNormal(), pred2->getShadingNormal(), pathLengthTarget); // TODO: remove memory of ellipse
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = succ->getIntersection();

@@ -235,7 +235,7 @@ public:
 		if (value == 0)
 			SLog(EWarn, "Matrix: Division by zero!");
 #endif
-		Float recip = 1/value;
+		T recip = 1/value;
 		for (int i=0; i<M; ++i)
 			for (int j=0; j<N; ++j)
 				result.m[i][j] = m[i][j]*recip;
@@ -248,7 +248,7 @@ public:
 		if (value == 0)
 			SLog(EWarn, "Matrix: Division by zero!");
 #endif
-		Float recip = 1/value;
+		T recip = 1/value;
 		for (int i=0; i<M; ++i)
 			for (int j=0; j<N; ++j)
 				m[i][j] *= recip;

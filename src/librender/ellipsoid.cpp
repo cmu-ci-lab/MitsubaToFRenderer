@@ -1,67 +1,117 @@
 #include <mitsuba/render/ellipsoid.h>
+#define Eps 1e-7
+#define almostEqual(a, b) ( ((a-b) < Eps) && ((b-a) < Eps)) // FIXME: check why abs fuction is misbehaving and refactor
+#define epsExclusiveGreater(a, b) (a > (b + Eps))
+#define epsExclusiveLesser(a, b) (a < (b - Eps))
+#define epsInclusiveGreater(a, b) (a > (b - Eps))
+#define epsInclusiveLesser(a, b) (a < (b + Eps))
 
 MTS_NAMESPACE_BEGIN
 
 template <typename PointType, typename LengthType>
-void TEllipsoid<PointType, LengthType>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const
+void TEllipsoid<PointType, LengthType>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const
 {
-    Vector v0 = b - a, v1 = c - a, v2 = p - a;
-    Float d00 = dot(v0, v0);
-    Float d01 = dot(v0, v1);
-    Float d11 = dot(v1, v1);
-    Float d20 = dot(v2, v0);
-    Float d21 = dot(v2, v1);
-    Float denom = d00 * d11 - d01 * d01;
+    TVector3<LengthType> v0 = b - a, v1 = c - a, v2 = p - a;
+    FLOAT d00 = dot(v0, v0);
+    FLOAT d01 = dot(v0, v1);
+    FLOAT d11 = dot(v1, v1);
+    FLOAT d20 = dot(v2, v0);
+    FLOAT d21 = dot(v2, v1);
+    FLOAT denom = d00 * d11 - d01 * d01;
     u = (d11 * d20 - d01 * d21) / denom;
     v = (d00 * d21 - d01 * d20) / denom;
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float thetaMin[], Float thetaMax[], size_t &indices, const Point Corners[], const Float &r) const{
+bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT thetaMin[], FLOAT thetaMax[], size_t &indices, const PointType Corners[], const FLOAT &r) const{
 	int noOfCorners = 3; // This code can be extended trivially to polygons of arbitrary size other than 3
-	Float norm_p[noOfCorners];
+	FLOAT norm_p[noOfCorners];
+	int locations_p[noOfCorners];
+
 	indices = 0;
 
-	Float temp;
+	FLOAT temp;
 	std::vector<IntersectionRecord> intersectionRecord;
 
 	for(int i = 0; i < noOfCorners; i++){
 		norm_p[i] = sqrt( Corners[i].x*Corners[i].x + Corners[i].y*Corners[i].y );
 	}
 
-	/* Determine the intersection first */
+	for(int i = 0; i < noOfCorners; i++){
+	    int checks = 0;
+	    if(almostEqual(norm_p[i], r)){
+	    	locations_p[i] =  0;
+			checks = checks + 1;
+	    }
+
+	    if(epsExclusiveLesser(norm_p[i], r)){
+	    	locations_p[i] = -1;
+			checks = checks + 1;
+	    }
+
+	    if(epsExclusiveGreater(norm_p[i], r)){
+	    	locations_p[i] =  1;
+			checks = checks + 1;
+	    }
+
+	    if(std::isnan(locations_p[i]))
+	        SLog(EError, "Point location in circle-poly intersection is not determined");
+
+	    if(checks != 1)
+	        SLog(EError, "Point location in circle-poly intersection is not clear");
+	}
+
 	for(int i = 0; i < noOfCorners; i++){
 		int j = i + 1;
 		if(j == noOfCorners){
 			j=0;
 		}
+
 		// both points are inside, do nothing
-		if(norm_p[i] < r && norm_p[j] < r)
+		if(locations_p[i] == -1 && locations_p[j] == -1)
 			continue;
 
-		// One of them is inside
-		if(norm_p[i] < r && norm_p[j] > r){
+		// Staring inside, ending outside
+		if(locations_p[i] == -1 && locations_p[j] ==  1){
 			temp = circleLineIntersection(Corners[i], Corners[j], r);
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
-		if(norm_p[i] < r && norm_p[j] == r){
+
+		// Staring inside, ending on the circle
+		if(locations_p[i] == -1 && locations_p[j] ==  0){
 			temp = atan2(Corners[j].y, Corners[j].x);
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
-		if(norm_p[i] > r && norm_p[j] < r){
+
+		// Staring outside, ending inside
+		if(locations_p[i] ==  1 && locations_p[j] == -1){
 			temp = circleLineIntersection(Corners[i], Corners[j], r);
 			intersectionRecord.push_back(IntersectionRecord(temp,false));
 			continue;
 		}
-		if(norm_p[i] == r && norm_p[j] < r){
+
+		// Staring on the circle, ending inside
+		if(locations_p[i] ==  0 && locations_p[j] == -1){
 			temp = atan2(Corners[i].y, Corners[i].x);
 			intersectionRecord.push_back(IntersectionRecord(temp,false));
 			continue;
 		}
-		if(norm_p[i] == r && norm_p[j] > r){
-			Float temp2;
+
+		// Staring and ending on the circle
+		if(locations_p[i] ==  0 && locations_p[j] == 0){
+			temp = atan2(Corners[i].y, Corners[i].x);
+			intersectionRecord.push_back(IntersectionRecord(temp,false));
+
+			temp = atan2(Corners[j].y, Corners[j].x);
+			intersectionRecord.push_back(IntersectionRecord(temp,true));
+			continue;
+		}
+
+		// Complex case - 1: Starting on the circle and ending outside
+		if(locations_p[i] ==  0 && locations_p[j] ==  1){
+			FLOAT temp2;
 			if(specialCircleLineIntersection(Corners[i], Corners[j], r, 2, temp2) == 2){
 				temp = atan2(Corners[i].y, Corners[i].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,false));
@@ -71,21 +121,12 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 				temp = atan2(Corners[i].y, Corners[i].x);
 				intersectionRecord.push_back(IntersectionRecord(temp,true));
 			}
-
-//			if(numberOfCircleLineIntersections(Corners[i], Corners[j], r) == 2){
-//				temp = atan2(Corners[i].y, Corners[i].x);
-//				intersectionRecord.push_back(IntersectionRecord(temp,false));
-//
-//				temp = circleLineIntersection(Corners[i], Corners[j], r);
-//				intersectionRecord.push_back(IntersectionRecord(temp,true));
-//			}else{
-//				temp = atan2(Corners[i].y, Corners[i].x);
-//				intersectionRecord.push_back(IntersectionRecord(temp,true));
-//			}
 			continue;
 		}
-		if(norm_p[i] > r && norm_p[j] == r){
-			Float temp2;
+
+		// Complex case - 2: Starting outside and ending on the circle
+		if(locations_p[i] ==  1 && locations_p[j] ==  0){
+			FLOAT temp2;
 			if(specialCircleLineIntersection(Corners[i], Corners[j], r, 1, temp2) == 2){
 				intersectionRecord.push_back(IntersectionRecord(temp2,false));
 
@@ -98,29 +139,19 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			continue;
 		}
 
-		// both points are on the circle
-		if(norm_p[i] == r && norm_p[j] == r){
-			temp = atan2(Corners[i].y, Corners[i].x);
-			intersectionRecord.push_back(IntersectionRecord(temp,false));
-
-			temp = atan2(Corners[j].y, Corners[j].x);
-			intersectionRecord.push_back(IntersectionRecord(temp,true));
-			continue;
-		}
-
-		// both points are outside, can intersect in zero points or 2 points
-		if(norm_p[i] > r && norm_p[j] > r){
-			Vector2 n(Corners[j].y-Corners[i].y, Corners[i].x-Corners[j].x);
+		// Complex case - 3: both points are outside, can intersect in zero points or 2 points
+		if(locations_p[i] ==  1 && locations_p[j] ==  1){
+			VECTOR2 n(Corners[j].y-Corners[i].y, Corners[i].x-Corners[j].x);
 			n = normalize(n);
-			Float dotP = (n.x*Corners[i].x + n.y*Corners[i].y);
-			Point P_O(dotP*n.x, dotP*n.y, 0.0f);
+			FLOAT dotP = (n.x*Corners[i].x + n.y*Corners[i].y);
+			PointType P_O(dotP*n.x, dotP*n.y, 0.0);
 
 			// If projection is not in the circle, the line-segment is completely outside circle
 			if(P_O.x*P_O.x + P_O.y*P_O.y >= r*r){
 				continue;
 			}
 
-			Float alpha = -1.0f;
+			FLOAT alpha = -1.0;
 	        // Compute where the projection is, with respect to the line joining p[i] and p[j]
 			if (Corners[i].x != Corners[j].x)
 				alpha = (P_O.x-Corners[j].x)/(Corners[i].x-Corners[j].x);
@@ -137,12 +168,13 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 			intersectionRecord.push_back(IntersectionRecord(temp,true));
 			continue;
 		}
+		SLog(EError,"Circle-triangle intersection reached an impossible location. Cannot execute");
 	}
 
 	// wrap angles to [0,2*pi]
-	std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ x.theta = fmod(x.theta, 2*M_PI);
+	std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ x.theta = fmod(x.theta, 2*PI);
 																	if (x.theta < 0)
-																		x.theta += 2*M_PI;
+																		x.theta += 2*PI;
 																	return x; });
 
 	//sort the thetas
@@ -191,15 +223,15 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 				return false;
 
 		/* check that a center of circle is inside the triangle */
-		Vector2 v0(Corners[0].x, Corners[0].y);
-		Vector2 v1(Corners[1].x-Corners[0].x, Corners[1].y-Corners[0].y);
-		Vector2 v2(Corners[2].x-Corners[0].x, Corners[2].y-Corners[0].y);
+		VECTOR2 v0(Corners[0].x, Corners[0].y);
+		VECTOR2 v1(Corners[1].x-Corners[0].x, Corners[1].y-Corners[0].y);
+		VECTOR2 v2(Corners[2].x-Corners[0].x, Corners[2].y-Corners[0].y);
 
-	    Float a = -det(v0, v2)/det(v1, v2);
-	    Float b =  det(v0, v1)/det(v1, v2);
+	    FLOAT a = -det(v0, v2)/det(v1, v2);
+	    FLOAT b =  det(v0, v1)/det(v1, v2);
 		if(a>0 && b>0 && (a+b)<1){
 			thetaMin[0]=0;
-			thetaMax[0]=2*M_PI;
+			thetaMax[0]=2*PI;
 			indices = 1;
 			//Sanitycheck --> All the triangle vertices must be outside the circle
 			if(!(norm_p[0] > r && norm_p[1] > r && norm_p[2] > r)){
@@ -214,7 +246,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 		return false;
 	}
 
-	Vector N  = cross(Corners[1]-Corners[0], Corners[2]-Corners[0]);
+	TVector3<LengthType> N  = cross(Corners[1]-Corners[0], Corners[2]-Corners[0]);
 
 	size_t start = 0;
 	if( intersectionRecord[0].directionOutside ^ (N.z > 0) )
@@ -229,7 +261,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 		thetaMax[indices] = intersectionRecord[j].theta;
 		if(thetaMax[indices] < thetaMin[indices]){
 			thetaMax[indices + 1] = thetaMax[indices];
-			thetaMax[indices] = 2*M_PI;
+			thetaMax[indices] = 2*PI;
 			thetaMin[indices + 1] = 0;
 			indices++;
 		}
@@ -240,7 +272,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 	if(indices > 4)
 		SLog(EError, "Circle triangle intersection has more sets of angles (%d) than max permissive 4\n",indices);
 	for(size_t i= 0;i<indices;i++){
-		if(thetaMin[i] == thetaMax[i] && (thetaMax[i]!=2*M_PI)){
+		if(thetaMin[i] == thetaMax[i] && (thetaMax[i]!=2*PI)){
 			for(size_t j=0;j<indices;j++)
 				std::cout<<"thetas: ("<<thetaMin[j]<<","<<thetaMax[j]<<")\n";
 
@@ -265,43 +297,19 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(Float th
 }
 
 template <typename PointType, typename LengthType>
-int TEllipsoid<PointType, LengthType>::numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const{
-	Float x1 = P1.x;
-	Float y1 = P1.y;
-	Float x2 = P2.x;
-	Float y2 = P2.y;
+FLOAT TEllipsoid<PointType, LengthType>::circleLineIntersection(const PointType &P1, const PointType &P2, const FLOAT &r) const{
+	FLOAT x1 = P1.x;
+	FLOAT y1 = P1.y;
+	FLOAT x2 = P2.x;
+	FLOAT y2 = P2.y;
 
-	Float dx = x1 - x2;
-	Float dy = y1 - y2;
-	Float a  = dx*dx + dy*dy;
-	Float b  = 2*(dx*x2 + dy*y2);
-	Float c  = x2*x2 + y2*y2 - r*r;
+	FLOAT dx = x1 - x2;
+	FLOAT dy = y1 - y2;
+	FLOAT a  = dx*dx + dy*dy;
+	FLOAT b  = 2*(dx*x2 + dy*y2);
+	FLOAT c  = x2*x2 + y2*y2 - r*r;
 
-	Float det = (b*b-4*a*c);
-	Float alpha = (-b+det)/(2*a);
-	int count = 0;
-	if(alpha >= 0 && alpha <= 1)
-		count++;
-	alpha = (-b-det)/(2*a);
-	if(alpha >= 0 && alpha <= 1)
-		count++;
-	return count;
-}
-
-template <typename PointType, typename LengthType>
-Float TEllipsoid<PointType, LengthType>::circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const{
-	double x1 = (double)P1.x;
-	double y1 = (double)P1.y;
-	double x2 = (double)P2.x;
-	double y2 = (double)P2.y;
-
-	double dx = x1 - x2;
-	double dy = y1 - y2;
-	double a  = dx*dx + dy*dy;
-	double b  = 2*(dx*x2 + dy*y2);
-	double c  = x2*x2 + y2*y2 - r*r;
-
-	double det = (b*b-4*a*c);
+	FLOAT det = (b*b-4*a*c);
 	if(det < 0){ // To compensate for Float precision errors
 		SLog(EWarn,"Circle-Line intersection resulted in a possible float precision error or called without an intersection -- Debug values: P1(%lf, %lf, %lf), P2(%lf, %lf, %lf), r(%lf),"
 				"																					  x1(%lf), y1(%lf), x2(%lf), y2(%lf),"
@@ -312,10 +320,10 @@ Float TEllipsoid<PointType, LengthType>::circleLineIntersection(const Point &P1,
 		det = 0;
 	}
 	det = sqrt(det);
-	double alpha;
+	FLOAT alpha;
 
-	double x = 0;
-	double y = std::numeric_limits<Float>::min();
+	FLOAT x = 0;
+	FLOAT y = std::numeric_limits<FLOAT>::min();
 
 	if(b >= 0){
 		alpha = (-b-det)/(2*a);
@@ -357,21 +365,21 @@ Float TEllipsoid<PointType, LengthType>::circleLineIntersection(const Point &P1,
 		}
 	}
 
-	return (Float)atan2(y, x);
+	return (FLOAT)atan2(y, x);
 }
 
 template <typename PointType, typename LengthType>
-int TEllipsoid<PointType, LengthType>::specialCircleLineIntersection(const Point &P1, const Point &P2, const Float &r, const int &specialCase, Float &angle) const{
-	double x1 = (double)P1.x;
-	double y1 = (double)P1.y;
-	double x2 = (double)P2.x;
-	double y2 = (double)P2.y;
+int TEllipsoid<PointType, LengthType>::specialCircleLineIntersection(const PointType &P1, const PointType &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const{
+	FLOAT x1 = (FLOAT)P1.x;
+	FLOAT y1 = (FLOAT)P1.y;
+	FLOAT x2 = (FLOAT)P2.x;
+	FLOAT y2 = (FLOAT)P2.y;
 
-	double dx;
-	double dy;
-	double a;
-	double b;
-	double alpha;
+	FLOAT dx;
+	FLOAT dy;
+	FLOAT a;
+	FLOAT b;
+	FLOAT alpha;
 
 	int noOfSols = 1;
 	if(specialCase == 1){
@@ -401,8 +409,8 @@ int TEllipsoid<PointType, LengthType>::specialCircleLineIntersection(const Point
 
 
 template <typename PointType, typename LengthType>
-Float TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const{
-	Float arcLength = 0;
+FLOAT TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const{
+	FLOAT arcLength = 0;
 	for(size_t i = 0; i < indices; i++){
 		arcLength += boost::math::ellint_2(k, thetaMax[i]) - boost::math::ellint_2(k, thetaMin[i]);
 	}
@@ -412,24 +420,31 @@ Float TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const Float k, con
 }
 
 template <typename PointType, typename LengthType>
-Float TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const Float k, const Float thetaMin[], const Float thetaMax[], const size_t &indices, ref<Sampler> sampler) const{
-	Float cumsum[4];
+FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const{
+	FLOAT cumsum[4];
 	cumsum[0] = thetaMax[0] - thetaMin[0];
 
-	for(size_t i=2; i < indices; i++){
+	for(size_t i=1; i < indices; i++){
 		cumsum[i] = cumsum[i - 1] + (thetaMax[i] - thetaMin[i]);
 	}
 
 	while(1){
-		Float theta_s = cumsum[indices-1] * sampler->nextFloat(), theta;
+		FLOAT rand = sampler->nextFloat();
+		if(rand < 0 || rand > 1)
+			SLog(EError, "Sampler is generating wrong rand");
+		FLOAT theta_s = cumsum[indices-1] * rand, theta = NAN;
 		if(theta_s < cumsum[0])
 			theta = theta_s + thetaMin[0];
-		for(size_t i = 2;i < indices; i++){
-			if(theta_s < cumsum[i]){
-				theta = theta_s -cumsum[i-1] + thetaMin[i];
+		else
+			for(size_t i = 1;i < indices; i++){
+				if(theta_s < cumsum[i]){
+					theta = theta_s -cumsum[i-1] + thetaMin[i];
+					break;
+				}
 			}
-		}
-		Float r = sampler->nextFloat();
+		if(std::isnan(theta))
+			SLog(EError,"theta not calculated in elliptic sampling");
+		FLOAT r = sampler->nextFloat();
 		if(r < sqrt(1 - pow(k*cos(theta),2))){
 			return theta;
 		}
@@ -437,85 +452,107 @@ Float TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const Float k, co
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointType &triA, const PointType &triB, const PointType &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
-	//Compute the center of the ellipse (resulting from ellipsoid-plane intersection)
-	Point SphereA;transformToSphere(triA, SphereA);
-	Point SphereB;transformToSphere(triB, SphereB);
-	Point SphereC;transformToSphere(triC, SphereC);
-	Point Origin(0.0f, 0.0f, 0.0f);
+bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const{
+	VECTOR f1_d_normal(this->f1_normal);
+	VECTOR f2_d_normal(this->f2_normal);
 
-	Vector b = SphereC-SphereA, c = SphereB-SphereA, N = cross(c, b);
+	//FIXME: verify how normals are stored in Mitsuba.
+	if(epsInclusiveGreater(dot(f1_d_normal,this->f1-a), 0) && epsInclusiveGreater(dot(f1_d_normal,this->f1-b), 0) && epsInclusiveGreater(dot(f1_d_normal,this->f1-c), 0))
+		return true;
+	if(epsInclusiveGreater(dot(f2_d_normal,this->f2-a), 0) && epsInclusiveGreater(dot(f2_d_normal,this->f2-b), 0) && epsInclusiveGreater(dot(f2_d_normal,this->f2-c), 0))
+		return true;
+	return false;
+}
+
+
+template <typename PointType, typename LengthType>
+bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &temp_triA, const Point &temp_triB, const Point &temp_triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
+
+	PointType triA(temp_triA.x, temp_triA.y, temp_triA.z);
+	PointType triB(temp_triB.x, temp_triB.y, temp_triB.z);
+	PointType triC(temp_triC.x, temp_triC.y, temp_triC.z);
+
+	if(earlyTriangleReject(triA, triB, triC))
+		return false;
+
+	//Compute the center of the ellipse (resulting from ellipsoid-plane intersection)
+	PointType SphereA;transformToSphere(triA, SphereA);
+	PointType SphereB;transformToSphere(triB, SphereB);
+	PointType SphereC;transformToSphere(triC, SphereC);
+	PointType Origin(0.0, 0.0, 0.0);
+
+	TVector3<LengthType> b = SphereC-SphereA, c = SphereB-SphereA, N = cross(c, b);
 	N = normalize(N);
 
-	Vector Center = dot(N,SphereA-Origin)*N;
+	TVector3<LengthType> Center = dot(N,SphereA-Origin)*N;
 
-	Vector O(Center[0]*this->a, Center[1]*this->b, Center[2]*this->b); // Note that O is position vector of the center of the ellipse
+	TVector3<LengthType> O(Center[0]*this->a, Center[1]*this->b, Center[2]*this->b); // Note that O is position vector of the center of the ellipse
 
-	Float d = Center.lengthSquared();
+	FLOAT d = Center.lengthSquared();
 
 	if(d > 1){ // ellipsoid does not intersect the plane
 		return false;
 	}
 
 	//Compute the angle of the ellipse with T
-	Point EllipsoidA;transformToEllipsoid(triA, EllipsoidA);
-	Point EllipsoidB;transformToEllipsoid(triB, EllipsoidB);
-	Point EllipsoidC;transformToEllipsoid(triC, EllipsoidC);
+	PointType EllipsoidA;transformToEllipsoid(triA, EllipsoidA);
+	PointType EllipsoidB;transformToEllipsoid(triB, EllipsoidB);
+	PointType EllipsoidC;transformToEllipsoid(triC, EllipsoidC);
 
-	Vector T = EllipsoidB - EllipsoidA;T = normalize(T);
+	TVector3<LengthType> T = EllipsoidB - EllipsoidA;T = normalize(T);
 	N = cross(T, EllipsoidC-EllipsoidA); N = normalize(N);
-	Vector U = cross(N, T);
+	TVector3<LengthType> U = cross(N, T);
 
-	Float TTD = weightedIP(T, T);
-	Float TUD = weightedIP(T, U);
-	Float UUD = weightedIP(U, U);
-	Float OOD = weightedIP(O, O);
+	FLOAT TTD = weightedIP(T, T);
+	FLOAT TUD = weightedIP(T, U);
+	FLOAT UUD = weightedIP(U, U);
+	FLOAT OOD = weightedIP(O, O);
 
-	Float theta = 0.5 * atan2(2*TUD, UUD-TTD);
+	FLOAT theta = 0.5 * atan2(2*TUD, UUD-TTD);
 	if(std::isnan(theta) || std::isinf(theta)){
 		SLog(EError,"Theta is not valid; TUD: %f, UUD: %f, TTD: %f; T: (%f, %f, %f); a:%f, b:%f\n", TUD, UUD, TTD, T[0], T[1], T[2], a, b);
 	}
 
-	Vector NewX = T*cos(theta) - U*sin(theta);
-	Vector NewY = T*sin(theta) + U*cos(theta);
+	TVector3<LengthType> NewX = T*cos(theta) - U*sin(theta);
+	TVector3<LengthType> NewY = T*sin(theta) + U*cos(theta);
 
 	if(std::isnan(NewX[0]) || std::isnan(NewX[1]) || std::isnan(NewX[2]) || std::isinf(NewX[0]) || std::isinf(NewX[1]) || std::isinf(NewX[2]) ||
 		std::isnan(NewY[0]) || std::isnan(NewY[1]) || std::isnan(NewY[2]) || std::isinf(NewY[0]) || std::isinf(NewY[1]) || std::isinf(NewY[2]))
 		SLog(EError,"One of the Ellipse axis is not valid:");
 
 	// Compute the transform to shift axis of ellipsoid to ellipse
-	Transform invEllipsoid2Ellipse(Matrix4x4({NewX[0], NewY[0], N[0], 0.0f,
-												 NewX[1], NewY[1], N[1], 0.0f,
-												 NewX[2], NewY[2], N[2], 0.0f,
-												 0.0f, 0.0f, 0.0f, 1.0f
+	Transform_FLOAT invEllipsoid2Ellipse(Matrix4x4_FLOAT({NewX[0], NewY[0], N[0], 0.0,
+												 NewX[1], NewY[1], N[1], 0.0,
+												 NewX[2], NewY[2], N[2], 0.0,
+												 0.0, 0.0, 0.0, 1.0
 												}));
-	Transform Ellipsoid2Ellipse = invEllipsoid2Ellipse.inverse()*Transform::translate(-O);
+	Transform_FLOAT Ellipsoid2Ellipse = invEllipsoid2Ellipse.inverse()*Transform_FLOAT::translate(-O);
 	invEllipsoid2Ellipse = Ellipsoid2Ellipse.inverse();
 
 	// Compute major and minor axis
-	Float det 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
-	Float m1 	= sqrt(2 * (1-OOD)/(TTD+UUD-det)); // Major axis
-	Float m2 	= sqrt(2 * (1-OOD)/(TTD+UUD+det)); // Minor axis
-	Float k  	= sqrt(1-m2*m2/(m1*m1)); // eccentricity
+	FLOAT det 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
+	FLOAT m1 	= sqrt(2 * (1-OOD)/(TTD+UUD-det)); // Major axis
+	FLOAT m2 	= sqrt(2 * (1-OOD)/(TTD+UUD+det)); // Minor axis
+	FLOAT k  	= sqrt(1-m2*m2/(m1*m1)); // eccentricity
 
 	// Compute transform to scale ellipse to circle
 
-	Transform Ellipse2Circle = Transform::scale(Vector(1, m1/m2, 1));
-	Transform Ellipsoid2Circle = Ellipse2Circle*Ellipsoid2Ellipse;
+	Transform_FLOAT Ellipse2Circle = Transform_FLOAT::scale(TVector3<LengthType>(1, m1/m2, 1));
+	Transform_FLOAT Ellipsoid2Circle = Ellipse2Circle*Ellipsoid2Ellipse;
 
-	Point Corners[3];
+	PointType Corners[3];
 	Corners[0] = Ellipsoid2Circle(EllipsoidA);
 	Corners[1] = Ellipsoid2Circle(EllipsoidB);
 	Corners[2] = Ellipsoid2Circle(EllipsoidC);
 
 	// Circle Triangle Intersection to get all the angles
-	Float thetaMin[4];
-	Float thetaMax[4];
+	FLOAT thetaMin[4];
+	FLOAT thetaMax[4];
 	size_t indices;
 	value = 0;
 
 	/*Testing the code with Matlab equivalent on corner cases */
-//	Point TestCorners[3];
+//	PointType TestCorners[3];
 //	TestCorners[0].x = -174.649; TestCorners[0].y = 39.8256; TestCorners[0].z = 0;
 //	TestCorners[1].x = -49.9041; TestCorners[1].y = -174.457; TestCorners[1].z = 0;
 //	TestCorners[2].x = 106.425; TestCorners[2].y = -3.46693; TestCorners[2].z = 0;
@@ -526,8 +563,8 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 		// Sample an angle using elliptic sampling algorithm
 		if(indices == 0)
 			SLog(EError, "Circle polygon intersection returned true without any intersection");
-		Float angle = ellipticCurveSampling(k, thetaMin, thetaMax, indices, sampler);
-		Point Projection(m1*cos(angle), m2*sin(angle), 0.0f), Original;
+		FLOAT angle = ellipticCurveSampling(k, thetaMin, thetaMax, indices, sampler);
+		PointType Projection(m1*cos(angle), m2*sin(angle), 0.0), Original;
 		Projection = invEllipsoid2Ellipse(Projection);
 		transformFromEllipsoid(Projection, Original);
 		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices)/m1;
@@ -540,7 +577,9 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 		if(v < 0 && v > (1+1e-3)){v = 1;}
 
 		if(u < 0 || u > 1 || v < 0 || v > 1){
-			cout<<"triA:("<<triA.x<<","<<triA.y<<","<<triA.z<<","<<"), "<<"triA:("<<triB.x<<","<<triB.y<<","<<triB.z<<","<<"), "<<"triA:("<<triC.x<<","<<triC.y<<","<<triC.z<<","<<");"<<"Point:("<<Original.x<<","<<Original.y<<","<<Original.z<<","<<");";
+			cout<<"angle Found:"<<angle;
+//			cout<<"ellipse: f1("<<this->f1.x<<","<<this->f1.y<<","<<this->f1.z<<");f2("<<this->f2.x<<","<<this->f2.y<<","<<this->f2.z<<")\n";
+//			cout<<"triA:("<<triA.x<<","<<triA.y<<","<<triA.z<<","<<"), "<<"triA:("<<triB.x<<","<<triB.y<<","<<triB.z<<","<<"), "<<"triA:("<<triC.x<<","<<triC.y<<","<<triC.z<<","<<");"<<"PointType:("<<Original.x<<","<<Original.y<<","<<Original.z<<","<<");";
 			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting; u:%f, v:%f", u, v);
 			return false;
 		}
@@ -556,7 +595,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 //
 //	T3D2Dinv = T3D2D.inverse();
 //
-//	Point Corners[3];
+//	PointType Corners[3];
 //
 //	Corners[0] = T3D2D(SphereA);
 //	Corners[1] = T3D2D(SphereB);
@@ -564,7 +603,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 //
 //	Float angle = 0.0f;
 //	if(circlePolygonIntersection(Corners, R, sampler, angle, value)){
-//		Point Projection(R*cos(angle), R*sin(angle), 0.0f), Original;
+//		PointType Projection(R*cos(angle), R*sin(angle), 0.0f), Original;
 //		Projection = T3D2Dinv(Projection);
 //		e.transformFromSphere(Projection, Original);
 //		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
@@ -576,21 +615,58 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const PointTy
 	return false;
 }
 
-template void TEllipsoid<Point3f, float>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
+//template bool TEllipsoid<Point, FLOAT>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
+//
+//template void TEllipsoid<Point, FLOAT>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
+//
+//template bool TEllipsoid<Point, FLOAT>::circlePolygonIntersectionAngles(FLOAT thetaMin[], FLOAT thetaMax[], size_t &indices, const Point Corners[], const FLOAT &r) const;
+//
+//template FLOAT TEllipsoid<Point, FLOAT>::circleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r) const;
+//
+//template int TEllipsoid<Point, FLOAT>::specialCircleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const;
+//
+//template FLOAT TEllipsoid<Point, FLOAT>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const;
+//
+//template FLOAT TEllipsoid<Point, FLOAT>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
+//
+//template bool TEllipsoid<Point, FLOAT>::ellipsoidIntersectTriangle(const PointType &triA, const PointType &triB, const PointType &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
+//
+//template struct TEllipsoid<Point, FLOAT>;
 
-template bool TEllipsoid<Point3f, float>::circlePolygonIntersectionAngles(Float thetaMin[], Float thetaMax[], size_t &indices, const Point Corners[], const Float &r) const;
+//template bool TEllipsoid<Point, Float>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
+//
+//template void TEllipsoid<Point, Float>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
+//
+//template bool TEllipsoid<Point, Float>::circlePolygonIntersectionAngles(FLOAT thetaMin[], FLOAT thetaMax[], size_t &indices, const Point Corners[], const FLOAT &r) const;
+//
+//template FLOAT TEllipsoid<Point, Float>::circleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r) const;
+//
+//template int TEllipsoid<Point, Float>::specialCircleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const;
+//
+//template FLOAT TEllipsoid<Point, Float>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const;
+//
+//template FLOAT TEllipsoid<Point, Float>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
+//
+//template bool TEllipsoid<Point, Float>::ellipsoidIntersectTriangle(const Point &triA, const Point &triB, const Point &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
+//
+//template struct TEllipsoid<Point, Float>;
 
-template int TEllipsoid<Point3f, float>::numberOfCircleLineIntersections(const Point &P1, const Point &P2, const Float &r) const;
+template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const;
 
-template Float TEllipsoid<Point3f, float>::circleLineIntersection(const Point &P1, const Point &P2, const Float &r) const;
+template void TEllipsoid<Point3d, double>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
 
-template int TEllipsoid<Point3f, float>::specialCircleLineIntersection(const Point &P1, const Point &P2, const Float &r, const int &specialCase, Float &angle) const;
+template bool TEllipsoid<Point3d, double>::circlePolygonIntersectionAngles(FLOAT thetaMin[], FLOAT thetaMax[], size_t &indices, const PointType Corners[], const FLOAT &r) const;
 
-template Float TEllipsoid<Point3f, float>::ellipticSampleWeight(const Float k, const Float thetaMin[], const Float thetaMax[],const size_t &indices) const;
+template FLOAT TEllipsoid<Point3d, double>::circleLineIntersection(const PointType &P1, const PointType &P2, const FLOAT &r) const;
 
-template Float TEllipsoid<Point3f, float>::ellipticCurveSampling(const Float k, const Float thetaMin[], const Float thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
+template int TEllipsoid<Point3d, double>::specialCircleLineIntersection(const PointType &P1, const PointType &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const;
 
-template struct TEllipsoid<Point3f, float>;
+template FLOAT TEllipsoid<Point3d, double>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const;
 
+template FLOAT TEllipsoid<Point3d, double>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
+
+template bool TEllipsoid<Point3d, double>::ellipsoidIntersectTriangle(const Point &triA, const Point &triB, const Point &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
+
+template struct TEllipsoid<Point3d, double>;
 
 MTS_NAMESPACE_END
