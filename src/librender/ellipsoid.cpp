@@ -1,4 +1,10 @@
 #include <mitsuba/render/ellipsoid.h>
+using boost::math::policies::policy;
+using boost::math::policies::digits10;
+
+typedef policy<digits10<5> > my_pol_5;
+typedef policy<digits10<10> > my_pol_10;
+
 #define Eps 1e-7
 #define almostEqual(a, b) ( ((a-b) < Eps) && ((b-a) < Eps)) // FIXME: check why abs fuction is misbehaving and refactor
 #define epsExclusiveGreater(a, b) (a > (b + Eps))
@@ -409,11 +415,16 @@ int TEllipsoid<PointType, LengthType>::specialCircleLineIntersection(const Point
 
 
 template <typename PointType, typename LengthType>
-FLOAT TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const{
+FLOAT TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices, const FLOAT &m1) const{
 	FLOAT arcLength = 0;
 	for(size_t i = 0; i < indices; i++){
-		arcLength += boost::math::ellint_2(k, thetaMax[i]) - boost::math::ellint_2(k, thetaMin[i]);
+		FLOAT max = boost::math::ellint_2(k, thetaMax[i], my_pol_10());
+		FLOAT min = boost::math::ellint_2(k, thetaMin[i], my_pol_10());
+		if(max < min)
+			SLog(EError, "Elliptic integrals are not computed accurately");
+		arcLength += max - min;
 	}
+	arcLength = arcLength * m1;
 	if(arcLength == 0)
 		SLog(EError, "Arc length of the ellipse is zero; Total indices: %d, k: %f, first angle range: (%f, %f)", indices, k, thetaMin[0], thetaMax[0]);
 	return (1/arcLength);
@@ -567,7 +578,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		PointType Projection(m1*cos(angle), m2*sin(angle), 0.0), Original;
 		Projection = invEllipsoid2Ellipse(Projection);
 		transformFromEllipsoid(Projection, Original);
-		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices)/m1;
+		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices, m1);
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
 		Barycentric(Original, triA, triB, triC, u, v);
 		// Adjust corner misses. Note that this biases the measurements
@@ -661,7 +672,7 @@ template FLOAT TEllipsoid<Point3d, double>::circleLineIntersection(const PointTy
 
 template int TEllipsoid<Point3d, double>::specialCircleLineIntersection(const PointType &P1, const PointType &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const;
 
-template FLOAT TEllipsoid<Point3d, double>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const;
+template FLOAT TEllipsoid<Point3d, double>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices, const FLOAT &m1) const;
 
 template FLOAT TEllipsoid<Point3d, double>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
 
