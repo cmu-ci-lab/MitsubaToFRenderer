@@ -1,4 +1,4 @@
-function Transient = PhotonRenderer(Time_min, Time_max, Time_res, packets, N)
+function Transient = PhotonEllipticRenderer(Time_min, Time_max, Time_res, packets, N)
 % Time_min = 3;
 % Time_max = 6;
 % Time_res = 0.01;
@@ -27,7 +27,7 @@ for i=1:packets
 
     ray_length = z_plane./direction(:,3);
 
-    x_plane = ray_length.*direction(:,1);
+    x_plane = ray_length.*direction(:,1) + 1;
     y_plane = ray_length.*direction(:,2);
 
     indices = (x_plane < x_min_plane) | (x_plane > x_max_plane) | (y_plane < y_min_plane) | (y_plane > y_max_plane);
@@ -35,8 +35,8 @@ for i=1:packets
     x_plane(indices) = [];
     y_plane(indices) = [];
 
-    Intensities =2*pi*cos(atan((sqrt(x_plane.^2+y_plane.^2))./z_plane))./(x_plane.^2+y_plane.^2+z_plane.^2);
-    Times = 2*sqrt(x_plane.^2+y_plane.^2+z_plane.^2);
+    Intensities =2*pi*cos(atan(sqrt(x_plane.^2+y_plane.^2)./z_plane))./(x_plane.^2+y_plane.^2+z_plane.^2);
+    Times = sqrt(x_plane.^2+y_plane.^2+z_plane.^2) + sqrt((x_plane-1).^2+y_plane.^2+z_plane.^2);
     Times_indices = ceil((Times - Time_min)/Time_res);
     u = unique(Times_indices);
     for j = 1:length(u)
