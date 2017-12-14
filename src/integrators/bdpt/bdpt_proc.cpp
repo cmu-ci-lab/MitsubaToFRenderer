@@ -539,7 +539,7 @@ public:
 				if (t>=2 && (currentDecompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
 					value.toSRGB(temp[0],temp[1],temp[2]);
 					if(currentDecompositionType == Film::ETransientEllipse)
-						miWeight /= EllipticPathWeight;
+						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)/EllipticPathWeight);
 					if(std::isinf(miWeight))
 						SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
 					if(std::isinf(temp[0]))

@@ -194,17 +194,12 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 	if(size == 2)
 		size = 1; // For size=2, checking the last value of theta is redundancy
 
-	bool debug_entered_for_deletionTheta = false;
-	bool debug_entered_for_deletiondirectionOutside = false;
-
 	for(size_t i = 0; i < size; i++){
 		size_t j = (i+1)%intersectionRecord.size();
 		if(intersectionRecord[i].theta == intersectionRecord[j].theta){
-			debug_entered_for_deletionTheta = true;
 			if(intersectionRecord[i].directionOutside == intersectionRecord[j].directionOutside)
 				deleteIndices.push_back(i);
 			else{
-				debug_entered_for_deletiondirectionOutside = true;
 				deleteIndices.push_back(i);
 				if(j != 0) // To maintain deleteIndices as ascending array
 					deleteIndices.push_back(j);
@@ -244,7 +239,6 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 				for(size_t j = 0; j < 3; j++)
 					std::cout<<"Corners["<<j<<"];"<<Corners[j].x<<","<<Corners[j].y<<","<<Corners[j].z<<std::endl;
 				std::cout<<"radius:"<<r<<std::endl;
-				std::cout<<"norms:"<<norm_p[0]<<","<<norm_p[1]<<","<<norm_p[2]<<std::endl;
 				SLog(EError, "Circle-Triangle intersection is returning illegally that the circle is completely inside triangle. intersectionRecord size: %d; deleteIndices size: %d\n", intersectionRecord.size(), deleteIndices.size());
 			}
 			return true;
@@ -279,23 +273,6 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 		SLog(EError, "Circle triangle intersection has more sets of angles (%d) than max permissive 4\n",indices);
 	for(size_t i= 0;i<indices;i++){
 		if(thetaMin[i] == thetaMax[i] && (thetaMax[i]!=2*PI)){
-			for(size_t j=0;j<indices;j++)
-				std::cout<<"thetas: ("<<thetaMin[j]<<","<<thetaMax[j]<<")\n";
-
-			std::for_each(intersectionRecord.begin(), intersectionRecord.end(), [](IntersectionRecord &x){ std::cout<<"Intersection: ("<<x.theta<<","<<x.directionOutside<<")\n" ;});
-			std::cout<<"Intersection record size:"<<intersectionRecord.size();
-
-			for(size_t j=0;j<3;j++)
-				std::cout<<"Corners["<<j<<"]:("<<Corners[j].x<<","<<Corners[j].y<<","<<Corners[j].z<<")\n";
-			std::cout<<"radius:"<<r<<std::endl;
-
-			std::cout<<"Debug flags -- theta:"<<debug_entered_for_deletionTheta<<";direction"<<debug_entered_for_deletiondirectionOutside<<"\n";
-
-			std::cout<<"Delete Indices("<<deleteIndices.size()<<"):";
-			for(size_t j=0;j<deleteIndices.size();j++)
-				std::cout<<deleteIndices[j]<<" ";
-			std::cout<<std::endl;
-
 			SLog(EError, "Circle triangle intersection has duplicates that are not eliminated properly \n");
 		}
 	}
@@ -428,6 +405,32 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticSampleWeight(const FLOAT k, con
 	if(arcLength == 0)
 		SLog(EError, "Arc length of the ellipse is zero; Total indices: %d, k: %f, first angle range: (%f, %f)", indices, k, thetaMin[0], thetaMax[0]);
 	return (1/arcLength);
+}
+
+template <typename PointType, typename LengthType>
+FLOAT TEllipsoid<PointType, LengthType>::uniformAngleSampling(const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler, FLOAT &thetaRange) const{
+	FLOAT cumsum[4];
+	cumsum[0] = thetaMax[0] - thetaMin[0];
+
+	for(size_t i=1; i < indices; i++){
+		cumsum[i] = cumsum[i - 1] + (thetaMax[i] - thetaMin[i]);
+	}
+
+	thetaRange = cumsum[indices-1];
+	FLOAT theta_s = thetaRange * sampler->nextFloat(), theta;
+
+	if(theta_s < cumsum[0])
+		theta = theta_s + thetaMin[0];
+	else
+		for(size_t i = 1;i < indices; i++){
+			if(theta_s < cumsum[i]){
+				theta = theta_s -cumsum[i-1] + thetaMin[i];
+				break;
+			}
+		}
+	if(std::isnan(theta))
+		SLog(EError,"theta not calculated in uniformAngleSampling");
+	return theta;
 }
 
 template <typename PointType, typename LengthType>
@@ -571,24 +574,35 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 //	circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, TestCorners, Test_m1);
 
 	if(circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, Corners, m1)){
-		// Sample an angle using elliptic sampling algorithm
+		// Sample an angle
 		if(indices == 0)
 			SLog(EError, "Circle polygon intersection returned true without any intersection");
-		FLOAT angle = ellipticCurveSampling(k, thetaMin, thetaMax, indices, sampler);
+		FLOAT thetaRange;
+		FLOAT angle = uniformAngleSampling(thetaMin, thetaMax, indices, sampler, thetaRange);
 		PointType Projection(m1*cos(angle), m2*sin(angle), 0.0), Original;
 		Projection = invEllipsoid2Ellipse(Projection);
 		transformFromEllipsoid(Projection, Original);
-		value = ellipticSampleWeight(k, thetaMin, thetaMax, indices, m1);
-		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
+
+		FLOAT TTE = weightedIPd(T, T);
+		FLOAT TUE = weightedIPd(T, U);
+		FLOAT UUE = weightedIPd(U, U);
+		FLOAT OOE = weightedIPd(O, O);
+		FLOAT DR  = (TTD+UUD-det);
+		FLOAT dDR = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+
+		value = (-DR*OOE-(1-OOD)*dDR)*sqrt(1-k*k)*thetaRange;
+		value = 1/value; //As value is pdf
+
+		//Compute the Barycentric co-ordinates. Return that and save it in the cache to be compatible with mitsuba
 		Barycentric(Original, triA, triB, triC, u, v);
-		// Adjust corner misses. Note that this biases the measurements
-		if(u < 0 && u > -1e-3){u = 0;}
-		if(v < 0 && v > -1e-3){v = 0;}
-		if(u > 1 && u < (1+1e-3)){u = 1;}
-		if(v < 0 && v > (1+1e-3)){v = 1;}
+		// Adjust corner misses. Note that this biases the measurements slightly.
+		if(u < 0 && u > -Eps){u = 0;}
+		if(v < 0 && v > -Eps){v = 0;}
+		if(u > 1 && u < (1+Eps)){u = 1;}
+		if(v < 0 && v > (1+Eps)){v = 1;}
 
 		if(u < 0 || u > 1 || v < 0 || v > 1){
-			cout<<"angle Found:"<<angle;
+//			cout<<"angle Found:"<<angle;
 //			cout<<"ellipse: f1("<<this->f1.x<<","<<this->f1.y<<","<<this->f1.z<<");f2("<<this->f2.x<<","<<this->f2.y<<","<<this->f2.z<<")\n";
 //			cout<<"triA:("<<triA.x<<","<<triA.y<<","<<triA.z<<","<<"), "<<"triA:("<<triB.x<<","<<triB.y<<","<<triB.z<<","<<"), "<<"triA:("<<triC.x<<","<<triC.y<<","<<triC.z<<","<<");"<<"PointType:("<<Original.x<<","<<Original.y<<","<<Original.z<<","<<");";
 			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting; u:%f, v:%f", u, v);

@@ -104,9 +104,10 @@ P = inv(Tranform3D2Ellipsoid)*inv(TranformEllipsoid2Ellipse)*ellipticPoints;
 TTE = WeightedIP(T, T, -(1/a^3), -(a/b^4), -(a/b^4));
 TUE = WeightedIP(T, U, -(1/a^3), -(a/b^4), -(a/b^4));
 UUE = WeightedIP(U, U, -(1/a^3), -(a/b^4), -(a/b^4));
+OOE = WeightedIP(O, O, -(1/a^3), -(a/b^4), -(a/b^4));
 DR = (TTD+UUD-det);
 dDR = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
 
-measure = -(2*(1-OOD)*dDR*sqrt(1-k*k)/(DR*DR))*theta_range;
+measure = (-DR*OOE-(1-OOD)*dDR)/(DR*DR)*sqrt(1-k*k)*theta_range;
 
 intersects = true;

@@ -646,6 +646,11 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		return (A[0]*B[0]/(a*a) + A[1]*B[1]/(b*b) + A[2]*B[2]/(b*b));
 	}
 
+	/* Compute Weighted Inner Product on the Ellipsoid differential */
+	FLOAT weightedIPd(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
+		return -(A[0]*B[0]/(a*a*a) + A[1]*B[1]*a/(b*b*b*b) + A[2]*B[2]*a/(b*b*b*b));
+	}
+
 	/* Early rejection of the triangle if the triangle is not in the */
 	bool earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const;
 
@@ -661,6 +666,9 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	FLOAT ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices, const FLOAT &m1) const;
 
 	FLOAT ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
+
+	FLOAT uniformAngleSampling(const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler, FLOAT &thetaRange) const;
+
 
 	//	inline bool isInside(float x, float y, float z) const{
 	//		Point P(x, y, z);
