@@ -10,7 +10,7 @@ C = (p1 + p2)/2;
 b = sqrt(a^2-norm(C-p1)^2);
 
 if(a^2<norm(C-p1)^2)
-    disp('impossible ellipse');
+%     disp('impossible ellipse');
     return;
 end
 
@@ -106,7 +106,11 @@ TUE = WeightedIP(T, U, -(1/a^3), -(a/b^4), -(a/b^4));
 UUE = WeightedIP(U, U, -(1/a^3), -(a/b^4), -(a/b^4));
 OOE = WeightedIP(O, O, -(1/a^3), -(a/b^4), -(a/b^4));
 DR = (TTD+UUD-det);
-dDR = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+if(det < 1e-7)
+    dDR = TTE + UUE;
+else
+    dDR = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+end
 
 measure = (-DR*OOE-(1-OOD)*dDR)/(DR*DR)*sqrt(1-k*k)*theta_range;
 

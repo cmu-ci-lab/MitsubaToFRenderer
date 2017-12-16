@@ -428,7 +428,7 @@ FLOAT TEllipsoid<PointType, LengthType>::uniformAngleSampling(const FLOAT thetaM
 				break;
 			}
 		}
-	if(std::isnan(theta))
+	if(std::isnan(theta) || theta < 0 || theta > 2*PI)
 		SLog(EError,"theta not calculated in uniformAngleSampling");
 	return theta;
 }
@@ -588,7 +588,11 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		FLOAT UUE = weightedIPd(U, U);
 		FLOAT OOE = weightedIPd(O, O);
 		FLOAT DR  = (TTD+UUD-det);
-		FLOAT dDR = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+		FLOAT dDR;
+		if(det < Eps)
+			dDR= TTE + UUE;
+		else
+			dDR= TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
 
 		value = (DR*DR)/((-DR*OOE-(1-OOD)*dDR)*sqrt(1-k*k)*thetaRange);
 

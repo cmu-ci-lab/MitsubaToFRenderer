@@ -2,29 +2,53 @@ clc, clear, close all
 
 addpath('../EllipsoidPlaneIntersection');
 
-%% Light source at (1, 0, 0) and camera at (0, 0, 0)
 
-Time_min = 2;
-Time_max = 6;
-Time_res =1e-2;
+sourceIntensity = 1e7;
 
-Time = Time_min:Time_res:Time_max;
+
+% Time_min = 0;
+% Time_max = 1000;
+% Time_res = 20;
+bias = 2*(500-340.79998779296875);
+Time_min = 560 - bias;
+Time_max = 581 - bias;
+Time_res = 20;
+
+Time = (Time_min:Time_res:Time_max);
+
+
+x_min_plane =  0;
+x_max_plane =  200;
+y_min_plane =  0;
+y_max_plane =  200;
+z_plane = -440.79998779296875;
+
 
 packets = 1;
-N = 1e6; % Total rays = packets*N;
+N = 4096*2^4; % Total rays = packets*N;
+
+
+p1 = [-4.9999923706054688 -5                 -340.79998779296875];
+p2 = [-1.2687225341796875 -0.883087158203125 -340.79998779296875];
+
+% sourceIntensity = sourceIntensity/(p1(3)^2);
 
 tic
-% PR = PhotonEllipticRenderer(Time_min, Time_max, Time_res, packets, N);
-SR = SurfaceEllipticRenderer(Time_min, Time_max, Time_res, packets, N);
-% CR = CircleRenderer(Time_min, Time_max, Time_res, packets, N);
-ERT= EllipticRenderer_timeRandomized(Time_min, Time_max, Time_res, packets, N);
-% CRR= CircleRenderer_radiusRandomized(Time_min, Time_max, Time_res, packets, N);
+PR = PhotonEllipticRenderer(x_min_plane, x_max_plane, y_min_plane, y_max_plane, z_plane, p1, p2, Time_min, Time_max, Time_res, packets, N);
+SR = SurfaceEllipticRenderer(x_min_plane, x_max_plane, y_min_plane, y_max_plane, z_plane, p1, p2, Time_min, Time_max, Time_res, packets, N);
+ERT= EllipticRenderer_timeRandomized(x_min_plane, x_max_plane, y_min_plane, y_max_plane, z_plane, p1, p2, Time_min, Time_max, Time_res, packets, N);
 
-% figure, plot(Time, PR), title('Photon Renderer');
+PR  = sourceIntensity *PR;
+SR  = sourceIntensity *SR;
+ERT = sourceIntensity *ERT;
+
+
+figure, plot(Time, PR), title('Photon Renderer');
 figure, plot(Time, SR), title('Surface Renderer');
 figure, plot(Time, ERT), title('Elliptic Renderer');
 
-% figure, plot(PR./SR), title('PR/SR');
-figure, plot(ERT./SR), title('ERT/SR');
-% figure, plot(CRR./SR), title('CRR/SR');
+figure, plot(Time,PR./SR), title('PR/SR');
+figure, plot(Time,ERT./SR), title('ERT/SR');
+% figure, plot(Time,CRR./SR), title('CRR/SR');
 toc
+% save('EllipicRenderingResults_1e9.mat')

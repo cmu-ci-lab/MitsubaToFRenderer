@@ -81,6 +81,7 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 			Intersection &its = succ->getIntersection();
 
 			if(scene->ellipsoidIntersectAll(e, value, ray, its, sampler)){
+				succ->ellipsoidalVertex = true;
 				succ->type = PathVertex::ESurfaceInteraction;
 				succ->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
 						its.shape->isEmitter() || its.shape->isSensor());
@@ -945,6 +946,10 @@ Spectrum PathVertex::eval(const Scene *scene, const PathVertex *pred,
 				if (wiDotGeoN * Frame::cosTheta(bRec.wi) <= 0 ||
 					woDotGeoN * Frame::cosTheta(bRec.wo) <= 0)
 					return Spectrum(0.0f);
+
+				if(ellipsoidalVertex){
+					return result;
+				}
 
 				if (mode == EImportance) {
 					/* Adjoint BSDF for shading normals */

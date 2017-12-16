@@ -434,8 +434,8 @@ public:
 								continue;
 							else
 								value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
-										connectionVertex->eval(scene, vs, vt, EImportance) *
-										vt->eval(scene, vtPred, connectionVertex, ERadiance); // FIXME: Verify and also multiply with the probability of choosing this vertex
+											connectionVertex->eval(scene, vs, vt, EImportance) *  // FIXME: This will apply the albedo twice at the connection vertex
+											vt->eval(scene, vtPred, connectionVertex, ERadiance);
 						}else
 							continue;
 					}
@@ -537,7 +537,10 @@ public:
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
 				if (t>=2 && (currentDecompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
-					value.toSRGB(temp[0],temp[1],temp[2]);
+					if(SPECTRUM_SAMPLES == 3)
+						value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
+					else
+						SLog(EError, "cannot run transient renderer for spectrum values more than 3");
 					if(currentDecompositionType == Film::ETransientEllipse)
 						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)/EllipticPathWeight);
 					if(std::isinf(miWeight))
