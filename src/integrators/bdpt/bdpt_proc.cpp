@@ -511,10 +511,10 @@ public:
 				Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
 					sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 
-				if(emitterSubpath.length() == 3 && sensorSubpath.length() == 3)
-					miWeight = 0.5f;
+				if(wr->m_decompositionType != Film::ETransientEllipse && !(s==3 && t == 2))
+					continue;
 				else
-					miWeight = 1.0f;
+					miWeight = 1.0;
 
 				if (sampleDirect) {
 					/* Now undo the previous change */
