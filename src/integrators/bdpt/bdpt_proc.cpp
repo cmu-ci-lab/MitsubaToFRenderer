@@ -434,7 +434,7 @@ public:
 								continue;
 							else
 								value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
-											connectionVertex->eval(scene, vs, vt, EImportance) *  // FIXME: This will apply the albedo twice at the connection vertex
+											connectionVertex->eval(scene, vs, vt, ERadiance) *
 											vt->eval(scene, vtPred, connectionVertex, ERadiance);
 						}else
 							continue;
@@ -510,6 +510,11 @@ public:
 				/* Compute the multiple importance sampling weight */
 				Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
 					sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+
+				if(emitterSubpath.length() == 3 && sensorSubpath.length() == 3)
+					miWeight = 0.5f;
+				else
+					miWeight = 1.0f;
 
 				if (sampleDirect) {
 					/* Now undo the previous change */
