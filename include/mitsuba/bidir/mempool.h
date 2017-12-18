@@ -50,7 +50,6 @@ public:
 		#if defined(MTS_BD_DEBUG_HEAVY)
 		memset(vertex, 0xFF, sizeof(PathVertex));
 		#endif
-		vertex->ellipsoidalVertex = false;
 		return vertex;
 	}
 

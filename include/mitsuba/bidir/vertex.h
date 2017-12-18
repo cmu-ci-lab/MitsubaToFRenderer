@@ -108,9 +108,6 @@ struct MTS_EXPORT_BIDIR PathVertex {
 	 */
 	bool degenerate : 1;
 
-	/* Ellipsoidal vertices are shaded differently compared to normal vertex */
-	bool ellipsoidalVertex : 1;
-
 	/**
 	 * \brief Denotes the measure associated with the
 	 * probability densities stored in \ref pdf.

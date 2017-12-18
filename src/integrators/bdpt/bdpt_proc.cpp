@@ -433,7 +433,7 @@ public:
 																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
 								continue;
 							else
-								value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+								value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
 											connectionVertex->eval(scene, vs, vt, ERadiance) *
 											vt->eval(scene, vtPred, connectionVertex, ERadiance);
 						}else
