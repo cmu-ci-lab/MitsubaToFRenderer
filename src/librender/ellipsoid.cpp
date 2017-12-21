@@ -594,7 +594,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		else
 			dDR= TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
 
-		value = (DR*DR)/((-DR*OOE-(1-OOD)*dDR)*sqrt(1-k*k)*thetaRange);
+		value = ((-DR*OOE-(1-OOD)*dDR)*sqrt(1-k*k)*thetaRange)/(DR*DR);
 
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache to be compatible with mitsuba
 		Barycentric(Original, triA, triB, triC, u, v);

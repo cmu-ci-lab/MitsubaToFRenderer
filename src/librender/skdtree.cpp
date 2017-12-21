@@ -196,7 +196,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 			cache->primIndex = ta.primIndex;
 			cache->u = tempU;
 			cache->v = tempV;
-			value = value/(u-l);
+			value = value*(u-l);
 			return true;
 		}
 		return false;
@@ -213,7 +213,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 		if(sampler->nextFloat() < 0.5f){ // go left first and then right -- NOTE: Currently only going only one side
 			fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 0);
 			if(recursiveEllipsoidIntersect(node->getLeft(), e, value, PNew, LNew, sampler, temp)){
-				value *= 0.5f;
+				value *= 2;
 				return true;
 			}
 //			else{
@@ -225,7 +225,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 		}else{ // go right first and then left
 			fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 1);
 			if(recursiveEllipsoidIntersect(node->getRight(), e, value, PNew, LNew, sampler, temp)){
-				value *= 0.5f;
+				value *= 2;
 				return true;
 			}
 //			else{

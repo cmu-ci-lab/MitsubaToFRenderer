@@ -97,6 +97,8 @@ public:
 		for (size_t i=0; i<m_hilbertCurve.getPointCount(); ++i) {
 			Point2i offset = Point2i(m_hilbertCurve[i]) + Vector2i(rect->getOffset());
 			m_sampler->generate(offset);
+//			if(!(offset.x == 240 && offset.y == 441))
+//				continue;
 
 			for (size_t j = 0; j<m_sampler->getSampleCount(); j++) {
 				if (stop)
@@ -479,20 +481,13 @@ public:
 					//Make sure that the pathLength and pathLengthTarget match to some error bound
 					if(((pathLength-pathLengthTarget) > 1)|| pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
 						continue;
-					if (!sampleDirect) //FIXME: code not valid when one or more of succeeding/preciding vertices are source/detector vertices
+					if (!sampleDirect)
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
 									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
 					else
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
 								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
-//					if (!sampleDirect) //FIXME: Understand this code. Currently written parallel to the normal code also understand pathConnectAndCollapse equivalent for connectionEdge1 and connectionEdge2
-//						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
-//									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
-//					else
-//						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
-//								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp)) *
-//								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::ETransmittance |
-//										(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+
 					if(t<2 || value.isZero())
 						continue;
 				}
@@ -547,7 +542,7 @@ public:
 					else
 						SLog(EError, "cannot run transient renderer for spectrum values more than 3");
 					if(currentDecompositionType == Film::ETransientEllipse)
-						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)/EllipticPathWeight);
+						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
 					if(std::isinf(miWeight))
 						SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
 					if(std::isinf(temp[0]))
