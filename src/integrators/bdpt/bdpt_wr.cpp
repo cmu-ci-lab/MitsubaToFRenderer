@@ -126,6 +126,12 @@ void BDPTWorkResult::load(Stream *stream) {
 	if (m_lightImage)
 		m_lightImage->load(stream);
 	m_block->load(stream);
+
+	m_decompositionType = (Film::EDecompositionType) stream->readUInt();
+	m_decompositionMinBound = stream->readFloat();
+	m_decompositionMaxBound = stream->readFloat();
+	m_decompositionBinWidth = stream->readFloat();
+	m_frames = stream->readSize();
 }
 
 void BDPTWorkResult::save(Stream *stream) const {
@@ -136,6 +142,12 @@ void BDPTWorkResult::save(Stream *stream) const {
 	if (m_lightImage.get())
 		m_lightImage->save(stream);
 	m_block->save(stream);
+
+	stream->writeUInt(m_decompositionType);
+	stream->writeFloat(m_decompositionMinBound);
+	stream->writeFloat(m_decompositionMaxBound);
+	stream->writeFloat(m_decompositionBinWidth);
+	stream->writeSize(m_frames);
 }
 
 std::string BDPTWorkResult::toString() const {

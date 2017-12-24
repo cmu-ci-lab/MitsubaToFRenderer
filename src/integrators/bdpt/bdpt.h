@@ -75,6 +75,7 @@ struct BDPTConfiguration {
 			if (maxDepth < m_decompositionMinBound)
 				SLog(EError, "maxDepth of BDPT is less than the minimum bound; Rendering is futile");
 		}
+		m_frames = stream->readSize();
 	}
 
 	inline void serialize(Stream *stream) const {
@@ -90,6 +91,7 @@ struct BDPTConfiguration {
 		stream->writeFloat(m_decompositionMinBound);
 		stream->writeFloat(m_decompositionMaxBound);
 		stream->writeFloat(m_decompositionBinWidth);
+		stream->writeSize(m_frames);
 	}
 
 	void dump() const {
@@ -116,10 +118,11 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   Russian roulette depth      : %i", rrDepth);
 		SLog(EDebug, "   Block size                  : %i", blockSize);
 		SLog(EDebug, "   Number of samples           : " SIZE_T_FMT, sampleCount);
-		SLog(EDebug, "   decomposition type 		 : %s", decompositionType);
+		SLog(EDebug, "   decomposition type 		 : %s", decompositionType.c_str());
 		SLog(EDebug, "   decomposition min bound	 : %f", m_decompositionMinBound);
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
+		SLog(EDebug, "   decomposition bin width 	 : %i", m_frames);
 		#if BDPT_DEBUG == 1
 			SLog(EDebug, "   Show weighted contributions : %s", showWeighted ? "yes" : "no");
 		#endif
