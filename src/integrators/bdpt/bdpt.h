@@ -122,7 +122,7 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   decomposition min bound	 : %f", m_decompositionMinBound);
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
-		SLog(EDebug, "   decomposition bin width 	 : %i", m_frames);
+		SLog(EDebug, "   number of frames	   	     : %i", m_frames);
 		#if BDPT_DEBUG == 1
 			SLog(EDebug, "   Show weighted contributions : %s", showWeighted ? "yes" : "no");
 		#endif
