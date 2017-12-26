@@ -191,7 +191,8 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 		const TriAccel &ta = m_triAccel[primIdx];
 		Float tempU;
 		Float tempV;
-		if(ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
+		if(ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
 			cache->shapeIndex = ta.shapeIndex;
 			cache->primIndex = ta.primIndex;
 			cache->u = tempU;

@@ -72,7 +72,6 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		case EEmitterSample: {
 			//code me
 		}
-		break;
 		case ESurfaceInteraction: {
 
 			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pred1->getShadingNormal(), pred2->getShadingNormal(), pathLengthTarget); // TODO: remove memory of ellipse

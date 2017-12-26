@@ -486,8 +486,8 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 	PointType triB(temp_triB.x, temp_triB.y, temp_triB.z);
 	PointType triC(temp_triC.x, temp_triC.y, temp_triC.z);
 
-	if(earlyTriangleReject(triA, triB, triC))
-		return false;
+//	if(earlyTriangleReject(triA, triB, triC))
+//		return false;
 
 	//Compute the center of the ellipse (resulting from ellipsoid-plane intersection)
 	PointType SphereA;transformToSphere(triA, SphereA);

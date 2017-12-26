@@ -398,8 +398,8 @@ public:
 					sampleDirect = true;
 				} else {
 
-					//FIXME: Adithya --> Even if sample direct is false, we can reach this part of code. So avoid t==1, t==2 and s==1 paths for all renderers so that we can compare them. Remove me in the future
-					if(s == 1 || t < 2)
+					//FIXME: Adithya --> Even if sample direct is false, we can reach this part of code. So avoid t==1, for all renderers so that we can compare them. Remove me in the future
+					if(t < 2)
 						continue;
 
 					/* Can't connect degenerate endpoints */
@@ -434,10 +434,20 @@ public:
 																										   EllipticPathWeight,
 																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
 								continue;
-							else
-								value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
+							else{
+								if(vs->type == PathVertex::ESurfaceInteraction)
+									value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
 											connectionVertex->eval(scene, vs, vt, ERadiance) *
 											vt->eval(scene, vtPred, connectionVertex, ERadiance);
+								else if(vs->type == PathVertex::EEmitterSample)
+									value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+											connectionVertex->eval(scene, vs, vt, ERadiance) *
+											vt->eval(scene, vtPred, connectionVertex, ERadiance);
+								else
+									SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
+													"unsupported vertex type (%i)!", vs->type);
+							}
+
 						}else
 							continue;
 					}
