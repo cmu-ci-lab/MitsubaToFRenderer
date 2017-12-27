@@ -417,26 +417,50 @@ public:
 		   is supported. This function basically just exists to support the
 		   somewhat peculiar film updates done by BDPT */
 
-		Vector2i size = bitmap->getSize();
-		if (bitmap->getPixelFormat() != Bitmap::ESpectrum ||
-			bitmap->getComponentFormat() != Bitmap::EFloat ||
-			bitmap->getGamma() != 1.0f ||
-			size != m_storage->getSize() ||
-			m_pixelFormats.size() != 1) {
-			Log(EError, "addBitmap(): Unsupported bitmap format!");
-		}
+		if (bitmap->getPixelFormat() == Bitmap::EMultiSpectrumAlphaWeight){
+			Vector2i size = bitmap->getSize();
+			if (bitmap->getComponentFormat() != Bitmap::EFloat ||
+				bitmap->getGamma() != 1.0f ||
+				size != m_storage->getSize()) {
+				Log(EError, "addBitmap(): Multichannel image is not created appropriately!");
+			}
 
-		size_t nPixels = (size_t) size.x * (size_t) size.y;
-		const Float *source = bitmap->getFloatData();
-		Float *target = m_storage->getBitmap()->getFloatData();
-		for (size_t i=0; i<nPixels; ++i) {
-			Float weight = target[SPECTRUM_SAMPLES + 1];
-			if (weight == 0)
-				weight = target[SPECTRUM_SAMPLES + 1] = 1;
-			weight *= multiplier;
-			for (size_t j=0; j<SPECTRUM_SAMPLES; ++j)
-				*target++ += *source++ * weight;
-			target += 2;
+			size_t nPixels = (size_t) size.x * (size_t) size.y;
+			size_t channels = bitmap->getChannelCount();
+			const Float *source = bitmap->getFloatData();
+			Float *target = m_storage->getBitmap()->getFloatData();
+			for (size_t i=0; i<nPixels; ++i) {
+				Float weight = target[channels-2]; //FIXME: guessing alpha
+				if (weight == 0)
+					weight = target[channels-2] = 1;
+				weight *= multiplier;
+				for (size_t j=0; j<channels-2; ++j)
+					*target++ += *source++ * weight;
+				target += 2;
+				source += 2;
+			}
+		}else{
+			Vector2i size = bitmap->getSize();
+			if (bitmap->getPixelFormat() != Bitmap::ESpectrum ||
+				bitmap->getComponentFormat() != Bitmap::EFloat ||
+				bitmap->getGamma() != 1.0f ||
+				size != m_storage->getSize() ||
+				m_pixelFormats.size() != 1) {
+				Log(EError, "addBitmap(): Unsupported bitmap format!");
+			}
+
+			size_t nPixels = (size_t) size.x * (size_t) size.y;
+			const Float *source = bitmap->getFloatData();
+			Float *target = m_storage->getBitmap()->getFloatData();
+			for (size_t i=0; i<nPixels; ++i) {
+				Float weight = target[SPECTRUM_SAMPLES + 1];
+				if (weight == 0)
+					weight = target[SPECTRUM_SAMPLES + 1] = 1;
+				weight *= multiplier;
+				for (size_t j=0; j<SPECTRUM_SAMPLES; ++j)
+					*target++ += *source++ * weight;
+				target += 2;
+			}
 		}
 	}
 

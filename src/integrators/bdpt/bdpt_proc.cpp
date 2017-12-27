@@ -201,14 +201,17 @@ public:
 
 
 		Float *sampleDecompositionValue = NULL;
+		Float *l_sampleDecompositionValue = NULL;
 		Float *temp = NULL;
 
 		if (wr->m_decompositionType != Film::ESteadyState) {
-			sampleDecompositionValue = (Float *) alloca(sizeof(Float) * wr->getChannelCount());
+			sampleDecompositionValue 	= (Float *) alloca(sizeof(Float) * wr->getChannelCount());
+			l_sampleDecompositionValue 	= (Float *) alloca(sizeof(Float) * wr->getChannelCount());
 			temp = (Float *) alloca(sizeof(Float) * SPECTRUM_SAMPLES); // Assuming that SPECTRUM_SAMPLES = 3;
 
 			for (int i=0; i<wr->getChannelCount(); ++i){
 				sampleDecompositionValue[i]=0.0f;
+				l_sampleDecompositionValue[i]=0.0f;
 			}
 		}
 
@@ -546,26 +549,41 @@ public:
 
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if (t>=2 && (currentDecompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
+				if ( currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
+
 					if(SPECTRUM_SAMPLES == 3)
 						value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
 					else
 						SLog(EError, "cannot run transient renderer for spectrum values more than 3");
-					if(currentDecompositionType == Film::ETransientEllipse)
-						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
-					if(std::isinf(miWeight))
-						SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
-					if(std::isinf(temp[0]))
-						SLog(EError, "Sample became inf", EllipticPathWeight);
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+
+					if (t>=2){
+						if(currentDecompositionType == Film::ETransientEllipse)
+							miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
+						if(std::isinf(miWeight))
+							SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
+						if(std::isinf(temp[0]))
+							SLog(EError, "Sample became inf", EllipticPathWeight);
+						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+					}else if(t==1){
+						// FIXME: This is very inefficient. l_sampleDecompositionValue is very sparse. In fact, we only write to bin with binIndex
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+						l_sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;
+						l_sampleDecompositionValue[wr->getChannelCount()-1]=1.0f;
+						wr->putLightSample(samplePos, l_sampleDecompositionValue);
+					}
+
 				}
 
-				if (t >= 2)
-					sampleValue += value * miWeight;
-				else
-					wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
+				if ( currentDecompositionType == Film::ESteadyState){
+					if (t >= 2)
+						sampleValue += value * miWeight;
+					else
+						wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
+				}
 			}
 		}
 		if (wr->m_decompositionType == Film::ESteadyState) {
@@ -579,7 +597,6 @@ public:
 		m_pool.release(connectionEdge1);
 		m_pool.release(connectionEdge2);
 		m_pool.release(connectionVertex);
-
 	}
 
 	ref<WorkProcessor> clone() const {
@@ -619,9 +636,8 @@ void BDPTProcess::develop() {
 	const ImageBlock *lightImage = m_result->getLightImage();
 	m_film->setBitmap(m_result->getImageBlock()->getBitmap());
 
-	if(m_config.m_decompositionType == Film::ESteadyState) {
-		m_film->addBitmap(lightImage->getBitmap(), 1.0f / m_config.sampleCount);
-	}
+	m_film->addBitmap(lightImage->getBitmap(), 1.0f / m_config.sampleCount);
+
 	m_refreshTimer->reset();
 	m_queue->signalRefresh(m_parent);
 }
