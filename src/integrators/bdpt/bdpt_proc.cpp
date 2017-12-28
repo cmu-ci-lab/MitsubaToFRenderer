@@ -401,10 +401,8 @@ public:
 					sampleDirect = true;
 				} else {
 
-					//FIXME: Adithya --> Even if sample direct is false, we can reach this part of code. So avoid t==1, for all renderers so that we can compare them. Remove me in the future
-					if(t < 2)
+					if(s != 1 || t == 1)
 						continue;
-
 					/* Can't connect degenerate endpoints */
 					if (vs->isDegenerate() || vt->isDegenerate())
 						continue;
@@ -492,16 +490,15 @@ public:
 
 				}else{
 					//Make sure that the pathLength and pathLengthTarget match to some error bound
-					if(((pathLength-pathLengthTarget) > 1)|| pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
+					if(value.isZero() || (pathLength-pathLengthTarget) > 1 || pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
 						continue;
 					if (!sampleDirect)
 						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
 									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
 					else
-						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::ETransmittance |
-								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
+						SLog(EError, "sample direct for elliptic renderer is not valid");
 
-					if(t<2 || value.isZero())
+					if(value.isZero())
 						continue;
 				}
 
@@ -533,8 +530,14 @@ public:
 				}
 
 				/* Determine the pixel sample position when necessary */
-				if (vt->isSensorSample() && !vt->getSamplePosition(vs, samplePos))
-					continue;
+				if(currentDecompositionType != Film::ETransientEllipse)
+				{
+					if (vt->isSensorSample() && !vt->getSamplePosition(vs, samplePos))
+						continue;
+				}else{
+					if (vt->isSensorSample() && !vt->getSamplePosition(connectionVertex, samplePos))
+						continue;
+				}
 
 				#if BDPT_DEBUG == 1
 					/* When the debug mode is on, collect samples
@@ -580,7 +583,8 @@ public:
 
 				if ( currentDecompositionType == Film::ESteadyState){
 					if (t >= 2)
-						sampleValue += value * miWeight;
+//						sampleValue += value * 0;
+					sampleValue += value * miWeight;
 					else
 						wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
 				}

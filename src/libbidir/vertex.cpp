@@ -40,9 +40,6 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		Float &value,
 		ETransportMode mode, bool russianRoulette, Spectrum *throughput) {
 
-	if(pred2->type != mitsuba::PathVertex::ESurfaceInteraction)
-		return false;
-
 	if(mode != EImportance)
 		SLog(EError, "Ellipsoidal intersection called with sensor path");
 
