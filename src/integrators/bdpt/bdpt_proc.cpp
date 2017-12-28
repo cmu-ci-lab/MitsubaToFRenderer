@@ -467,6 +467,8 @@ public:
 					vs->measure = vt->measure = EArea;
 
 				}
+				if(s != 1 || t == 1)
+					continue;
 
 				/* Attempt to connect the two endpoints, which could result in
 				   the creation of additional vertices (index-matched boundaries etc.) */
