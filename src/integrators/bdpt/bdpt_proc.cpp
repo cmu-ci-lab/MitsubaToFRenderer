@@ -401,7 +401,7 @@ public:
 					sampleDirect = true;
 				} else {
 
-					if(s != 1 || t == 1)
+					if(s != 1)
 						continue;
 					/* Can't connect degenerate endpoints */
 					if (vs->isDegenerate() || vt->isDegenerate())
@@ -467,7 +467,7 @@ public:
 					vs->measure = vt->measure = EArea;
 
 				}
-				if(s != 1 || t == 1)
+				if(s != 1)
 					continue;
 
 				/* Attempt to connect the two endpoints, which could result in
