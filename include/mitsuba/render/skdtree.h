@@ -130,6 +130,7 @@ public:
 	//direction=1 => Filling from the right one to the left one
 	void fillPositionsAndLocations(const Float P[][3], const PLocation L[], Float PNew[][3], PLocation LNew[], const int axis, const bool direction) const;
 
+	void fillInlinePositionsAndLocations(Float P[][3], PLocation L[], const Float splitValue, const int axis, const bool direction) const;
 	//! @}
 	// =============================================================
 
