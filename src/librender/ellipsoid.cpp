@@ -565,14 +565,6 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 	size_t indices;
 	value = 0;
 
-	/*Testing the code with Matlab equivalent on corner cases */
-//	PointType TestCorners[3];
-//	TestCorners[0].x = -174.649; TestCorners[0].y = 39.8256; TestCorners[0].z = 0;
-//	TestCorners[1].x = -49.9041; TestCorners[1].y = -174.457; TestCorners[1].z = 0;
-//	TestCorners[2].x = 106.425; TestCorners[2].y = -3.46693; TestCorners[2].z = 0;
-//	Float Test_m1 = 106.481;
-//	circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, TestCorners, Test_m1);
-
 	if(circlePolygonIntersectionAngles(thetaMin, thetaMax, indices, Corners, m1)){
 		// Sample an angle
 		if(indices == 0)

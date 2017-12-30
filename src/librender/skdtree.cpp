@@ -206,35 +206,18 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 		const Float splitValue = (Float)node->getSplit();
 		const int axis = node->getAxis();
 
-		//FIXME: The below two variable are not needed anymore
-		Float PNew[8][3];
-		PLocation LNew[8];
-
-
-		if(sampler->nextFloat() < 0.5f){ // go left first and then right -- NOTE: Currently only going only one side
-			fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 0);
-			if(recursiveEllipsoidIntersect(node->getLeft(), e, value, PNew, LNew, sampler, temp)){
+		if(sampler->nextFloat() < 0.5f){ // go left
+			fillInlinePositionsAndLocations(P, L, splitValue, axis, 0);
+			if(recursiveEllipsoidIntersect(node->getLeft(), e, value, P, L, sampler, temp)){
 				value *= 2;
 				return true;
 			}
-//			else{
-//				fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 1);
-//				if(recursiveEllipsoidIntersect(node->getRight(), e, value, PNew, LNew, sampler, temp)){
-//					return true;
-//				}
-//			}
-		}else{ // go right first and then left
-			fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 1);
-			if(recursiveEllipsoidIntersect(node->getRight(), e, value, PNew, LNew, sampler, temp)){
+		}else{ // go right
+			fillInlinePositionsAndLocations(P, L, splitValue, axis, 1);
+			if(recursiveEllipsoidIntersect(node->getRight(), e, value, P, L, sampler, temp)){
 				value *= 2;
 				return true;
 			}
-//			else{
-//				fillPositionsAndLocations(P, L, PNew, LNew, splitValue, axis, 0);
-//				if(recursiveEllipsoidIntersect(node->getLeft(), e, value, PNew, LNew, sampler, temp)){
-//					return true;
-//				}
-//			}
 		}
 	}
 	return false;
@@ -279,6 +262,44 @@ void ShapeKDTree::fillPositionsAndLocations(const Float P[][3], const PLocation 
 	for(int i=0;i<4;i++){
 		LNew[indices[i]] = ShapeKDTree::ETBD;
 		PNew[indices[i]][axis] =splitValue;
+	}
+}
+
+
+//direction=0 => Filling in the left one
+//direction=1 => Filling in the right one
+void ShapeKDTree::fillInlinePositionsAndLocations(Float P[][3], PLocation L[], const Float splitValue, const int axis, const bool direction) const{
+	int indices[4];
+	switch(axis){
+		case 0:{
+			if(direction == 0){
+				indices[0] = 1;indices[1] = 3;indices[2] = 5;indices[3] = 7;
+			}else{
+				indices[0] = 0;indices[1] = 2;indices[2] = 4;indices[3] = 5;
+			}
+			break;
+		}
+		case 1:{
+			if(direction == 0){
+				indices[0] = 2;indices[1] = 3;indices[2] = 6;indices[3] = 7;
+			}else{
+				indices[0] = 0;indices[1] = 1;indices[2] = 4;indices[3] = 5;
+			}
+			break;
+		}
+		case 2:{
+			if(direction == 0){
+				indices[0] = 4;indices[1] = 5;indices[2] = 6;indices[3] = 7;
+			}else{
+				indices[0] = 0;indices[1] = 1;indices[2] = 2;indices[3] = 3;
+			}
+			break;
+		}
+		default: SLog(EError,"axis should only be between 0 to 2");break;
+	}
+	for(int i=0;i<4;i++){
+		L[indices[i]] = ShapeKDTree::ETBD;
+		P[indices[i]][axis] =splitValue;
 	}
 }
 
