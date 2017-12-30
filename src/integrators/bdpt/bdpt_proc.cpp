@@ -401,8 +401,6 @@ public:
 					sampleDirect = true;
 				} else {
 
-					if(s != 1)
-						continue;
 					/* Can't connect degenerate endpoints */
 					if (vs->isDegenerate() || vt->isDegenerate())
 						continue;
@@ -467,8 +465,6 @@ public:
 					vs->measure = vt->measure = EArea;
 
 				}
-				if(s != 1)
-					continue;
 
 				/* Attempt to connect the two endpoints, which could result in
 				   the creation of additional vertices (index-matched boundaries etc.) */
