@@ -561,13 +561,15 @@ public:
 					else
 						SLog(EError, "cannot run transient renderer for spectrum values more than 3");
 
+
+					if(currentDecompositionType == Film::ETransientEllipse)
+						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
+					if(std::isinf(miWeight))
+						SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
+					if(std::isinf(temp[0]))
+						SLog(EError, "Sample became inf", EllipticPathWeight);
+
 					if (t>=2){
-						if(currentDecompositionType == Film::ETransientEllipse)
-							miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
-						if(std::isinf(miWeight))
-							SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
-						if(std::isinf(temp[0]))
-							SLog(EError, "Sample became inf", EllipticPathWeight);
 						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
 						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
 						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
