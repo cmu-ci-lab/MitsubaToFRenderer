@@ -429,6 +429,11 @@ public:
 			size_t channels = bitmap->getChannelCount();
 			const Float *source = bitmap->getFloatData();
 			Float *target = m_storage->getBitmap()->getFloatData();
+
+			if (bitmap->getChannelCount() != m_storage->getBitmap()->getChannelCount()) {
+				Log(EError, "addBitmap(): Multichannel image has improper channel count!");
+			}
+
 			for (size_t i=0; i<nPixels; ++i) {
 				Float weight = target[channels-2]; //FIXME: guessing alpha
 				if (weight == 0)

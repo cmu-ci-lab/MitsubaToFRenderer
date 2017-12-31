@@ -97,8 +97,6 @@ public:
 		for (size_t i=0; i<m_hilbertCurve.getPointCount(); ++i) {
 			Point2i offset = Point2i(m_hilbertCurve[i]) + Vector2i(rect->getOffset());
 			m_sampler->generate(offset);
-//			if(!(offset.x == 240 && offset.y == 441))
-//				continue;
 
 			for (size_t j = 0; j<m_sampler->getSampleCount(); j++) {
 				if (stop)
@@ -267,7 +265,7 @@ public:
 						vt->eval(scene, vtPred, vs, ERadiance);
 
 					if (currentDecompositionType != Film::ESteadyState) {
-						pathLength = sensorPathlength[t];
+						pathLength = sensorPathlength[t]; // FIXME: Need to add newly casted vt distance?
 						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (pathLength >= wr->m_decompositionMinBound) && (pathLength <= wr->m_decompositionMaxBound)){
 							currentDecompositionType = Film::ETransient;
 						}
@@ -287,7 +285,7 @@ public:
 						vt->eval(scene, vtPred, vs, ERadiance);
 
 					if (currentDecompositionType != Film::ESteadyState) {
-						pathLength = emitterPathlength[s];
+						pathLength = emitterPathlength[s]; // FIXME: Need to add newly casted vt distance?
 						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (pathLength >= wr->m_decompositionMinBound) && (pathLength <= wr->m_decompositionMaxBound)){
 							currentDecompositionType = Film::ETransient;
 						}
@@ -552,7 +550,7 @@ public:
 
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if ( currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
+				if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
 
 					if(SPECTRUM_SAMPLES == 3)
 						value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
@@ -579,6 +577,10 @@ public:
 						l_sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;
 						l_sampleDecompositionValue[wr->getChannelCount()-1]=1.0f;
 						wr->putLightSample(samplePos, l_sampleDecompositionValue);
+						//reset the l_sampleDecompositionValue
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
 					}
 
 				}
