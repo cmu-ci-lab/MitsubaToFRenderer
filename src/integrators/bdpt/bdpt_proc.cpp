@@ -257,6 +257,7 @@ public:
 				/* Account for the terms of the measurement contribution
 				   function that are coupled to the connection endpoints */
 				if (vs->isEmitterSupernode()) {
+					continue; //FIXME: Hack to avoid supernodes
 					/* If possible, convert 'vt' into an emitter sample */
 					if (!vt->cast(scene, PathVertex::EEmitterSample) || vt->isDegenerate())
 						continue;
@@ -272,6 +273,7 @@ public:
 						}
 					}
 				} else if (vt->isSensorSupernode()) {
+					continue; //FIXME: Hack to avoid supernodes
 					/* If possible, convert 'vs' into an sensor sample */
 					if (!vs->cast(scene, PathVertex::ESensorSample) || vs->isDegenerate())
 						continue;
