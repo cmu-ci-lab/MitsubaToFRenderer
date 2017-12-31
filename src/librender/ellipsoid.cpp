@@ -153,9 +153,10 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 			PointType P_O(dotP*n.x, dotP*n.y, 0.0);
 
 			// If projection is not in the circle, the line-segment is completely outside circle
-			if(P_O.x*P_O.x + P_O.y*P_O.y >= r*r){
+			if(epsInclusiveGreater(P_O.x*P_O.x + P_O.y*P_O.y, r*r)){
 				continue;
 			}
+
 
 			FLOAT alpha = -1.0;
 	        // Compute where the projection is, with respect to the line joining p[i] and p[j]
@@ -196,7 +197,8 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 
 	for(size_t i = 0; i < size; i++){
 		size_t j = (i+1)%intersectionRecord.size();
-		if(intersectionRecord[i].theta == intersectionRecord[j].theta){
+		//FIXME: This almost equal can result in errors. Need to find a way to avoid it
+		if(almostEqual(intersectionRecord[i].theta, intersectionRecord[j].theta)){
 			if(intersectionRecord[i].directionOutside == intersectionRecord[j].directionOutside)
 				deleteIndices.push_back(i);
 			else{
@@ -237,8 +239,8 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 			//Sanitycheck --> All the triangle vertices must be outside the circle
 			if(!(norm_p[0] > r && norm_p[1] > r && norm_p[2] > r)){
 				for(size_t j = 0; j < 3; j++)
-					std::cout<<"Corners["<<j<<"];"<<Corners[j].x<<","<<Corners[j].y<<","<<Corners[j].z<<std::endl;
-				std::cout<<"radius:"<<r<<std::endl;
+					std::cout << "Corners[" << j << "];" << Corners[j].x << "," << Corners[j].y << "," << Corners[j].z << std::endl;
+				std::cout << "radius:" << r << std::endl;
 				SLog(EError, "Circle-Triangle intersection is returning illegally that the circle is completely inside triangle. intersectionRecord size: %d; deleteIndices size: %d\n", intersectionRecord.size(), deleteIndices.size());
 			}
 			return true;
@@ -272,7 +274,7 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 	if(indices > 4)
 		SLog(EError, "Circle triangle intersection has more sets of angles (%d) than max permissive 4\n",indices);
 	for(size_t i= 0;i<indices;i++){
-		if(thetaMin[i] == thetaMax[i] && (thetaMax[i]!=2*PI)){
+		if(thetaMin[i] == thetaMax[i] && thetaMax[i]!=2*PI && thetaMax[i]!=0){
 			SLog(EError, "Circle triangle intersection has duplicates that are not eliminated properly \n");
 		}
 	}
@@ -597,9 +599,19 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		if(v < 0 && v > (1+Eps)){v = 1;}
 
 		if(u < 0 || u > 1 || v < 0 || v > 1){
-//			cout<<"angle Found:"<<angle;
-//			cout<<"ellipse: f1("<<this->f1.x<<","<<this->f1.y<<","<<this->f1.z<<");f2("<<this->f2.x<<","<<this->f2.y<<","<<this->f2.z<<")\n";
-//			cout<<"triA:("<<triA.x<<","<<triA.y<<","<<triA.z<<","<<"), "<<"triA:("<<triB.x<<","<<triB.y<<","<<triB.z<<","<<"), "<<"triA:("<<triC.x<<","<<triC.y<<","<<triC.z<<","<<");"<<"PointType:("<<Original.x<<","<<Original.y<<","<<Original.z<<","<<");";
+
+			cout << "angle Found:" << angle << "\n";
+			cout << "Indices:" << indices << "\n";
+			for(int i=0;i<indices;i++)
+				cout  << thetaMin[i] << " - " << thetaMax[i]  <<  "\n";
+			cout << "angle Found:" << angle << "\n";
+			cout << "Ellipsoid: f1(" << this->f1.x << "," << this->f1.y << "," << this->f1.z << "); f2(" << this->f2.x << "," << this->f2.y << "," << this->f2.z << "); Tau:"  <<  this->Tau  <<  "\n";
+			cout << "triA:(" << triA.x << "," << triA.y << "," << triA.z << ");\n";
+			cout << "triB:(" << triB.x << "," << triB.y << "," << triB.z << ");\n";
+			cout << "triC:(" << triC.x << "," << triC.y << "," << triC.z << ");\n";
+			cout << "Original Point:(" << Original.x << "," << Original.y << "," << Original.z << ");\n";
+			cout << "On Origin centered Ellipsoid Point:(" << Projection.x << "," << Projection.y << "," << Projection.z << ");\n";
+
 			SLog(EWarn,"wrong intersection found by elliptic algorithm; Not counting; u:%f, v:%f", u, v);
 			return false;
 		}
