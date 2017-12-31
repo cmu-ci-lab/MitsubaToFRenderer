@@ -517,7 +517,7 @@ public:
 //				if(wr->m_decompositionType != Film::ETransientEllipse && !(s==3 && t == 2))
 //					continue;
 //				else
-					miWeight = 1.0;
+//					miWeight = 1.0;
 
 				if (sampleDirect) {
 					/* Now undo the previous change */
