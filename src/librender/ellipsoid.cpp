@@ -160,10 +160,14 @@ bool TEllipsoid<PointType, LengthType>::circlePolygonIntersectionAngles(FLOAT th
 
 			FLOAT alpha = -1.0;
 	        // Compute where the projection is, with respect to the line joining p[i] and p[j]
-			if (Corners[i].x != Corners[j].x)
+			if (!almostEqual(Corners[i].x, Corners[j].x))
 				alpha = (P_O.x-Corners[j].x)/(Corners[i].x-Corners[j].x);
-			else
+			else if(!almostEqual(Corners[i].y, Corners[j].y))
 				alpha = (P_O.y-Corners[j].y)/(Corners[i].y-Corners[j].y);
+			else{
+				SLog(EWarn, "Two corners of a triangle inputted to circle-poly intersection code are almost same \n");
+				continue;
+			}
 
 			if(alpha <= 0 || alpha >= 1)
 				continue;
