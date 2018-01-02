@@ -606,7 +606,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 
 			cout << "angle Found:" << angle << "\n";
 			cout << "Indices:" << indices << "\n";
-			for(int i=0;i<indices;i++)
+			for(size_t i=0; i < indices ; i++)
 				cout  << thetaMin[i] << " - " << thetaMax[i]  <<  "\n";
 			cout << "angle Found:" << angle << "\n";
 			cout << "Ellipsoid: f1(" << this->f1.x << "," << this->f1.y << "," << this->f1.z << "); f2(" << this->f2.x << "," << this->f2.y << "," << this->f2.z << "); Tau:"  <<  this->Tau  <<  "\n";

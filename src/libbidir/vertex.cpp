@@ -188,6 +188,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				if(currentValue.isZero())
 					continue;
 				if(islightSamplePath){
+					currentValue /= subSamples;
 					if (!vt->getSamplePosition(connectionVertex, samplePos))
 						continue;
 					currentValue.toLinearRGB(temp[0],temp[1],temp[2]);
