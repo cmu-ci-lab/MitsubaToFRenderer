@@ -211,6 +211,8 @@ public:
 				sampleDecompositionValue[i]=0.0f;
 				l_sampleDecompositionValue[i]=0.0f;
 			}
+			l_sampleDecompositionValue[wr->getChannelCount() - 1]=1.0f;
+			l_sampleDecompositionValue[wr->getChannelCount() - 2]=1.0f;
 		}
 
 		for (int s = (int) emitterSubpath.vertexCount()-1; s >= 0; --s) {
@@ -427,25 +429,51 @@ public:
 					if(currentDecompositionType == Film::ETransientEllipse){ // Adding additional vertex can only increase path length
 						if(!combine || tempPathLength <= wr->m_decompositionMinBound){
 							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
-							if(value.isZero() || PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
-																										   vt, vtEdge,
-																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
-																										   EllipticPathWeight,
-																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
-								continue;
-							else{
-								if(vs->type == PathVertex::ESurfaceInteraction)
-									value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
-											connectionVertex->eval(scene, vs, vt, ERadiance) *
-											vt->eval(scene, vtPred, connectionVertex, ERadiance);
-								else if(vs->type == PathVertex::EEmitterSample)
-									value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
-											connectionVertex->eval(scene, vs, vt, ERadiance) *
-											vt->eval(scene, vtPred, connectionVertex, ERadiance);
-								else
-									SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
-													"unsupported vertex type (%i)!", vs->type);
+//							if(value.isZero() || PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
+//																										   vt, vtEdge,
+//																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
+//																										   EllipticPathWeight,
+//																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
+//								continue;
+//							else{
+//								if(vs->type == PathVertex::ESurfaceInteraction)
+//									value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
+//											connectionVertex->eval(scene, vs, vt, ERadiance) *
+//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
+//								else if(vs->type == PathVertex::EEmitterSample)
+//									value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+//											connectionVertex->eval(scene, vs, vt, ERadiance) *
+//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
+//								else
+//									SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
+//													"unsupported vertex type (%i)!", vs->type);
+//							}
+
+							if(!value.isZero() && PathLengthRemaining > 0){
+								 Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
+									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+								 tempPathLength = emitterPathlength[s] + sensorPathlength[t];
+								 vs->EllipsoidalSampleBetween(scene, m_sampler, vsPred, vs, vsEdge,
+																			   vtPred, vt, vtEdge,
+																			   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining, tempPathLength,
+																			   EllipticPathWeight, miWeight, value,
+																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos,
+																			   EImportance, wr);
+								 continue;
 							}
+							else
+								continue;
+//								if(vs->type == PathVertex::ESurfaceInteraction)
+//									value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
+//											connectionVertex->eval(scene, vs, vt, ERadiance) *
+//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
+//								else if(vs->type == PathVertex::EEmitterSample)
+//									value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+//											connectionVertex->eval(scene, vs, vt, ERadiance) *
+//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
+//								else
+//									SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
+//													"unsupported vertex type (%i)!", vs->type);
 
 						}else
 							continue;
@@ -486,111 +514,97 @@ public:
 						value *= connectionEdge.evalCached(vs, vt, PathEdge::ETransmittance |
 								(s == 1 ? PathEdge::ECosineRad : PathEdge::ECosineImp));
 
-				}else{
-					//Make sure that the pathLength and pathLengthTarget match to some error bound
-					if(value.isZero() || (pathLength-pathLengthTarget) > 1 || pathLength > wr->m_decompositionMaxBound || pathLength < wr->m_decompositionMinBound)
-						continue;
-					if (!sampleDirect)
-						value *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
-									connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
-					else
-						SLog(EError, "sample direct for elliptic renderer is not valid");
 
-					if(value.isZero())
-						continue;
-				}
-
-				if (sampleDirect) {
-					/* A direct sampling strategy was used, which generated
-					   two new vertices at one of the path ends. Temporarily
-					   modify the path to reflect this change */
-					if (t == 1)
-						sensorSubpath.swapEndpoints(vtPred, vtEdge, vt);
-					else
-						emitterSubpath.swapEndpoints(vsPred, vsEdge, vs);
-				}
-
-				/* Compute the multiple importance sampling weight */
-				Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
-					sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
-
-//				if(wr->m_decompositionType != Film::ETransientEllipse && !(s==3 && t == 2))
-//					continue;
-//				else
-//					miWeight = 1.0;
-
-				if (sampleDirect) {
-					/* Now undo the previous change */
-					if (t == 1)
-						sensorSubpath.swapEndpoints(vtPred, vtEdge, vt);
-					else
-						emitterSubpath.swapEndpoints(vsPred, vsEdge, vs);
-				}
-
-				/* Determine the pixel sample position when necessary */
-				if(currentDecompositionType != Film::ETransientEllipse)
-				{
-					if (vt->isSensorSample() && !vt->getSamplePosition(vs, samplePos))
-						continue;
-				}else{
-					if (vt->isSensorSample() && !vt->getSamplePosition(connectionVertex, samplePos))
-						continue;
-				}
-
-				#if BDPT_DEBUG == 1
-					/* When the debug mode is on, collect samples
-					   separately for each sampling strategy. Note: the
-					   following piece of code artificially increases the
-					   exposure of longer paths */
-					Spectrum splatValue = value * (m_config.showWeighted
-						? miWeight : 1.0f);// * std::pow(2.0f, s+t-3.0f));
-					wr->putDebugSample(s, t, samplePos, splatValue);
-				#endif
-
-
-				// Update sampleTransientValue
-				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
-
-					if(SPECTRUM_SAMPLES == 3)
-						value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
-					else
-						SLog(EError, "cannot run transient renderer for spectrum values more than 3");
-
-
-					if(currentDecompositionType == Film::ETransientEllipse)
-						miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
-					if(std::isinf(miWeight))
-						SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
-					if(std::isinf(temp[0]))
-						SLog(EError, "Sample became inf", EllipticPathWeight);
-
-					if (t>=2){
-						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-						sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-					}else if(t==1){
-						// FIXME: This is very inefficient. l_sampleDecompositionValue is very sparse. In fact, we only write to bin with binIndex
-						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-						l_sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;
-						l_sampleDecompositionValue[wr->getChannelCount()-1]=1.0f;
-						wr->putLightSample(samplePos, l_sampleDecompositionValue);
-						//reset the l_sampleDecompositionValue
-						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
-						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
-						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+					if (sampleDirect) {
+						/* A direct sampling strategy was used, which generated
+						   two new vertices at one of the path ends. Temporarily
+						   modify the path to reflect this change */
+						if (t == 1)
+							sensorSubpath.swapEndpoints(vtPred, vtEdge, vt);
+						else
+							emitterSubpath.swapEndpoints(vsPred, vsEdge, vs);
 					}
 
-				}
+					/* Compute the multiple importance sampling weight */
+					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
+						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 
-				if ( currentDecompositionType == Film::ESteadyState){
-					if (t >= 2)
-//						sampleValue += value * 0;
-					sampleValue += value * miWeight;
-					else
-						wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
+	//				if(wr->m_decompositionType != Film::ETransientEllipse && !(s==3 && t == 2))
+	//					continue;
+	//				else
+	//					miWeight = 1.0;
+
+					if (sampleDirect) {
+						/* Now undo the previous change */
+						if (t == 1)
+							sensorSubpath.swapEndpoints(vtPred, vtEdge, vt);
+						else
+							emitterSubpath.swapEndpoints(vsPred, vsEdge, vs);
+					}
+
+					/* Determine the pixel sample position when necessary */
+					if(currentDecompositionType != Film::ETransientEllipse)
+					{
+						if (vt->isSensorSample() && !vt->getSamplePosition(vs, samplePos))
+							continue;
+					}else{
+						if (vt->isSensorSample() && !vt->getSamplePosition(connectionVertex, samplePos))
+							continue;
+					}
+
+					#if BDPT_DEBUG == 1
+						/* When the debug mode is on, collect samples
+						   separately for each sampling strategy. Note: the
+						   following piece of code artificially increases the
+						   exposure of longer paths */
+						Spectrum splatValue = value * (m_config.showWeighted
+							? miWeight : 1.0f);// * std::pow(2.0f, s+t-3.0f));
+						wr->putDebugSample(s, t, samplePos, splatValue);
+					#endif
+
+
+					// Update sampleTransientValue
+					size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+					if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
+
+						if(SPECTRUM_SAMPLES == 3)
+							value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
+						else
+							SLog(EError, "cannot run transient renderer for spectrum values more than 3");
+
+
+						if(currentDecompositionType == Film::ETransientEllipse)
+							miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
+						if(std::isinf(miWeight))
+							SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
+						if(std::isinf(temp[0]))
+							SLog(EError, "Sample became inf", EllipticPathWeight);
+
+						if (t>=2){
+							sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+							sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+							sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+						}else if(t==1){
+							// FIXME: This is very inefficient. l_sampleDecompositionValue is very sparse. In fact, we only write to bin with binIndex
+							l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+							l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+							l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+							wr->putLightSample(samplePos, l_sampleDecompositionValue);
+							//reset the l_sampleDecompositionValue
+							l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
+							l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+							l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+						}
+
+					}
+
+					if ( currentDecompositionType == Film::ESteadyState){
+						if (t >= 2)
+	//						sampleValue += value * 0;
+						sampleValue += value * miWeight;
+						else
+							wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
+					}
 				}
 			}
 		}

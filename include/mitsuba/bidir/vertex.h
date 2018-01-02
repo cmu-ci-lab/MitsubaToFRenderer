@@ -21,6 +21,8 @@
 #define __MITSUBA_BIDIR_VERTEX_H_
 
 #include <mitsuba/bidir/common.h>
+#include <../src/integrators/bdpt/bdpt_wr.h>
+
 
 MTS_NAMESPACE_BEGIN
 
@@ -241,9 +243,17 @@ struct MTS_EXPORT_BIDIR PathVertex {
 	bool EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
 			const PathVertex *pred1, const PathEdge *predEdge1,
 			const PathVertex *pred2, const PathEdge *predEdge2,
-			PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float pathLengthTarget,
+			PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float &pathLengthTarget,
 			Float &value,
 			ETransportMode mode, bool russianRoulette, Spectrum *throughput);
+
+	void EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
+			const PathVertex *vsPred, const PathVertex *vs, const PathEdge *vsEdge,
+			const PathVertex *vtPred, const PathVertex *vt, const PathEdge *vtEdge,
+			PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
+			Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
+			Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
+			ETransportMode mode, BDPTWorkResult *wr);
 
 	/**
 	 * \brief Sample the next vertex in a random walk using the default

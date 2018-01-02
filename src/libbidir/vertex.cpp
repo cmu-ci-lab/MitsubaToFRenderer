@@ -36,7 +36,7 @@ void PathVertex::makeEndpoint(const Scene *scene, Float time, ETransportMode mod
 bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
 		const PathVertex *pred1, const PathEdge *predEdge1,
 		const PathVertex *pred2, const PathEdge *predEdge2,
-		PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float pathLengthTarget,
+		PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float &pathLengthTarget,
 		Float &value,
 		ETransportMode mode, bool russianRoulette, Spectrum *throughput) {
 
@@ -55,7 +55,7 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 	switch (type) {
 		case EEmitterSupernode: {
-			SLog(EError, "Ellipsoidal intersection called at sensor supernode. We do not have space to create additional node");
+			SLog(EError, "Ellipsoidal intersection called at emitter supernode. We do not have space to create additional node");
 		}
 		break;
 		case ESensorSupernode: {
@@ -67,7 +67,6 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		}
 		break;
 		case EEmitterSample: {
-			//code me
 		}
 		case ESurfaceInteraction: {
 
@@ -101,6 +100,120 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 	return false;
 }
 
+void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
+		const PathVertex *vsPred, const PathVertex *vs, const PathEdge *vsEdge,
+		const PathVertex *vtPred, const PathVertex *vt, const PathEdge *vtEdge,
+		PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
+		Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
+		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
+		ETransportMode mode, BDPTWorkResult *wr){
+
+	int subSamples = 1; //Need to read this part from hdrfilm, just like samples. It can be adaptive in the future based on miWeight
+	Spectrum cumulativeValue(0.0f);
+
+	if(mode != EImportance)
+		SLog(EError, "Ellipsoidal intersection called with sensor path");
+
+	bool islightSamplePath = vt->isSensorSample();
+
+	Ray ray;
+
+	memset(connectionEdge1, 0, sizeof(PathEdge));
+	memset(connectionVertex, 0, sizeof(PathVertex));
+	memset(connectionEdge2, 0, sizeof(PathEdge));
+
+	connectionEdge1->medium = (vsEdge == NULL) ? NULL : vsEdge->medium;
+
+	size_t binIndex = floor((pathLengthTarget + currentPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+
+	switch (type) {
+		case EEmitterSupernode: {
+			SLog(EError, "Ellipsoidal intersection called at emitter supernode. We do not have space to create additional node");
+		}
+		break;
+		case ESensorSupernode: {
+			SLog(EError, "Ellipsoidal intersection called at sensor supernode. We do not have space to create additional node");
+		}
+		break;
+		case ESensorSample: {
+			SLog(EError, "Ellipsoidal intersection called at sensor sample. We do not start from sensor path and should not have encountered this case");
+		}
+		break;
+		case EEmitterSample: {
+		}
+		case ESurfaceInteraction: {
+
+			Ellipsoid e(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget); // TODO: remove memory of ellipse
+
+			ray.setOrigin(getIntersection().p);
+			Intersection &its = connectionVertex->getIntersection();
+
+			for(int i = 0; i < subSamples; i++){
+				EllipticPathWeight = 1.0f;
+				if(scene->ellipsoidIntersectAll(e, EllipticPathWeight, ray, its, sampler)){
+					connectionVertex->type = PathVertex::ESurfaceInteraction;
+					connectionVertex->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
+							its.shape->isEmitter() || its.shape->isSensor());
+					int interactions = 0; // FIXME: can we do better than this?
+
+					if(!(connectionEdge1->pathConnectAndCollapse(scene, vsEdge, vs, connectionVertex, NULL, interactions)) || !(connectionEdge2->pathConnectAndCollapse(scene, connectionEdge1, connectionVertex, vt, vtEdge, interactions)))
+						continue;
+				}else{
+					continue;
+				}
+				Spectrum currentValue(value);
+				if(vs->type == PathVertex::ESurfaceInteraction)
+					currentValue *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
+							connectionVertex->eval(scene, vs, vt, ERadiance) *
+							vt->eval(scene, vtPred, connectionVertex, ERadiance);
+				else if(vs->type == PathVertex::EEmitterSample)
+					currentValue *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+							connectionVertex->eval(scene, vs, vt, ERadiance) *
+							vt->eval(scene, vtPred, connectionVertex, ERadiance);
+				else
+					SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
+									"unsupported vertex type (%i)!", vs->type);
+				currentValue *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
+								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
+				currentValue *= EllipticPathWeight;
+				if(currentValue.isZero())
+					continue;
+				if(islightSamplePath){
+					if (!vt->getSamplePosition(connectionVertex, samplePos))
+						continue;
+					currentValue.toLinearRGB(temp[0],temp[1],temp[2]);
+					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+					wr->putLightSample(samplePos, l_sampleDecompositionValue);
+					//reset the l_sampleDecompositionValue
+					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
+					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+				}else{
+					cumulativeValue += currentValue;
+				}
+			}
+			if(!islightSamplePath && !cumulativeValue.isZero()){
+				cumulativeValue /= subSamples;
+//				cumulativeValue *= value;
+				cumulativeValue.toLinearRGB(temp[0],temp[1],temp[2]);
+				sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+				sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+				sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+			}
+
+		}
+		break;
+		case EMediumInteraction: {
+			SLog(EError, "Ellipsoidal intersection called with Medium interaction, which is not handled today");
+		}
+		break;
+		default:
+			SLog(EError, "Ellipsoidal intersection encountered an "
+				"unsupported vertex type (%i)!", type);
+	}
+}
 
 
 bool PathVertex::sampleNext(const Scene *scene, Sampler *sampler,
