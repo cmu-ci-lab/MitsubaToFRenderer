@@ -450,8 +450,17 @@ public:
 //							}
 
 							if(!value.isZero() && PathLengthRemaining > 0){
-								 Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
+								EMeasure vsMeasure = vs->measure;
+								EMeasure vtMeasure = vt->measure;
+
+								vs->measure = vt->measure = EArea;
+
+								Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
 									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+
+								vs->measure = vsMeasure;
+								vt->measure = vtMeasure;
+
 								 tempPathLength = emitterPathlength[s] + sensorPathlength[t];
 								 vs->EllipsoidalSampleBetween(scene, m_sampler, vsPred, vs, vsEdge,
 																			   vtPred, vt, vtEdge,
