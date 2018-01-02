@@ -101,8 +101,8 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 }
 
 void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
-		const PathVertex *vsPred, const PathVertex *vs, const PathEdge *vsEdge,
-		const PathVertex *vtPred, const PathVertex *vt, const PathEdge *vtEdge,
+		const PathVertex *vsPred, PathVertex *vs, const PathEdge *vsEdge,
+		const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 		PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
 		Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
 		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
@@ -117,6 +117,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 	bool islightSamplePath = vt->isSensorSample();
 
 	Ray ray;
+
+	EMeasure vsOriginal = vs->measure;
+	EMeasure vtOriginal = vt->measure;
 
 	memset(connectionEdge1, 0, sizeof(PathEdge));
 	memset(connectionVertex, 0, sizeof(PathVertex));
@@ -149,6 +152,10 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 			Intersection &its = connectionVertex->getIntersection();
 
 			for(int i = 0; i < subSamples; i++){
+
+				vs->measure = vsOriginal;
+				vt->measure = vtOriginal;
+
 				EllipticPathWeight = 1.0f;
 				if(scene->ellipsoidIntersectAll(e, EllipticPathWeight, ray, its, sampler)){
 					connectionVertex->type = PathVertex::ESurfaceInteraction;
@@ -173,6 +180,8 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				else
 					SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
 									"unsupported vertex type (%i)!", vs->type);
+
+				vs->measure = vt->measure = EArea;
 				currentValue *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
 								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
 				currentValue *= EllipticPathWeight;

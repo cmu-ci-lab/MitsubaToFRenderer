@@ -248,8 +248,8 @@ struct MTS_EXPORT_BIDIR PathVertex {
 			ETransportMode mode, bool russianRoulette, Spectrum *throughput);
 
 	void EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
-			const PathVertex *vsPred, const PathVertex *vs, const PathEdge *vsEdge,
-			const PathVertex *vtPred, const PathVertex *vt, const PathEdge *vtEdge,
+			const PathVertex *vsPred, PathVertex *vs, const PathEdge *vsEdge,
+			const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 			PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
 			Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
 			Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
