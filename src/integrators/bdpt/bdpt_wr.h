@@ -123,6 +123,7 @@ public:
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
 	size_t m_frames;
+	size_t m_subSamples; // For elliptic sampling. Defaults to 1.
 };
 
 MTS_NAMESPACE_END

@@ -53,6 +53,7 @@ struct BDPTConfiguration {
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
 	size_t m_frames;
+	size_t m_subSamples;
 
 	inline BDPTConfiguration() { }
 
@@ -76,6 +77,7 @@ struct BDPTConfiguration {
 				SLog(EError, "maxDepth of BDPT is less than the minimum bound; Rendering is futile");
 		}
 		m_frames = stream->readSize();
+		m_subSamples = stream->readSize();
 	}
 
 	inline void serialize(Stream *stream) const {
@@ -92,6 +94,7 @@ struct BDPTConfiguration {
 		stream->writeFloat(m_decompositionMaxBound);
 		stream->writeFloat(m_decompositionBinWidth);
 		stream->writeSize(m_frames);
+		stream->writeSize(m_subSamples);
 	}
 
 	void dump() const {
@@ -123,6 +126,7 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
 		SLog(EDebug, "   number of frames	   	     : %i", m_frames);
+		SLog(EDebug, "   number of subsamples		 : %i", m_frames);
 		#if BDPT_DEBUG == 1
 			SLog(EDebug, "   Show weighted contributions : %s", showWeighted ? "yes" : "no");
 		#endif

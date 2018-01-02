@@ -73,6 +73,7 @@ Film::Film(const Properties &props)
 	m_decompositionMaxBound = props.getFloat("maxBound", 0.0f);
 	m_decompositionBinWidth = props.getFloat("binWidth", 1.0f);
 	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
+	m_subSamples = props.getSize("subSamples", 1);
 }
 
 Film::Film(Stream *stream, InstanceManager *manager)
@@ -86,6 +87,7 @@ Film::Film(Stream *stream, InstanceManager *manager)
 	m_decompositionMaxBound = stream->readFloat();
 	m_decompositionBinWidth = stream->readFloat();
 	m_frames = stream->readSize();
+	m_subSamples = stream->readSize();
 	m_filter = static_cast<ReconstructionFilter *>(manager->getInstance(stream));
 }
 
@@ -102,6 +104,7 @@ void Film::serialize(Stream *stream, InstanceManager *manager) const {
 	stream->writeFloat(m_decompositionMaxBound);
 	stream->writeFloat(m_decompositionBinWidth);
 	stream->writeSize(m_frames);
+	stream->writeSize(m_subSamples);
 	manager->serialize(stream, m_filter.get());
 }
 

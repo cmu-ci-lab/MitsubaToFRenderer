@@ -210,6 +210,8 @@ public:
 		m_config.m_decompositionMaxBound 	= film->getDecompositionMaxBound();
 		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();
 		m_config.m_frames = film->getFrames();
+		m_config.m_subSamples = film->getSubSamples();
+
 
 		if (m_config.maxDepth!=-1 && m_config.m_decompositionType == Film::EBounce){
 			if (m_config.maxDepth > m_config.m_decompositionMaxBound)

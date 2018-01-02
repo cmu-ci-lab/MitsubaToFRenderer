@@ -38,6 +38,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_decompositionBinWidth = conf.m_decompositionBinWidth;
 	m_decompositionType = conf.m_decompositionType;
 	m_frames = conf.m_frames;
+	m_subSamples = conf.m_subSamples;
 
 	if (conf.m_decompositionType == Film::ESteadyState) {
 		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
@@ -138,6 +139,7 @@ void BDPTWorkResult::load(Stream *stream) {
 	m_decompositionMaxBound = stream->readFloat();
 	m_decompositionBinWidth = stream->readFloat();
 	m_frames = stream->readSize();
+	m_subSamples = stream->readSize();
 }
 
 void BDPTWorkResult::save(Stream *stream) const {
@@ -154,6 +156,7 @@ void BDPTWorkResult::save(Stream *stream) const {
 	stream->writeFloat(m_decompositionMaxBound);
 	stream->writeFloat(m_decompositionBinWidth);
 	stream->writeSize(m_frames);
+	stream->writeSize(m_subSamples);
 }
 
 std::string BDPTWorkResult::toString() const {

@@ -89,6 +89,7 @@ public:
 	inline Float getDecompositionMaxBound() const {return m_decompositionMaxBound; }
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
 	inline size_t getFrames() const {return m_frames; }
+	inline size_t getSubSamples() const {return m_subSamples; }
 
 	/**
 	 * \brief Develop the contents of a subregion of the film and store
@@ -166,6 +167,7 @@ protected:
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
 	size_t m_frames;
+	size_t m_subSamples;
 };
 
 MTS_NAMESPACE_END

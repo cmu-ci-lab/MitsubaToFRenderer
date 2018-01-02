@@ -429,25 +429,6 @@ public:
 					if(currentDecompositionType == Film::ETransientEllipse){ // Adding additional vertex can only increase path length
 						if(!combine || tempPathLength <= wr->m_decompositionMinBound){
 							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
-//							if(value.isZero() || PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,
-//																										   vt, vtEdge,
-//																										   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining,
-//																										   EllipticPathWeight,
-//																										   EImportance,(int) emitterSubpath.vertexCount() > m_config.rrDepth, &throughputS)))
-//								continue;
-//							else{
-//								if(vs->type == PathVertex::ESurfaceInteraction)
-//									value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
-//											connectionVertex->eval(scene, vs, vt, ERadiance) *
-//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
-//								else if(vs->type == PathVertex::EEmitterSample)
-//									value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
-//											connectionVertex->eval(scene, vs, vt, ERadiance) *
-//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
-//								else
-//									SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
-//													"unsupported vertex type (%i)!", vs->type);
-//							}
 
 							if(!value.isZero() && PathLengthRemaining > 0){
 								EMeasure vsMeasure = vs->measure;
@@ -468,22 +449,8 @@ public:
 																			   EllipticPathWeight, miWeight, value,
 																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos,
 																			   EImportance, wr);
-								 continue;
 							}
-							else
-								continue;
-//								if(vs->type == PathVertex::ESurfaceInteraction)
-//									value *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
-//											connectionVertex->eval(scene, vs, vt, ERadiance) *
-//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
-//								else if(vs->type == PathVertex::EEmitterSample)
-//									value *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
-//											connectionVertex->eval(scene, vs, vt, ERadiance) *
-//											vt->eval(scene, vtPred, connectionVertex, ERadiance);
-//								else
-//									SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "
-//													"unsupported vertex type (%i)!", vs->type);
-
+							continue;
 						}else
 							continue;
 					}

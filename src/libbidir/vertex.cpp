@@ -108,7 +108,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
 		ETransportMode mode, BDPTWorkResult *wr){
 
-	int subSamples = 1; //Need to read this part from hdrfilm, just like samples. It can be adaptive in the future based on miWeight
+	int subSamples = wr->m_subSamples; //Need to read this part from hdrfilm, just like samples. It can be adaptive in the future based on miWeight
 	Spectrum cumulativeValue(0.0f);
 
 	if(mode != EImportance)
