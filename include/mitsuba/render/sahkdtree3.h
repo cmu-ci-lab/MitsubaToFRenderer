@@ -114,6 +114,7 @@ public:
 	using Parent::m_nodes;
 	using Parent::m_aabb;
 	using Parent::m_indices;
+	using Parent::m_maxDepth;
 
 protected:
 	void buildInternal() {

@@ -198,6 +198,9 @@ public:
 	inline size_t getPrimitiveCount() const{
 		return m_kdtree->getPrimitiveCount();
 	}
+	inline size_t getMaxDepth() const{
+		return m_kdtree->getMaxDepth();
+	}
 
 
 	/**

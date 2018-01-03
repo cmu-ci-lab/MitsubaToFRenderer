@@ -108,6 +108,10 @@ public:
 		return m_shapeMap[m_shapeMap.size()-1];
 	}
 
+	inline SizeType getMaxKDDepth() const{
+		return m_maxDepth;
+	}
+
 	/// Return an axis-aligned bounding box containing all primitives
 	inline const AABB &getAABB() const { return m_aabb; }
 

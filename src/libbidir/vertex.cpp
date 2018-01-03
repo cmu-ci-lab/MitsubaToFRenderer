@@ -71,7 +71,9 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		case ESurfaceInteraction: {
 
 			size_t primCount = scene->getPrimitiveCount();
-			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pred1->getShadingNormal(), pred2->getShadingNormal(), primCount, pathLengthTarget); // TODO: remove memory of ellipse
+			size_t maxDepth  = scene->getMaxDepth();
+
+			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pred1->getShadingNormal(), pred2->getShadingNormal(), maxDepth, primCount, pathLengthTarget); // TODO: remove memory of ellipse
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = succ->getIntersection();
@@ -148,7 +150,8 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		case ESurfaceInteraction: {
 
 			size_t primCount = scene->getPrimitiveCount();
-			Ellipsoid e(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), primCount, pathLengthTarget); // TODO: remove memory of ellipse
+			size_t maxDepth  = scene->getMaxDepth();
+			Ellipsoid e(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), maxDepth, primCount, pathLengthTarget); // TODO: remove memory of ellipse
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = connectionVertex->getIntersection();

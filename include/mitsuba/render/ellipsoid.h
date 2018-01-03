@@ -517,7 +517,7 @@ private:
 
 /* For ellipsoid intersections */
 struct Cache{
-	enum STATE {
+	enum STATE : char{
 		// To be determined if the ellipsoid intersects (either Bounding box or triangle)
 		ETBD = 0x00,
 
@@ -529,74 +529,69 @@ struct Cache{
 	};
 
 private:
-	struct Node{
-		Node *left;
-		Node *right;
-		STATE state;
-		Node(){
-			state 	= ETBD;
-			left 	= NULL;
-			right 	= NULL;
-		}
-	};
-
-	Node *root;
-	Node **currentNode;
-
-	void recursiveDelete(Node* &cacheNode){
-		if(cacheNode == NULL)
-			return;
-		recursiveDelete(cacheNode->left);
-		recursiveDelete(cacheNode->right);
-		delete cacheNode;
-	}
 
 	STATE *m_triangleState;
+	STATE *m_nodeState;
+	size_t m_currentNode;
+	size_t m_triangleSize;
+	size_t m_nodeSize;
 
 public:
-	Cache(size_t N){
-		root = NULL;
-		currentNode = &root;
-		m_triangleState = new STATE[N];
-		for(size_t i = 0; i < N; i++){
-			m_triangleState[i] = STATE::ETBD;
-		}
+	Cache(size_t maxDepth, size_t primCount){
+		m_nodeSize = pow(2, maxDepth)-1;
+		m_triangleSize = primCount;
+		m_currentNode = 0;
+		m_triangleState = new STATE[m_triangleSize];
+		m_nodeState = new STATE[m_nodeSize];
+
+		memset(m_triangleState, STATE::ETBD, m_triangleSize);
+		memset(m_nodeState, STATE::ETBD, m_nodeSize);
+
+//		for(size_t i = 0; i < m_triangleSize; i++){ // FIXME: We are just writing zeros. memset might be efficient
+//			m_nodeState[i] = STATE::ETBD;
+//		}
+//		for(size_t i = 0; i < m_triangleSize; i++){ // FIXME: We are just writing zeros. memset might be efficient
+//			m_triangleState[i] = STATE::ETBD;
+//		}
 	}
 
 	STATE getState(){
-		if((*currentNode) == NULL){
-			(*currentNode) = new Node();
-		}
-		return (*currentNode)->state;
+		return m_nodeState[m_currentNode];
+//		return STATE::ETBD;
 	}
 
 	void setState(STATE state){
-		(*currentNode)->state = state;
+		if(m_currentNode >= m_nodeSize )
+			SLog(EError,"Node cache setting crossed size limit");
+		m_nodeState[m_currentNode] = state;
 	}
 
 	STATE getTriState(size_t index){
 		return m_triangleState[index];
+//		return STATE::ETBD;
 	}
 
 	void setTriState(size_t index, STATE state){
+		if(index >= m_triangleSize )
+			SLog(EError,"Triangle setting crossed size limit");
 		m_triangleState[index] = state;
 	}
 
 	void goLeft(){
-		(*currentNode) = (*currentNode)->left;
+		m_currentNode = 2*m_currentNode+1;
 	}
 
 	void goRight(){
-		(*currentNode) = (*currentNode)->right;
+		m_currentNode = 2*m_currentNode+2;
 	}
 
 	void reset(){
-		(*currentNode) = root;
+		m_currentNode = 0;
 	}
 
 	~Cache(){
-		recursiveDelete(root);
 		delete [] m_triangleState;
+		delete [] m_nodeState;
 	}
 
 };
@@ -606,8 +601,8 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	typedef _PointType                  PointType;
 	typedef _LengthType                 LengthType;
 
-	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const size_t primCount, const LengthType tau):
-			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), ellipsoidCache(primCount), Tau(tau){
+	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const size_t maxDepth, const size_t primCount, const LengthType tau):
+			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), ellipsoidCache(maxDepth, primCount), Tau(tau){
 		// Algorithm to compute the T3D3D
 
 		a = tau/2.0;
