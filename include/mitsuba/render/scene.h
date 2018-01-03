@@ -189,11 +189,16 @@ public:
 	}
 
 	/* comment appropriately*/
-	inline bool ellipsoidIntersectAll(const Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
+	inline bool ellipsoidIntersectAll(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
 		if(e.isDegenerate())
 			return false;
 		return m_kdtree->ellipsoidIntersect(e, value, ray, its, sampler);
 	}
+
+	inline size_t getPrimitiveCount() const{
+		return m_kdtree->getPrimitiveCount();
+	}
+
 
 	/**
 	 * \brief Intersect a ray against all primitives stored in the scene

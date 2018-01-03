@@ -513,43 +513,103 @@ private:
 	Matrix4x4_FLOAT m_invTransform;
 };
 
+
+
+/* For ellipsoid intersections */
+struct Cache{
+	enum STATE {
+		// To be determined if the ellipsoid intersects (either Bounding box or triangle)
+		ETBD = 0x00,
+
+		// Intersects (either Bounding box or triangle)
+		EIntersects = 0x01,
+
+		// Does not intersect (either Bounding box or triangle)
+		EFails = 0x02,
+	};
+
+private:
+	struct Node{
+		Node *left;
+		Node *right;
+		STATE state;
+		Node(){
+			state 	= ETBD;
+			left 	= NULL;
+			right 	= NULL;
+		}
+	};
+
+	Node *root;
+	Node **currentNode;
+
+	void recursiveDelete(Node* &cacheNode){
+		if(cacheNode == NULL)
+			return;
+		recursiveDelete(cacheNode->left);
+		recursiveDelete(cacheNode->right);
+		delete cacheNode;
+	}
+
+	STATE *m_triangleState;
+
+public:
+	Cache(size_t N){
+		root = NULL;
+		currentNode = &root;
+		m_triangleState = new STATE[N];
+		for(size_t i = 0; i < N; i++){
+			m_triangleState[i] = STATE::ETBD;
+		}
+	}
+
+	STATE getState(){
+		if((*currentNode) == NULL){
+			(*currentNode) = new Node();
+		}
+		return (*currentNode)->state;
+	}
+
+	void setState(STATE state){
+		(*currentNode)->state = state;
+	}
+
+	STATE getTriState(size_t index){
+		return m_triangleState[index];
+	}
+
+	void setTriState(size_t index, STATE state){
+		m_triangleState[index] = state;
+	}
+
+	void goLeft(){
+		(*currentNode) = (*currentNode)->left;
+	}
+
+	void goRight(){
+		(*currentNode) = (*currentNode)->right;
+	}
+
+	void reset(){
+		(*currentNode) = root;
+	}
+
+	~Cache(){
+		recursiveDelete(root);
+		delete [] m_triangleState;
+	}
+
+};
+
+
 template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	typedef _PointType                  PointType;
 	typedef _LengthType                 LengthType;
 
-	/* Focal points */
-	PointType f1;
-	PointType f2;
-
-	/* Focal points */
-	Normal f1_normal;
-	Normal f2_normal;
-
-	/* center of the ellipse */
-	PointType  C;
-
-	LengthType Tau;
-
-	/* Major and minor axis lengths */
-	LengthType a, b;
-
-	bool degenerateEllipsoid;
-
-	Transform_FLOAT T3D2Ellipsoid;
-	Transform_FLOAT invT3D2Ellipsoid;
-	Transform_FLOAT T3D2Sphere;
-	Transform_FLOAT invT3D2Sphere;
-
-	struct BoundingBox{
-		PointType min;
-		PointType max;
-	}m_aabb;
-
-//	TEllipsoid(const PointType p1, const PointType p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau):
-//			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau){
-	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau):
-			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau){
+	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const size_t primCount, const LengthType tau):
+			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), ellipsoidCache(primCount), Tau(tau){
 		// Algorithm to compute the T3D3D
+
 		a = tau/2.0;
 		C = (f1 + f2) * 0.5;
 		b = (a*a-distanceSquared(C, f1));
@@ -669,6 +729,34 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	FLOAT uniformAngleSampling(const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler, FLOAT &thetaRange) const;
 
+	Cache::STATE cacheCheck(){
+		return ellipsoidCache.getState();
+	}
+
+	void updateCache(Cache::STATE state){
+		return ellipsoidCache.setState(state);
+	}
+
+	void cacheLeft(){
+		ellipsoidCache.goLeft();
+	}
+
+	void cacheRight(){
+		ellipsoidCache.goLeft();
+	}
+
+	void cacheReset(){
+		ellipsoidCache.reset();
+	}
+
+	Cache::STATE cacheGetTriState(size_t index){
+		return ellipsoidCache.getTriState(index);
+	}
+
+	void cacheSetTriState(size_t index, Cache::STATE state){
+		ellipsoidCache.setTriState(index, state);
+	}
+
 
 	//	inline bool isInside(float x, float y, float z) const{
 	//		Point P(x, y, z);
@@ -690,6 +778,37 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	//	inline bool isEllipticPoint(Point P) const{
 	//		return ((P-f1).length + (P-f2).length - Tau) < 0.01f);
 	//	}
+
+	/* Focal points */
+	PointType f1;
+	PointType f2;
+
+	/* Normals of the triangle containing f1 and f2 */
+	Normal f1_normal;
+	Normal f2_normal;
+
+	/* center of the ellipse */
+	PointType  C;
+
+	LengthType Tau;
+
+	/* Major and minor axis lengths */
+	LengthType a, b;
+
+	bool degenerateEllipsoid;
+
+	Transform_FLOAT T3D2Ellipsoid;
+	Transform_FLOAT invT3D2Ellipsoid;
+	Transform_FLOAT T3D2Sphere;
+	Transform_FLOAT invT3D2Sphere;
+
+	Cache ellipsoidCache;
+
+	struct BoundingBox{
+		PointType min;
+		PointType max;
+	}m_aabb;
+
 };
 
 struct IntersectionRecord{

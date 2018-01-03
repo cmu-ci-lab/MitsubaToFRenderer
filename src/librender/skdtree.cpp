@@ -111,7 +111,7 @@ void ShapeKDTree::build() {
 }
 
 /* Search the KD tree recursively starting from root. If both children are a hit, check both the children randomly */
-bool ShapeKDTree::ellipsoidIntersect(const Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
+bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
 	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
 
 	Float positions[8][3] =		{m_aabb.min.x, m_aabb.min.y, m_aabb.min.z,
@@ -131,6 +131,7 @@ bool ShapeKDTree::ellipsoidIntersect(const Ellipsoid &e, Float &value, Ray &ray,
 			ShapeKDTree::ETBD,
 			ShapeKDTree::ETBD,
 			ShapeKDTree::ETBD};
+	e.cacheReset(); // brings the current point to the root node.
 	if (recursiveEllipsoidIntersect(m_nodes, e, value, positions, locations, sampler, temp)) {
 		fillEllipticIntersectionRecord<true>(ray, temp, its);
 		return true; //FIX Me: write the recursive code
@@ -138,14 +139,24 @@ bool ShapeKDTree::ellipsoidIntersect(const Ellipsoid &e, Float &value, Ray &ray,
 	return false;
 }
 
-bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoid &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const{
+bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const{
 
 	IntersectionCache *cache =
 		static_cast<IntersectionCache *>(temp);
 	if(node == NULL)
 		return false;
-	if(!isBoxCuttingEllipsoid(e, P, L))
-		return false;
+	Cache::STATE state = e.cacheCheck();
+	if(state == Cache::STATE::EFails)
+			return false;
+
+	if(state == Cache::STATE::ETBD){
+		if(!isBoxCuttingEllipsoid(e, P, L)){
+			e.updateCache(Cache::STATE::EFails);
+			return false;
+		}else{
+			e.updateCache(Cache::STATE::EIntersects);
+		}
+	}
 
 	if(node->isLeaf()){
 		// leaf handling code:
@@ -192,7 +203,8 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 		Float tempU;
 		Float tempV;
 		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
-		if(ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+			e.cacheSetTriState(primIdx,Cache::EIntersects);
 			cache->shapeIndex = ta.shapeIndex;
 			cache->primIndex = ta.primIndex;
 			cache->u = tempU;
@@ -200,6 +212,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 			value = value*(u-l);
 			return true;
 		}
+		e.cacheSetTriState(primIdx,Cache::EFails);
 		return false;
 	}else{
 
@@ -207,12 +220,14 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoi
 		const int axis = node->getAxis();
 
 		if(sampler->nextFloat() < 0.5f){ // go left
+			e.cacheLeft();
 			fillInlinePositionsAndLocations(P, L, splitValue, axis, 0);
 			if(recursiveEllipsoidIntersect(node->getLeft(), e, value, P, L, sampler, temp)){
 				value *= 2;
 				return true;
 			}
 		}else{ // go right
+			e.cacheRight();
 			fillInlinePositionsAndLocations(P, L, splitValue, axis, 1);
 			if(recursiveEllipsoidIntersect(node->getRight(), e, value, P, L, sampler, temp)){
 				value *= 2;
@@ -309,7 +324,7 @@ void ShapeKDTree::fillPositionsAndLocations(const Float P[][3], const PLocation 
 	SLog(EError,"Fill position optimization is not implemented");
 }
 
-bool ShapeKDTree::isBoxCuttingEllipsoid(const Ellipsoid &e, const Float P[][3], PLocation L[]) const {
+bool ShapeKDTree::isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3], PLocation L[]) const {
 // Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
 // Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
 

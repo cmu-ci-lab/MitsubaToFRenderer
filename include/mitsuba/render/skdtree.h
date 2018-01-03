@@ -115,11 +115,11 @@ public:
 	void build();
 
 	/* comment appropriately*/
-	bool ellipsoidIntersect(const Ellipsoid &ellipse, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
+	bool ellipsoidIntersect(Ellipsoid &ellipse, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
 
-	bool recursiveEllipsoidIntersect(const KDNode* node, const Ellipsoid &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const;
+	bool recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const;
 
-	bool isBoxCuttingEllipsoid(const Ellipsoid &e, const Float P[][3], PLocation L[]) const;
+	bool isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3], PLocation L[]) const;
 
 
 	//direction=0 => Filling in the left one
