@@ -555,37 +555,31 @@ public:
 //		}
 	}
 
-	STATE getState(){
-		return m_nodeState[m_currentNode];
-//		return STATE::ETBD;
-	}
+	STATE getState();
 
-	void setState(STATE state){
+	inline void setState(STATE state){
 		if(m_currentNode >= m_nodeSize )
 			SLog(EError,"Node cache setting crossed size limit");
 		m_nodeState[m_currentNode] = state;
 	}
 
-	STATE getTriState(size_t index){
-		return m_triangleState[index];
-//		return STATE::ETBD;
-	}
+	STATE getTriState(size_t index);
 
-	void setTriState(size_t index, STATE state){
+	inline void setTriState(size_t index, STATE state){
 		if(index >= m_triangleSize )
 			SLog(EError,"Triangle setting crossed size limit");
 		m_triangleState[index] = state;
 	}
 
-	void goLeft(){
+	inline void goLeft(){
 		m_currentNode = 2*m_currentNode+1;
 	}
 
-	void goRight(){
+	inline void goRight(){
 		m_currentNode = 2*m_currentNode+2;
 	}
 
-	void reset(){
+	inline void reset(){
 		m_currentNode = 0;
 	}
 
@@ -737,7 +731,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	}
 
 	void cacheRight(){
-		ellipsoidCache.goLeft();
+		ellipsoidCache.goRight();
 	}
 
 	void cacheReset(){
