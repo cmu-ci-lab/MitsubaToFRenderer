@@ -270,13 +270,13 @@ bool ShapeKDTree::isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3]) const 
 // Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
 
     if (e.m_aabb.max.x < P[0][0]) return false;
-    if (e.m_aabb.min.x > P[3][0]) return false;
+    if (e.m_aabb.min.x > P[7][0]) return false;
 
     if (e.m_aabb.max.y < P[0][1]) return false;
-    if (e.m_aabb.min.y > P[3][1]) return false;
+    if (e.m_aabb.min.y > P[7][1]) return false;
 
     if (e.m_aabb.max.z < P[0][2]) return false;
-    if (e.m_aabb.min.z > P[3][2]) return false;
+    if (e.m_aabb.min.z > P[7][2]) return false;
 
 
 //    if (e.m_aabb.max.x < m_aabb.min.x) return false;
