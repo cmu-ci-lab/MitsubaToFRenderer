@@ -143,7 +143,6 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 
 	if(state == Cache::STATE::ETBD){
 		if(!e.isBoxValid(P)){
-//			if(!isBoxCuttingEllipsoid(e, P)){
 			e.updateCache(Cache::STATE::EFails);
 			return false;
 		}else{
@@ -264,34 +263,6 @@ void ShapeKDTree::fillInlinePositionsAndLocations(Float P[][3], const Float &spl
 	for(int i=0;i<4;i++){
 		P[indices[i]][axis] =splitValue;
 	}
-}
-
-bool ShapeKDTree::isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3]) const {
-// Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
-// Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
-
-    if (e.m_aabb.max.x < P[0][0]) return false;
-    if (e.m_aabb.min.x > P[7][0]) return false;
-
-    if (e.m_aabb.max.y < P[0][1]) return false;
-    if (e.m_aabb.min.y > P[7][1]) return false;
-
-    if (e.m_aabb.max.z < P[0][2]) return false;
-    if (e.m_aabb.min.z > P[7][2]) return false;
-
-
-//    if (e.m_aabb.max.x < m_aabb.min.x) return false;
-//    if (e.m_aabb.min.x > m_aabb.max.x) return false;
-//
-//    if (e.m_aabb.max.y < m_aabb.min.y) return false;
-//    if (e.m_aabb.min.y > m_aabb.max.y) return false;
-//
-//    if (e.m_aabb.max.z < m_aabb.min.z) return false;
-//    if (e.m_aabb.min.z > m_aabb.max.z) return false;
-
-// FIXME: Need to code this idea: If the entire node (AABB) is inside the ellipsoid, we need not check for the intersection
-
-    return true;
 }
 
 bool ShapeKDTree::rayIntersect(const Ray &ray, Intersection &its) const {

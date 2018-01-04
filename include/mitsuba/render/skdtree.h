@@ -111,8 +111,6 @@ public:
 
 	bool recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const;
 
-	bool isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3]) const;
-
 	void fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const;
 	//! @}
 	// =============================================================
