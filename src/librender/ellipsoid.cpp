@@ -14,17 +14,6 @@ typedef policy<digits10<10> > my_pol_10;
 
 MTS_NAMESPACE_BEGIN
 
-Cache::STATE Cache::getState(){
-		return m_nodeState[m_currentNode];
-//	return STATE::ETBD;
-}
-
-Cache::STATE Cache::getTriState(size_t index){
-		return m_triangleState[index];
-//	return STATE::ETBD;
-}
-
-
 template <typename PointType, typename LengthType>
 void TEllipsoid<PointType, LengthType>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const
 {

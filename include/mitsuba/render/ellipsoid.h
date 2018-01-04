@@ -555,19 +555,27 @@ public:
 //		}
 	}
 
-	STATE getState();
+	inline STATE getState(){
+		return m_nodeState[m_currentNode];
+	}
 
 	inline void setState(STATE state){
+#if 0
 		if(m_currentNode >= m_nodeSize )
 			SLog(EError,"Node cache setting crossed size limit");
+#endif
 		m_nodeState[m_currentNode] = state;
 	}
 
-	STATE getTriState(size_t index);
+	inline STATE getTriState(size_t index){
+		return m_triangleState[index];
+	}
 
 	inline void setTriState(size_t index, STATE state){
+#if 0
 		if(index >= m_triangleSize )
 			SLog(EError,"Triangle setting crossed size limit");
+#endif
 		m_triangleState[index] = state;
 	}
 
@@ -691,12 +699,12 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	}
 
 	/* Compute Weighted Inner Product on the Ellipsoid */
-	FLOAT weightedIP(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
+	inline FLOAT weightedIP(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
 		return (A[0]*B[0]/(a*a) + A[1]*B[1]/(b*b) + A[2]*B[2]/(b*b));
 	}
 
 	/* Compute Weighted Inner Product on the Ellipsoid differential */
-	FLOAT weightedIPd(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
+	inline FLOAT weightedIPd(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
 		return -(A[0]*B[0]/(a*a*a) + A[1]*B[1]*a/(b*b*b*b) + A[2]*B[2]*a/(b*b*b*b));
 	}
 
@@ -718,31 +726,31 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	FLOAT uniformAngleSampling(const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler, FLOAT &thetaRange) const;
 
-	Cache::STATE cacheCheck(){
+	inline Cache::STATE cacheCheck(){
 		return ellipsoidCache.getState();
 	}
 
-	void updateCache(Cache::STATE state){
+	inline void updateCache(Cache::STATE state){
 		return ellipsoidCache.setState(state);
 	}
 
-	void cacheLeft(){
+	inline void cacheLeft(){
 		ellipsoidCache.goLeft();
 	}
 
-	void cacheRight(){
+	inline void cacheRight(){
 		ellipsoidCache.goRight();
 	}
 
-	void cacheReset(){
+	inline void cacheReset(){
 		ellipsoidCache.reset();
 	}
 
-	Cache::STATE cacheGetTriState(size_t index){
+	inline Cache::STATE cacheGetTriState(size_t index){
 		return ellipsoidCache.getTriState(index);
 	}
 
-	void cacheSetTriState(size_t index, Cache::STATE state){
+	inline void cacheSetTriState(size_t index, Cache::STATE state){
 		ellipsoidCache.setTriState(index, state);
 	}
 
@@ -799,7 +807,6 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	}m_aabb;
 
 };
-
 struct IntersectionRecord{
 	FLOAT theta;
 	bool directionOutside;

@@ -76,18 +76,6 @@ class MTS_EXPORT_RENDER ShapeKDTree : public SAHKDTree3D<ShapeKDTree> {
 
 public:
 
-	// Location of a point for the ellipsoidal intersection code
-	enum PLocation {
-		/// The point is inside the ellipsoid
-		EInside              = 0x00,
-
-		/// The point is outside the ellipsoid
-		EOutside                = 0x01,
-
-		/// To be determined of the point is inside or outside
-		ETBD                   = 0x02,
-	};
-
 	// =============================================================
 	//! @{ \name Initialization and tree construction
 	// =============================================================
@@ -121,20 +109,11 @@ public:
 	/* comment appropriately*/
 	bool ellipsoidIntersect(Ellipsoid &ellipse, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
 
-	bool recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], PLocation L[], ref<Sampler> sampler, void *temp) const;
+	bool recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const;
 
-	bool isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3], PLocation L[]) const;
+	bool isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3]) const;
 
-
-	//direction=0 => Filling in the left one
-	//direction=1 => Filling in the right one
-	void fillPositionsAndLocations(const Float P[][3], const PLocation L[], Float PNew[][3], PLocation LNew[], const Float splitValue, const int axis, const bool direction) const;
-
-	//direction=0 => Filling from the left one to the right one
-	//direction=1 => Filling from the right one to the left one
-	void fillPositionsAndLocations(const Float P[][3], const PLocation L[], Float PNew[][3], PLocation LNew[], const int axis, const bool direction) const;
-
-	void fillInlinePositionsAndLocations(Float P[][3], PLocation L[], const Float splitValue, const int axis, const bool direction) const;
+	void fillInlinePositionsAndLocations(Float P[][3], const Float splitValue, const int axis, const bool direction) const;
 	//! @}
 	// =============================================================
 
