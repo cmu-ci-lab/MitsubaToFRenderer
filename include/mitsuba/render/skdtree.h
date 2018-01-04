@@ -107,13 +107,13 @@ public:
 	void build();
 
 	/* comment appropriately*/
-	bool ellipsoidIntersect(Ellipsoid &ellipse, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
+	bool ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
 
 	bool recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const;
 
 	bool isBoxCuttingEllipsoid(Ellipsoid &e, const Float P[][3]) const;
 
-	void fillInlinePositionsAndLocations(Float P[][3], const Float splitValue, const int axis, const bool direction) const;
+	void fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const;
 	//! @}
 	// =============================================================
 

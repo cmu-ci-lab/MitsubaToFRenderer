@@ -142,7 +142,8 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 			return false;
 
 	if(state == Cache::STATE::ETBD){
-		if(!isBoxCuttingEllipsoid(e, P)){
+		if(!e.isBoxValid(P)){
+//			if(!isBoxCuttingEllipsoid(e, P)){
 			e.updateCache(Cache::STATE::EFails);
 			return false;
 		}else{
@@ -231,7 +232,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 
 //direction=0 => Filling in the left one
 //direction=1 => Filling in the right one
-void ShapeKDTree::fillInlinePositionsAndLocations(Float P[][3], const Float splitValue, const int axis, const bool direction) const{
+void ShapeKDTree::fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const{
 	int indices[4];
 	switch(axis){
 		case 0:{

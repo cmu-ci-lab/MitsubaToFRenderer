@@ -15,6 +15,61 @@ typedef policy<digits10<10> > my_pol_10;
 MTS_NAMESPACE_BEGIN
 
 template <typename PointType, typename LengthType>
+bool TEllipsoid<PointType, LengthType>::isBoxValid(const Float P[][3]) const{
+	if(!isBoxCuttingEllipsoid(P)){
+		return false;
+	}
+	if(isBoxOnNegativeHalfSpace(f1, f1_normal, P) || isBoxOnNegativeHalfSpace(f2, f2_normal, P) ){
+		return false;
+	}
+	if(isBoxInsideEllipsoid(P)){
+		return false;
+	}
+	return true;
+}
+
+template <typename PointType, typename LengthType>
+bool TEllipsoid<PointType, LengthType>::isBoxInsideEllipsoid(const Float P[][3]) const{
+	for(size_t i = 0; i < 8; i++){
+		PointType Pt(P[i][0], P[i][1], P[i][2]);
+		PointType spherePt;
+		transformToSphere(Pt, spherePt);
+		if( epsInclusiveGreater(lengthSquared(spherePt), 1) ){
+			return false;
+		}
+	}
+	return true;
+}
+
+template <typename PointType, typename LengthType>
+bool TEllipsoid<PointType, LengthType>::isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const Float P[][3]) const{
+	for(size_t i = 0; i < 8; i++){
+		Normal N1(P[i][0]-PT.x, P[i][1]-PT.y, P[i][2]-PT.z);
+		if(epsInclusiveGreater(dot(N1, N), 0)){
+			return false;
+		}
+	}
+	return true;
+}
+
+template <typename PointType, typename LengthType>
+bool TEllipsoid<PointType, LengthType>::isBoxCuttingEllipsoid(const Float P[][3]) const {
+// Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
+// Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
+
+    if (m_aabb.max.x < P[0][0]) return false;
+    if (m_aabb.min.x > P[7][0]) return false;
+
+    if (m_aabb.max.y < P[0][1]) return false;
+    if (m_aabb.min.y > P[7][1]) return false;
+
+    if (m_aabb.max.z < P[0][2]) return false;
+    if (m_aabb.min.z > P[7][2]) return false;
+
+    return true;
+}
+
+template <typename PointType, typename LengthType>
 void TEllipsoid<PointType, LengthType>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const
 {
     TVector3<LengthType> v0 = b - a, v1 = c - a, v2 = p - a;
@@ -686,6 +741,14 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 //template bool TEllipsoid<Point, Float>::ellipsoidIntersectTriangle(const Point &triA, const Point &triB, const Point &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
 //
 //template struct TEllipsoid<Point, Float>;
+
+template bool TEllipsoid<Point3d, double>::isBoxValid(const Float P[][3]) const;
+
+template bool TEllipsoid<Point3d, double>::isBoxInsideEllipsoid(const Float P[][3]) const;
+
+template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const Float P[][3]) const;
+
+template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const Float P[][3]) const;
 
 template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const;
 

@@ -686,13 +686,13 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		return;
 	}
 
-	/* Transforms a point from 3D space to Sphere space*/
+	/* Transforms a point from 3D space to unit sphere space*/
 	inline void transformToSphere(const PointType &A, PointType &B) const{
 		B = T3D2Sphere(A);
 		return;
 	}
 
-	/* Transforms a point from Sphere space to 3D space*/
+	/* Transforms a point from unit sphere space to 3D space*/
 	inline void transformFromSphere(const PointType &A, PointType &B) const{
 		B = invT3D2Sphere(A);
 		return;
@@ -725,6 +725,14 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	FLOAT ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
 
 	FLOAT uniformAngleSampling(const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler, FLOAT &thetaRange) const;
+
+	bool isBoxValid(const Float P[][3]) const;
+
+	bool isBoxInsideEllipsoid(const Float P[][3]) const;
+
+	bool isBoxCuttingEllipsoid(const Float P[][3]) const;
+
+	bool isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const Float P[][3]) const;
 
 	inline Cache::STATE cacheCheck(){
 		return ellipsoidCache.getState();
