@@ -12,6 +12,11 @@ typedef policy<digits10<10> > my_pol_10;
 #define epsInclusiveGreater(a, b) (a > (b - Eps))
 #define epsInclusiveLesser(a, b) (a < (b + Eps))
 
+#define epsExclusiveGreaterF(a, b) (a > (b + Epsilon))
+#define epsExclusiveLesserF(a, b) (a < (b - Epsilon))
+#define epsInclusiveGreaterF(a, b) (a > (b - Epsilon))
+#define epsInclusiveLesserF(a, b) (a < (b + Epsilon))
+
 MTS_NAMESPACE_BEGIN
 
 template <typename PointType, typename LengthType>
@@ -57,14 +62,24 @@ bool TEllipsoid<PointType, LengthType>::isBoxCuttingEllipsoid(const Float P[][3]
 // Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
 // Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
 
-    if (m_aabb.max.x < P[0][0]) return false;
-    if (m_aabb.min.x > P[7][0]) return false;
+    if (epsExclusiveLesserF(m_aabb.max.x, P[0][0])) return false;
+    if (epsExclusiveGreaterF(m_aabb.min.x, P[7][0])) return false;
 
-    if (m_aabb.max.y < P[0][1]) return false;
-    if (m_aabb.min.y > P[7][1]) return false;
+    if (epsExclusiveLesserF(m_aabb.max.y, P[0][1])) return false;
+    if (epsExclusiveGreaterF(m_aabb.min.y, P[7][1])) return false;
 
-    if (m_aabb.max.z < P[0][2]) return false;
-    if (m_aabb.min.z > P[7][2]) return false;
+    if (epsExclusiveLesserF(m_aabb.max.z, P[0][2])) return false;
+    if (epsExclusiveGreaterF(m_aabb.min.z, P[7][2])) return false;
+
+
+//    if (m_aabb.max.x < P[0][0]) return false;
+//    if (m_aabb.min.x > P[7][0]) return false;
+//
+//    if (m_aabb.max.y < P[0][1]) return false;
+//    if (m_aabb.min.y > P[7][1]) return false;
+//
+//    if (m_aabb.max.z < P[0][2]) return false;
+//    if (m_aabb.min.z > P[7][2]) return false;
 
     return true;
 }
@@ -531,14 +546,14 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 
 	Point f1_Float(f1.x, f1.y, f1.z);
 	Point f2_Float(f2.x, f2.y, f2.z);
-	if(epsExclusiveLesser(dot(f1_normal, a - f1_Float), 0) && epsExclusiveLesser(dot(f1_normal, b - f1_Float), 0) && epsExclusiveLesser(dot(f1_normal, c - f1_Float), 0))
+	if(epsExclusiveLesserF(dot(f1_normal, a - f1_Float), 0) && epsExclusiveLesserF(dot(f1_normal, b - f1_Float), 0) && epsExclusiveLesserF(dot(f1_normal, c - f1_Float), 0))
 		return true;
-	if(epsExclusiveLesser(dot(f2_normal, a - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, b - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, c - f2_Float), 0))
+	if(epsExclusiveLesserF(dot(f2_normal, a - f2_Float), 0) && epsExclusiveLesserF(dot(f2_normal, b - f2_Float), 0) && epsExclusiveLesserF(dot(f2_normal, c - f2_Float), 0))
 		return true;
 
 	//FIXME: This code will fail if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately.
 	Normal N = cross(b-a, c-a);
-	if(epsExclusiveLesser(dot(N, f1_Float - a), 0) || epsExclusiveLesser(dot(N, f2_Float - a), 0) )
+	if(epsExclusiveLesserF(dot(N, f1_Float - a), 0) || epsExclusiveLesserF(dot(N, f2_Float - a), 0) )
 		return true;
 
 	return false;
