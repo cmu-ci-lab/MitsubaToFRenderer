@@ -536,8 +536,8 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	if(epsExclusiveLesser(dot(f2_normal, a - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, b - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, c - f2_Float), 0))
 		return true;
 
-	//FIXME: verify how triangle normals are stored in Mitsuba BDPT. This code is wrong if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane.
-	Normal N(n_u, n_v, 1.0f);
+	//FIXME: This code is wrong if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately
+	Normal N = cross(b-a, c-a);
 	if(epsExclusiveLesser(dot(N, f1_Float - a), 0) || epsExclusiveLesser(dot(N, f2_Float - a), 0) )
 		return true;
 
