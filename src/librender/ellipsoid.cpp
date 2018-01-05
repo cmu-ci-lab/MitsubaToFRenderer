@@ -527,15 +527,20 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const{
-	VECTOR f1_d_normal(this->f1_normal);
-	VECTOR f2_d_normal(this->f2_normal);
+bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Float &n_u, const Float &n_v) const{
 
-	//FIXME: verify how normals are stored in Mitsuba.
-	if(epsInclusiveGreater(dot(f1_d_normal,this->f1-a), 0) && epsInclusiveGreater(dot(f1_d_normal,this->f1-b), 0) && epsInclusiveGreater(dot(f1_d_normal,this->f1-c), 0))
+	Point f1_Float(f1.x, f1.y, f1.z);
+	Point f2_Float(f2.x, f2.y, f2.z);
+	if(epsExclusiveLesser(dot(f1_normal, a - f1_Float), 0) && epsExclusiveLesser(dot(f1_normal, b - f1_Float), 0) && epsExclusiveLesser(dot(f1_normal, c - f1_Float), 0))
 		return true;
-	if(epsInclusiveGreater(dot(f2_d_normal,this->f2-a), 0) && epsInclusiveGreater(dot(f2_d_normal,this->f2-b), 0) && epsInclusiveGreater(dot(f2_d_normal,this->f2-c), 0))
+	if(epsExclusiveLesser(dot(f2_normal, a - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, b - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, c - f2_Float), 0))
 		return true;
+
+	//FIXME: verify how triangle normals are stored in Mitsuba BDPT. This code is wrong if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane.
+	Normal N(n_u, n_v, 1.0f);
+	if(epsExclusiveLesser(dot(N, f1_Float - a), 0) || epsExclusiveLesser(dot(N, f2_Float - a), 0) )
+		return true;
+
 	return false;
 }
 
@@ -750,7 +755,7 @@ template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointT
 
 template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const Float P[][3]) const;
 
-template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const;
+template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Float &n_u, const Float &n_v) const;
 
 template void TEllipsoid<Point3d, double>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
 

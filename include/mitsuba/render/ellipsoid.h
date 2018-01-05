@@ -603,8 +603,8 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	typedef _PointType                  PointType;
 	typedef _LengthType                 LengthType;
 
-	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const size_t maxDepth, const size_t primCount, const LengthType tau):
-			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), ellipsoidCache(maxDepth, primCount), Tau(tau){
+	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau, const size_t maxDepth, const size_t primCount):
+			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau), ellipsoidCache(maxDepth, primCount){
 		// Algorithm to compute the T3D3D
 
 		a = tau/2.0;
@@ -708,8 +708,8 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		return -(A[0]*B[0]/(a*a*a) + A[1]*B[1]*a/(b*b*b*b) + A[2]*B[2]*a/(b*b*b*b));
 	}
 
-	/* Early rejection of the triangle if the triangle is not in the */
-	bool earlyTriangleReject(const PointType &a, const PointType &b, const PointType &c) const;
+	/* Early rejection of the triangle if the triangle is not in the positive hyperspace of either of the focal points or if the focal points are not in the positive hyperspace of the triangle*/
+	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Float &n_u, const Float &n_v) const;
 
 	/*Convert intersections found by ellipsoid intersection algorithm into barycentric co-ordinates for the rest of mitsuba code to work*/
 	void Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;

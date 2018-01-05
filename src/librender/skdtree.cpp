@@ -193,6 +193,15 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 		const TriAccel &ta = m_triAccel[primIdx];
 		Float tempU;
 		Float tempV;
+
+		if(e.cacheGetTriState(primIdx) == Cache::ETBD){
+			// Do early rejection tests only once
+			if(e.earlyTriangleReject(ta.A, ta.B, ta.C, ta.n_u, ta.n_v)){
+				e.cacheSetTriState(primIdx,Cache::EFails);
+				return false;
+			}
+		}
+
 		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
 		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
 			e.cacheSetTriState(primIdx,Cache::EIntersects);
