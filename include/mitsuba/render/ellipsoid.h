@@ -559,7 +559,7 @@ public:
 		return m_nodeState[m_currentNode];
 	}
 
-	inline void setState(STATE state){
+	inline void setState(const STATE &state){
 #if 0
 		if(m_currentNode >= m_nodeSize )
 			SLog(EError,"Node cache setting crossed size limit");
@@ -567,11 +567,11 @@ public:
 		m_nodeState[m_currentNode] = state;
 	}
 
-	inline STATE getTriState(size_t index){
+	inline STATE getTriState(const size_t &index){
 		return m_triangleState[index];
 	}
 
-	inline void setTriState(size_t index, STATE state){
+	inline void setTriState(const size_t &index, const STATE &state){
 #if 0
 		if(index >= m_triangleSize )
 			SLog(EError,"Triangle setting crossed size limit");
@@ -738,7 +738,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		return ellipsoidCache.getState();
 	}
 
-	inline void updateCache(Cache::STATE state){
+	inline void updateCache(const Cache::STATE &state){
 		return ellipsoidCache.setState(state);
 	}
 
@@ -754,11 +754,11 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		ellipsoidCache.reset();
 	}
 
-	inline Cache::STATE cacheGetTriState(size_t index){
+	inline Cache::STATE cacheGetTriState(const size_t &index){
 		return ellipsoidCache.getTriState(index);
 	}
 
-	inline void cacheSetTriState(size_t index, Cache::STATE state){
+	inline void cacheSetTriState(const size_t &index, const Cache::STATE &state){
 		ellipsoidCache.setTriState(index, state);
 	}
 
