@@ -610,7 +610,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		a = tau/2.0;
 		C = (f1 + f2) * 0.5;
 		b = (a*a-distanceSquared(C, f1));
-		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex.
+		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
 			degenerateEllipsoid = true;
 		else
 			degenerateEllipsoid = false;

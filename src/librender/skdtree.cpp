@@ -142,7 +142,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 			return false;
 
 	if(state == Cache::STATE::ETBD){
-		if(e.isBoxValid(P)){
+		if(!e.isBoxValid(P)){
 			e.updateCache(Cache::STATE::EFails);
 			return false;
 		}else{
@@ -247,7 +247,7 @@ void ShapeKDTree::fillInlinePositionsAndLocations(Float P[][3], const Float &spl
 			if(direction == 0){
 				indices[0] = 1;indices[1] = 3;indices[2] = 5;indices[3] = 7;
 			}else{
-				indices[0] = 0;indices[1] = 2;indices[2] = 4;indices[3] = 5;
+				indices[0] = 0;indices[1] = 2;indices[2] = 4;indices[3] = 6;
 			}
 			break;
 		}
