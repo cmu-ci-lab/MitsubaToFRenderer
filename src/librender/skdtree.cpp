@@ -196,7 +196,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 
 		if(e.cacheGetTriState(primIdx) == Cache::ETBD){
 			// Do early rejection tests only once
-			if(e.earlyTriangleReject(ta.A, ta.B, ta.C, ta.n_u, ta.n_v)){
+			if(e.earlyTriangleReject(ta.A, ta.B, ta.C)){
 				e.cacheSetTriState(primIdx,Cache::EFails);
 				return false;
 			}

@@ -527,7 +527,7 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Float &n_u, const Float &n_v) const{
+bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const{
 
 	Point f1_Float(f1.x, f1.y, f1.z);
 	Point f2_Float(f2.x, f2.y, f2.z);
@@ -536,7 +536,7 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	if(epsExclusiveLesser(dot(f2_normal, a - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, b - f2_Float), 0) && epsExclusiveLesser(dot(f2_normal, c - f2_Float), 0))
 		return true;
 
-	//FIXME: This code is wrong if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately
+	//FIXME: This code will fail if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately.
 	Normal N = cross(b-a, c-a);
 	if(epsExclusiveLesser(dot(N, f1_Float - a), 0) || epsExclusiveLesser(dot(N, f2_Float - a), 0) )
 		return true;
@@ -551,9 +551,6 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 	PointType triA(temp_triA.x, temp_triA.y, temp_triA.z);
 	PointType triB(temp_triB.x, temp_triB.y, temp_triB.z);
 	PointType triC(temp_triC.x, temp_triC.y, temp_triC.z);
-
-//	if(earlyTriangleReject(triA, triB, triC))
-//		return false;
 
 	//Compute the center of the ellipse (resulting from ellipsoid-plane intersection)
 	PointType SphereA;transformToSphere(triA, SphereA);
@@ -681,71 +678,9 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		}
 		return true;
 	}
-//Old algorithm that is no longer relevant
-//	float R = sqrt(1-d);
-//
-//	Vector Z(0.0f, 0.0f, 1.0f);
-//	Transform T3D2D, T3D2Dinv;
-//	Transform temp;
-//	T3D2D = temp.rotateVector2Vector(N, Z)*temp.translate(-Center);
-//
-//	T3D2Dinv = T3D2D.inverse();
-//
-//	PointType Corners[3];
-//
-//	Corners[0] = T3D2D(SphereA);
-//	Corners[1] = T3D2D(SphereB);
-//	Corners[2] = T3D2D(SphereC);
-//
-//	Float angle = 0.0f;
-//	if(circlePolygonIntersection(Corners, R, sampler, angle, value)){
-//		PointType Projection(R*cos(angle), R*sin(angle), 0.0f), Original;
-//		Projection = T3D2Dinv(Projection);
-//		e.transformFromSphere(Projection, Original);
-//		//Compute the Barycentric co-ordinates. Return that and save it in the cache.
-//		Barycentric(Original, A, B, C, u, v);
-//
-//		return true;
-//	}
 
 	return false;
 }
-
-//template bool TEllipsoid<Point, FLOAT>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
-//
-//template void TEllipsoid<Point, FLOAT>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
-//
-//template bool TEllipsoid<Point, FLOAT>::circlePolygonIntersectionAngles(FLOAT thetaMin[], FLOAT thetaMax[], size_t &indices, const Point Corners[], const FLOAT &r) const;
-//
-//template FLOAT TEllipsoid<Point, FLOAT>::circleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r) const;
-//
-//template int TEllipsoid<Point, FLOAT>::specialCircleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const;
-//
-//template FLOAT TEllipsoid<Point, FLOAT>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const;
-//
-//template FLOAT TEllipsoid<Point, FLOAT>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
-//
-//template bool TEllipsoid<Point, FLOAT>::ellipsoidIntersectTriangle(const PointType &triA, const PointType &triB, const PointType &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
-//
-//template struct TEllipsoid<Point, FLOAT>;
-
-//template bool TEllipsoid<Point, Float>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
-//
-//template void TEllipsoid<Point, Float>::Barycentric(const Point &p, const Point &a, const Point &b, const Point &c, Float &u, Float &v) const;
-//
-//template bool TEllipsoid<Point, Float>::circlePolygonIntersectionAngles(FLOAT thetaMin[], FLOAT thetaMax[], size_t &indices, const Point Corners[], const FLOAT &r) const;
-//
-//template FLOAT TEllipsoid<Point, Float>::circleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r) const;
-//
-//template int TEllipsoid<Point, Float>::specialCircleLineIntersection(const Point &P1, const Point &P2, const FLOAT &r, const int &specialCase, FLOAT &angle) const;
-//
-//template FLOAT TEllipsoid<Point, Float>::ellipticSampleWeight(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[],const size_t &indices) const;
-//
-//template FLOAT TEllipsoid<Point, Float>::ellipticCurveSampling(const FLOAT k, const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler) const;
-//
-//template bool TEllipsoid<Point, Float>::ellipsoidIntersectTriangle(const Point &triA, const Point &triB, const Point &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
-//
-//template struct TEllipsoid<Point, Float>;
 
 template bool TEllipsoid<Point3d, double>::isBoxValid(const Float P[][3]) const;
 
@@ -755,7 +690,7 @@ template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointT
 
 template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const Float P[][3]) const;
 
-template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Float &n_u, const Float &n_v) const;
+template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
 
 template void TEllipsoid<Point3d, double>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
 
