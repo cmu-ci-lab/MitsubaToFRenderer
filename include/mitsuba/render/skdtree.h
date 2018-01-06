@@ -42,6 +42,73 @@ MTS_NAMESPACE_BEGIN
 
 typedef const Shape * ConstShapePtr;
 
+
+struct BBTree{
+	AABB *m_aabb;
+	size_t m_currentNode;
+	size_t m_maxNodes;
+
+	BBTree(size_t& max_depth){
+		m_currentNode = 0;
+		size_t m_maxNodes = pow(2, max_depth);
+		m_aabb = new AABB[m_maxNodes];
+	}
+
+	~BBTree(){
+		delete [] m_aabb;
+	}
+
+	inline void print(const size_t& index) const{
+		if(!(index < m_maxNodes) )
+			SLog(EError, "Trying to access index: %i, when the maxNode index is %i", index, m_maxNodes);
+		cout << "AABB" "[" << "min=" << m_aabb[index].min.toString() << ", max=" << m_aabb[index].max.toString();
+	}
+
+	inline void goLeft(){
+		m_currentNode = 2 * m_currentNode + 1;
+	}
+
+	inline void goRight(){
+		m_currentNode = 2 * m_currentNode + 2;
+	}
+
+	inline void goParent(){
+		m_currentNode = (m_currentNode - 1) >> 1;
+	}
+
+	inline void goRightSibling(){
+		if(m_currentNode%2 == 0)
+			SLog(EError, "goSibling called for root node or Right Node");
+		m_currentNode++;
+	}
+
+	inline void reset(){
+		m_currentNode = 0;
+	}
+
+	inline AABB getAABB(size_t index) const{
+		if(!(index < m_maxNodes) )
+			SLog(EError, "Trying to access index: %i, when the maxNode index is %i", index, m_maxNodes);
+		return m_aabb[index];
+	}
+
+
+	inline AABB getCurrentAABB() const{
+		return m_aabb[m_currentNode];
+	}
+
+	/// Expand the bounding box of the m_currentNode to contain another point
+	inline void expandBy(const Point &p) {
+		m_aabb[m_currentNode].expandBy(p);
+	}
+
+	/// Expand the bounding box to contain bounding boxes of the childen
+	inline void expandByChildren() {
+		m_aabb[m_currentNode].expandBy(m_aabb[2 * m_currentNode + 1]);
+		m_aabb[m_currentNode].expandBy(m_aabb[2 * m_currentNode + 2]);
+	}
+};
+
 /**
  * \brief SAH KD-tree acceleration data structure for fast ray-triangle
  * intersections.
@@ -109,7 +176,7 @@ public:
 	/* comment appropriately*/
 	bool ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
 
-	bool recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const;
+	bool recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const;
 
 	void fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const;
 	//! @}
@@ -436,6 +503,9 @@ protected:
 		its.wi = its.toLocal(-ray.d);
 	}
 
+	void printBBTree(const KDNode* node, const size_t& index) const;
+
+	void buildBBTree(const KDNode* node);
 
 	/**
 	 * \brief After having found a unique intersection, fill a proper record
@@ -564,11 +634,13 @@ private:
 	std::vector<const Shape *> m_shapes;
 	std::vector<bool> m_triangleFlag;
 	std::vector<IndexType> m_shapeMap;
+	BBTree *m_BBTree;
 
 #if !defined(MTS_KD_CONSERVE_MEMORY)
 	TriAccel *m_triAccel;
 #endif
 };
+
 
 MTS_NAMESPACE_END
 

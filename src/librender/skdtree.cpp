@@ -108,6 +108,11 @@ void ShapeKDTree::build() {
 	Log(m_logLevel, "");
 	KDAssert(idx == primCount);
 #endif
+
+	size_t maxDepth = getMaxDepth();
+	m_BBTree = new BBTree(maxDepth);
+	buildBBTree(m_nodes);
+	printBBTree(m_nodes, 0);
 }
 
 /* Search the KD tree recursively starting from root. If both children are a hit, check both the children randomly */
@@ -124,14 +129,74 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Inter
 								 m_aabb.max.x, m_aabb.max.y, m_aabb.max.z};
 
 	e.cacheReset(); // brings the current point to the root node.
-	if (recursiveEllipsoidIntersect(m_nodes, e, value, positions, sampler, temp)) {
+	cout << ":NR";
+	if (recursiveEllipsoidIntersect(m_nodes, 0, e, value, positions, sampler, temp)) {
 		fillEllipticIntersectionRecord<true>(ray, temp, its);
 		return true;
 	}
 	return false;
 }
 
-bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const{
+void ShapeKDTree::buildBBTree(const KDNode* node){
+	if(node == NULL){
+		return;
+	}
+	if(node->isLeaf()){
+		for (unsigned int entry=node->getPrimStart(),
+						last = node->getPrimEnd(); entry != last; entry++) {
+			const IndexType primIdx = m_indices[entry];
+			const TriAccel &ta = m_triAccel[primIdx];
+			m_BBTree->expandBy(ta.A);
+			m_BBTree->expandBy(ta.B);
+			m_BBTree->expandBy(ta.C);
+		}
+	}else{
+		m_BBTree->goLeft();
+		buildBBTree(node->getLeft());
+		m_BBTree->goRightSibling();
+		buildBBTree(node->getRight());
+		m_BBTree->goParent();
+		m_BBTree->expandByChildren();
+	}
+	return;
+}
+
+void ShapeKDTree::printBBTree(const KDNode* node, const size_t& index) const{
+
+	if(node->isLeaf()){
+		cout << "\nLeaf Node:\n";
+		m_BBTree->print(index);
+		for (unsigned int entry=node->getPrimStart(),
+				last = node->getPrimEnd(); entry != last; entry++) {
+			const IndexType primIdx = m_indices[entry];
+			const TriAccel &ta = m_triAccel[primIdx];
+			cout << "A: (" << ta.A.x << ", " << ta.A.y << ", " << ta.A.z << "); ";
+			cout << "B: (" << ta.B.x << ", " << ta.B.y << ", " << ta.B.z << "); ";
+			cout << "C: (" << ta.C.x << ", " << ta.C.y << ", " << ta.C.z << ");\n";
+		}
+		cout << "End Leaf Node; \n";
+		return;
+	}
+	switch(node->getAxis()){
+		case 0:
+			printBBTree(node->getLeft(), 2*index+1);
+			printBBTree(node->getRight(), 2*index+2);
+			break;
+		case 1:
+			printBBTree(node->getLeft(), 2*index+1);
+			printBBTree(node->getRight(), 2*index+2);
+			break;
+		case 2:
+			printBBTree(node->getLeft(), 2*index+1);
+			printBBTree(node->getRight(), 2*index+2);
+			break;
+	}
+	cout << "\nInner Node: ";
+	m_BBTree->print(index);
+	cout << "End Inner Node; \n";
+}
+
+bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const{
 
 	IntersectionCache *cache =
 		static_cast<IntersectionCache *>(temp);
@@ -204,6 +269,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 
 		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
 		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+			cout<<":TC";
 			e.cacheSetTriState(primIdx,Cache::EIntersects);
 			cache->shapeIndex = ta.shapeIndex;
 			cache->primIndex = ta.primIndex;
@@ -221,15 +287,15 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, Ellipsoid &e, 
 
 		if(sampler->nextFloat() < 0.5f){ // go left
 			e.cacheLeft();
-			fillInlinePositionsAndLocations(P, splitValue, axis, 0);
-			if(recursiveEllipsoidIntersect(node->getLeft(), e, value, P, sampler, temp)){
+//			fillInlinePositionsAndLocations(P, splitValue, axis, 0);
+			if(recursiveEllipsoidIntersect(node->getLeft(), 2*index+1, e, value, P, sampler, temp)){
 				value *= 2;
 				return true;
 			}
 		}else{ // go right
 			e.cacheRight();
 			fillInlinePositionsAndLocations(P, splitValue, axis, 1);
-			if(recursiveEllipsoidIntersect(node->getRight(), e, value, P, sampler, temp)){
+			if(recursiveEllipsoidIntersect(node->getRight(), 2*index+2, e, value, P, sampler, temp)){
 				value *= 2;
 				return true;
 			}
