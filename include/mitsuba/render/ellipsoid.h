@@ -726,13 +726,13 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	FLOAT uniformAngleSampling(const FLOAT thetaMin[], const FLOAT thetaMax[], const size_t &indices, ref<Sampler> sampler, FLOAT &thetaRange) const;
 
-	bool isBoxValid(const Float P[][3]) const;
+	bool isBoxValid(const AABB& aabb) const;
 
-	bool isBoxInsideEllipsoid(const Float P[][3]) const;
+	bool isBoxInsideEllipsoid(const AABB& aabb) const;
 
-	bool isBoxCuttingEllipsoid(const Float P[][3]) const;
+	bool isBoxCuttingEllipsoid(const AABB& aabb) const;
 
-	bool isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const Float P[][3]) const;
+	bool isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const AABB& aabb) const;
 
 	inline Cache::STATE cacheCheck(){
 		return ellipsoidCache.getState();

@@ -112,7 +112,7 @@ void ShapeKDTree::build() {
 	size_t maxDepth = getMaxDepth();
 	m_BBTree = new BBTree(maxDepth);
 	buildBBTree(m_nodes);
-	printBBTree(m_nodes, 0);
+//	printBBTree(m_nodes, 0);
 }
 
 /* Search the KD tree recursively starting from root. If both children are a hit, check both the children randomly */
@@ -129,7 +129,6 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Inter
 								 m_aabb.max.x, m_aabb.max.y, m_aabb.max.z};
 
 	e.cacheReset(); // brings the current point to the root node.
-	cout << ":NR";
 	if (recursiveEllipsoidIntersect(m_nodes, 0, e, value, positions, sampler, temp)) {
 		fillEllipticIntersectionRecord<true>(ray, temp, its);
 		return true;
@@ -207,7 +206,8 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 			return false;
 
 	if(state == Cache::STATE::ETBD){
-		if(!e.isBoxValid(P)){
+		AABB currentAABB = m_BBTree->getAABB(index);
+		if(!e.isBoxValid(currentAABB)){
 			e.updateCache(Cache::STATE::EFails);
 			return false;
 		}else{
@@ -269,7 +269,6 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 
 		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
 		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
-			cout<<":TC";
 			e.cacheSetTriState(primIdx,Cache::EIntersects);
 			cache->shapeIndex = ta.shapeIndex;
 			cache->primIndex = ta.primIndex;
@@ -282,19 +281,14 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 		return false;
 	}else{
 
-		const Float splitValue = (Float)node->getSplit();
-		const int axis = node->getAxis();
-
 		if(sampler->nextFloat() < 0.5f){ // go left
 			e.cacheLeft();
-//			fillInlinePositionsAndLocations(P, splitValue, axis, 0);
 			if(recursiveEllipsoidIntersect(node->getLeft(), 2*index+1, e, value, P, sampler, temp)){
 				value *= 2;
 				return true;
 			}
 		}else{ // go right
 			e.cacheRight();
-			fillInlinePositionsAndLocations(P, splitValue, axis, 1);
 			if(recursiveEllipsoidIntersect(node->getRight(), 2*index+2, e, value, P, sampler, temp)){
 				value *= 2;
 				return true;

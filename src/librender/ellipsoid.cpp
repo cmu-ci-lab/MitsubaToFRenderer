@@ -1,4 +1,5 @@
 #include <mitsuba/render/ellipsoid.h>
+#include <mitsuba/core/aabb.h>
 using boost::math::policies::policy;
 using boost::math::policies::digits10;
 
@@ -20,23 +21,24 @@ typedef policy<digits10<10> > my_pol_10;
 MTS_NAMESPACE_BEGIN
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::isBoxValid(const Float P[][3]) const{
-	if(!isBoxCuttingEllipsoid(P)){
+bool TEllipsoid<PointType, LengthType>::isBoxValid(const AABB& aabb) const{
+	if(!isBoxCuttingEllipsoid(aabb)){
 		return false;
 	}
-	if(isBoxOnNegativeHalfSpace(f1, f1_normal, P) || isBoxOnNegativeHalfSpace(f2, f2_normal, P) ){
+	if(isBoxOnNegativeHalfSpace(f1, f1_normal, aabb) || isBoxOnNegativeHalfSpace(f2, f2_normal, aabb) ){
 		return false;
 	}
-	if(isBoxInsideEllipsoid(P)){
+	if(isBoxInsideEllipsoid(aabb)){
 		return false;
 	}
 	return true;
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::isBoxInsideEllipsoid(const Float P[][3]) const{
+bool TEllipsoid<PointType, LengthType>::isBoxInsideEllipsoid(const AABB& aabb) const{
 	for(size_t i = 0; i < 8; i++){
-		PointType Pt(P[i][0], P[i][1], P[i][2]);
+		const Point& temp = aabb.getCorner(i);
+		PointType Pt(temp[0], temp[1], temp[2]);
 		PointType spherePt;
 		transformToSphere(Pt, spherePt);
 		if( epsInclusiveGreater(lengthSquared(spherePt), 1) ){
@@ -47,10 +49,11 @@ bool TEllipsoid<PointType, LengthType>::isBoxInsideEllipsoid(const Float P[][3])
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const Float P[][3]) const{
+bool TEllipsoid<PointType, LengthType>::isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const AABB& aabb) const{
 	for(size_t i = 0; i < 8; i++){
-		Normal N1(P[i][0]-PT.x, P[i][1]-PT.y, P[i][2]-PT.z);
-		if(epsInclusiveGreater(dot(N1, N), 0)){
+		const Point& temp = aabb.getCorner(i);
+		Normal N1(temp.x-PT.x, temp.y-PT.y, temp.z-PT.z);
+		if(epsInclusiveGreaterF(dot(N1, N), 0)){
 			return false;
 		}
 	}
@@ -58,28 +61,18 @@ bool TEllipsoid<PointType, LengthType>::isBoxOnNegativeHalfSpace(const PointType
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::isBoxCuttingEllipsoid(const Float P[][3]) const {
+bool TEllipsoid<PointType, LengthType>::isBoxCuttingEllipsoid(const AABB& aabb) const {
 // Check if the bounding boxes of the ellipsoid intersects with the bounding box of the triangles
 // Bounding box intersection algorithm: http://gamemath.com/2011/09/detecting-whether-two-boxes-overlap/
 
-    if (epsExclusiveLesserF(m_aabb.max.x, P[0][0])) return false;
-    if (epsExclusiveGreaterF(m_aabb.min.x, P[7][0])) return false;
+    if (epsExclusiveLesserF(m_aabb.max.x, aabb.min.x)) return false;
+    if (epsExclusiveGreaterF(m_aabb.min.x, aabb.max.x)) return false;
 
-    if (epsExclusiveLesserF(m_aabb.max.y, P[0][1])) return false;
-    if (epsExclusiveGreaterF(m_aabb.min.y, P[7][1])) return false;
+    if (epsExclusiveLesserF(m_aabb.max.y, aabb.min.y)) return false;
+    if (epsExclusiveGreaterF(m_aabb.min.y, aabb.max.y)) return false;
 
-    if (epsExclusiveLesserF(m_aabb.max.z, P[0][2])) return false;
-    if (epsExclusiveGreaterF(m_aabb.min.z, P[7][2])) return false;
-
-
-//    if (m_aabb.max.x < P[0][0]) return false;
-//    if (m_aabb.min.x > P[7][0]) return false;
-//
-//    if (m_aabb.max.y < P[0][1]) return false;
-//    if (m_aabb.min.y > P[7][1]) return false;
-//
-//    if (m_aabb.max.z < P[0][2]) return false;
-//    if (m_aabb.min.z > P[7][2]) return false;
+    if (epsExclusiveLesserF(m_aabb.max.z, aabb.min.z)) return false;
+    if (epsExclusiveGreaterF(m_aabb.min.z, aabb.max.z)) return false;
 
     return true;
 }
@@ -697,13 +690,13 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 	return false;
 }
 
-template bool TEllipsoid<Point3d, double>::isBoxValid(const Float P[][3]) const;
+template bool TEllipsoid<Point3d, double>::isBoxValid(const AABB& aabb) const;
 
-template bool TEllipsoid<Point3d, double>::isBoxInsideEllipsoid(const Float P[][3]) const;
+template bool TEllipsoid<Point3d, double>::isBoxInsideEllipsoid(const AABB& aabb) const;
 
-template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const Float P[][3]) const;
+template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const AABB& aabb) const;
 
-template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const Float P[][3]) const;
+template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const AABB& aabb) const;
 
 template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
 
