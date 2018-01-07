@@ -566,6 +566,12 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 	PointType SphereC;transformToSphere(triC, SphereC);
 	PointType Origin(0.0, 0.0, 0.0);
 
+	if(epsExclusiveLesser(lengthSquared(SphereA), 1) &&
+	   epsExclusiveLesser(lengthSquared(SphereB), 1) &&
+	   epsExclusiveLesser(lengthSquared(SphereC), 1)){
+		return false;
+	}
+
 	TVector3<LengthType> b = SphereC-SphereA, c = SphereB-SphereA, N = cross(c, b);
 	N = normalize(N);
 

@@ -50,7 +50,7 @@ struct BBTree{
 
 	BBTree(size_t& max_depth){
 		m_currentNode = 0;
-		size_t m_maxNodes = pow(2, max_depth);
+		size_t m_maxNodes = pow(2, max_depth) + 1;
 		m_aabb = new AABB[m_maxNodes];
 	}
 
