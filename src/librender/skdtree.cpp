@@ -196,107 +196,175 @@ void ShapeKDTree::printBBTree(const KDNode* node, const size_t& index) const{
 }
 
 bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const{
-
 	IntersectionCache *cache =
-		static_cast<IntersectionCache *>(temp);
-	if(node == NULL)
-		return false;
-	Cache::STATE state = e.cacheCheck();
-	if(state == Cache::STATE::EFails)
-			return false;
-
-	if(state == Cache::STATE::ETBD){
-		AABB currentAABB = m_BBTree->getAABB(index);
-		if(!e.isBoxValid(currentAABB)){
-			e.updateCache(Cache::STATE::EFails);
-			return false;
-		}else{
-			e.updateCache(Cache::STATE::EIntersects);
-		}
-	}
-
-	if(node->isLeaf()){
-		// leaf handling code:
-		int l = (int)(node->getPrimStart());
-		int u = (int)(node->getPrimEnd());
-
-		/*
-		 * checks all the triangles in a random permutation. However, this approach will bias the estimate. Hence, currently testing the first random triangle only and adjusting weight according to the intersection
-		 *
-		std::vector<int> Permutation;
-		auto it = Permutation.begin();
-		for(int i = l;i < u; i++){
-			it = Permutation.insert(it, i);
-			it++;
-		}
-
-		auto it1 = Permutation.begin();
-		auto it2 = Permutation.end();
-
-//		sampler->shuffle(it1,it2);
-//		//FixME: sampler->shuffle(it1,it2) code is not compiling. Copy pasted the same code here.
-		for (it = it2 - 1; it > it1; --it)
-					std::iter_swap(it, it1 + sampler->nextSize((size_t) (it-it1)));
-
-		for (auto x: Permutation) {
-			const IndexType primIdx = m_indices[x];
-			const TriAccel &ta = m_triAccel[primIdx];
-			Float tempU;
-			Float tempV;
-			if(ta.ellipseIntersectTriangle(e, value, tempU, tempV, sampler)){
-				cache->shapeIndex = ta.shapeIndex;
-				cache->primIndex = ta.primIndex;
-				cache->u = tempU;
-				cache->v = tempV;
-				return true;
-			}
-
-		}
-		*/
-		int x = l+sampler->nextSize(u-l); //checkME
-		const IndexType primIdx = m_indices[x];
-		const TriAccel &ta = m_triAccel[primIdx];
-		Float tempU;
-		Float tempV;
-
-		if(e.cacheGetTriState(primIdx) == Cache::ETBD){
-			// Do early rejection tests only once
-			if(e.earlyTriangleReject(ta.A, ta.B, ta.C)){
-				e.cacheSetTriState(primIdx,Cache::EFails);
+			static_cast<IntersectionCache *>(temp);
+	size_t idx = index;
+	int multiplier = 1;
+	while(node != NULL && !node->isLeaf()){
+		// Check BBox is valid
+		Cache::STATE state = e.cacheCheck();
+		if(state == Cache::STATE::EFails)
 				return false;
+
+		if(state == Cache::STATE::ETBD){
+			if(!e.isBoxValid(m_BBTree->getAABB(idx))){
+				e.updateCache(Cache::STATE::EFails);
+				return false;
+			}else{
+				e.updateCache(Cache::STATE::EIntersects);
 			}
 		}
-
-		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
-		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
-			e.cacheSetTriState(primIdx,Cache::EIntersects);
-			cache->shapeIndex = ta.shapeIndex;
-			cache->primIndex = ta.primIndex;
-			cache->u = tempU;
-			cache->v = tempV;
-			value = value*(u-l);
-			return true;
-		}
-		e.cacheSetTriState(primIdx,Cache::EFails);
-		return false;
-	}else{
-
+		//Travel through the tree
 		if(sampler->nextFloat() < 0.5f){ // go left
 			e.cacheLeft();
-			if(recursiveEllipsoidIntersect(node->getLeft(), 2*index+1, e, value, P, sampler, temp)){
-				value *= 2;
-				return true;
-			}
+			node = node->getLeft();
+			idx  = 2*idx + 1;
 		}else{ // go right
 			e.cacheRight();
-			if(recursiveEllipsoidIntersect(node->getRight(), 2*index+2, e, value, P, sampler, temp)){
-				value *= 2;
-				return true;
-			}
+			node = node->getRight();
+			idx  = 2*idx + 2;
+		}
+		multiplier *= 2;
+
+	}
+	//leaf code
+
+	int l = (int)(node->getPrimStart());
+	int u = (int)(node->getPrimEnd());
+
+	int x = l+sampler->nextSize(u-l); //checkME
+	const IndexType &primIdx = m_indices[x];
+	const TriAccel &ta = m_triAccel[primIdx];
+	Float tempU;
+	Float tempV;
+
+	if(e.cacheGetTriState(primIdx) == Cache::ETBD){
+		// Do early rejection tests only once
+		if(e.earlyTriangleReject(ta.A, ta.B, ta.C)){
+			e.cacheSetTriState(primIdx,Cache::EFails);
+			return false;
 		}
 	}
+
+	//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
+	if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+		e.cacheSetTriState(primIdx,Cache::EIntersects);
+		cache->shapeIndex = ta.shapeIndex;
+		cache->primIndex = ta.primIndex;
+		cache->u = tempU;
+		cache->v = tempV;
+		value = value*(u-l)*multiplier;
+		return true;
+	}
+	e.cacheSetTriState(primIdx,Cache::EFails);
 	return false;
+
+
 }
+
+//bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const{
+//
+//	IntersectionCache *cache =
+//		static_cast<IntersectionCache *>(temp);
+//	if(node == NULL)
+//		return false;
+//	Cache::STATE state = e.cacheCheck();
+//	if(state == Cache::STATE::EFails)
+//			return false;
+//
+//	if(state == Cache::STATE::ETBD){
+//		AABB currentAABB = m_BBTree->getAABB(index);
+//		if(!e.isBoxValid(currentAABB)){
+//			e.updateCache(Cache::STATE::EFails);
+//			return false;
+//		}else{
+//			e.updateCache(Cache::STATE::EIntersects);
+//		}
+//	}
+//
+//	if(node->isLeaf()){
+//		// leaf handling code:
+//		int l = (int)(node->getPrimStart());
+//		int u = (int)(node->getPrimEnd());
+//
+//		/*
+//		 * checks all the triangles in a random permutation. However, this approach will bias the estimate. Hence, currently testing the first random triangle only and adjusting weight according to the intersection
+//		 *
+//		std::vector<int> Permutation;
+//		auto it = Permutation.begin();
+//		for(int i = l;i < u; i++){
+//			it = Permutation.insert(it, i);
+//			it++;
+//		}
+//
+//		auto it1 = Permutation.begin();
+//		auto it2 = Permutation.end();
+//
+////		sampler->shuffle(it1,it2);
+////		//FixME: sampler->shuffle(it1,it2) code is not compiling. Copy pasted the same code here.
+//		for (it = it2 - 1; it > it1; --it)
+//					std::iter_swap(it, it1 + sampler->nextSize((size_t) (it-it1)));
+//
+//		for (auto x: Permutation) {
+//			const IndexType primIdx = m_indices[x];
+//			const TriAccel &ta = m_triAccel[primIdx];
+//			Float tempU;
+//			Float tempV;
+//			if(ta.ellipseIntersectTriangle(e, value, tempU, tempV, sampler)){
+//				cache->shapeIndex = ta.shapeIndex;
+//				cache->primIndex = ta.primIndex;
+//				cache->u = tempU;
+//				cache->v = tempV;
+//				return true;
+//			}
+//
+//		}
+//		*/
+//		int x = l+sampler->nextSize(u-l); //checkME
+//		const IndexType primIdx = m_indices[x];
+//		const TriAccel &ta = m_triAccel[primIdx];
+//		Float tempU;
+//		Float tempV;
+//
+//		if(e.cacheGetTriState(primIdx) == Cache::ETBD){
+//			// Do early rejection tests only once
+//			if(e.earlyTriangleReject(ta.A, ta.B, ta.C)){
+//				e.cacheSetTriState(primIdx,Cache::EFails);
+//				return false;
+//			}
+//		}
+//
+//		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
+//		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+//			cout << "TA";
+//			e.cacheSetTriState(primIdx,Cache::EIntersects);
+//			cache->shapeIndex = ta.shapeIndex;
+//			cache->primIndex = ta.primIndex;
+//			cache->u = tempU;
+//			cache->v = tempV;
+//			value = value*(u-l);
+//			return true;
+//		}
+//		e.cacheSetTriState(primIdx,Cache::EFails);
+//		return false;
+//	}else{
+//
+//		if(sampler->nextFloat() < 0.5f){ // go left
+//			e.cacheLeft();
+//			if(recursiveEllipsoidIntersect(node->getLeft(), 2*index+1, e, value, P, sampler, temp)){
+//				value *= 2;
+//				return true;
+//			}
+//		}else{ // go right
+//			e.cacheRight();
+//			if(recursiveEllipsoidIntersect(node->getRight(), 2*index+2, e, value, P, sampler, temp)){
+//				value *= 2;
+//				return true;
+//			}
+//		}
+//	}
+//	return false;
+//}
 
 //direction=0 => Filling in the left one
 //direction=1 => Filling in the right one
