@@ -200,7 +200,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 			static_cast<IntersectionCache *>(temp);
 	size_t idx = index;
 	int multiplier = 1;
-	while(node != NULL && !node->isLeaf()){
+	while(!node->isLeaf()){
 		// Check BBox is valid
 		Cache::STATE state = e.cacheCheck();
 		if(state == Cache::STATE::EFails)
@@ -225,12 +225,16 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 			idx  = 2*idx + 2;
 		}
 		multiplier *= 2;
-
+		if(node == NULL)
+			return false;
 	}
 	//leaf code
 
 	int l = (int)(node->getPrimStart());
 	int u = (int)(node->getPrimEnd());
+
+	if(!(l < u))
+		return false;
 
 	int x = l+sampler->nextSize(u-l); //checkME
 	const IndexType &primIdx = m_indices[x];
