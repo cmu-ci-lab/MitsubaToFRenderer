@@ -12,7 +12,7 @@
 #define VECTOR4 Vector4d
 #define PI M_PI_DBL
 
-
+#include <algorithm>
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/transform.h>
 #include <boost/math/special_functions/ellint_2.hpp>
@@ -529,14 +529,22 @@ struct Cache{
 	};
 
 private:
+	std::vector<bool> m_isTriangleStateValid;
+	std::vector<bool> m_TriangleState;
 
+	std::vector<bool> m_isNodeStateValid;
+	std::vector<bool> m_NodeState;
+
+	// FIXME: These data structures are not needed with good coding optimization
 	STATE *m_triangleState;
 	STATE *m_nodeState;
+
 	size_t m_currentNode;
 	size_t m_triangleSize;
 	size_t m_nodeSize;
 
 public:
+
 	Cache(size_t maxDepth, size_t primCount){
 		m_nodeSize = pow(2, maxDepth)-1;
 		m_triangleSize = primCount;
@@ -547,37 +555,25 @@ public:
 		memset(m_triangleState, STATE::ETBD, m_triangleSize);
 		memset(m_nodeState, STATE::ETBD, m_nodeSize);
 
-//		for(size_t i = 0; i < m_triangleSize; i++){ // FIXME: We are just writing zeros. memset might be efficient
-//			m_nodeState[i] = STATE::ETBD;
-//		}
-//		for(size_t i = 0; i < m_triangleSize; i++){ // FIXME: We are just writing zeros. memset might be efficient
-//			m_triangleState[i] = STATE::ETBD;
-//		}
+//		m_isTriangleStateValid.reserve(m_triangleSize);
+//		m_TriangleState.reserve(m_triangleSize);
+//		m_isNodeStateValid.reserve(m_nodeSize);
+//		m_NodeState.reserve(m_nodeSize);
+		m_isTriangleStateValid.assign(m_triangleSize, false);
+		m_TriangleState.assign(m_triangleSize, false);
+		m_isNodeStateValid.assign(m_nodeSize, false);
+		m_NodeState.assign(m_nodeSize, false);
 	}
 
-	inline STATE getState(){
-		return m_nodeState[m_currentNode];
-	}
+	STATE getState();
 
-	inline void setState(const STATE &state){
-#if 0
-		if(m_currentNode >= m_nodeSize )
-			SLog(EError,"Node cache setting crossed size limit");
-#endif
-		m_nodeState[m_currentNode] = state;
-	}
+	void setState(const STATE &state);
 
-	inline STATE getTriState(const size_t &index){
-		return m_triangleState[index];
-	}
+	STATE getTriState(const size_t &index);
 
-	inline void setTriState(const size_t &index, const STATE &state){
-#if 0
-		if(index >= m_triangleSize )
-			SLog(EError,"Triangle setting crossed size limit");
-#endif
-		m_triangleState[index] = state;
-	}
+	void setTriState(const size_t &index, const STATE &state);
+
+
 
 	inline void goLeft(){
 		m_currentNode = 2*m_currentNode+1;
