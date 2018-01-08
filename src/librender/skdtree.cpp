@@ -180,42 +180,39 @@ void ShapeKDTree::printBBTree(const KDNode* node, const size_t& index) const{
 bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
 	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
 
-	e.cacheReset(); // brings the cache current point to the root node.
-	if (ellipsoidParseKDTree(m_nodes, 0, e, value, sampler, temp)) {
+	size_t rootIndex = 0;
+	if (ellipsoidParseKDTree(m_nodes, rootIndex, e, value, sampler, temp)) {
 		fillEllipticIntersectionRecord<true>(ray, temp, its);
 		return true;
 	}
 	return false;
 }
 
-bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, ref<Sampler> sampler, void *temp) const{
+bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid &e, Float &value, ref<Sampler> sampler, void *temp) const{
 	IntersectionCache *cache =
 			static_cast<IntersectionCache *>(temp);
-	size_t idx = index;
 	int multiplier = 1;
 	while(!node->isLeaf()){
 		// Check BBox is valid
-		Cache::STATE state = e.cacheCheck();
+		Cache::STATE state = e.cacheCheck(index);
 		if(state == Cache::STATE::EFails)
 				return false;
 
 		if(state == Cache::STATE::ETBD){
-			if(!e.isBoxValid(m_BBTree->getAABB(idx))){
-				e.updateCache(Cache::STATE::EFails);
+			if(!e.isBoxValid(m_BBTree->getAABB(index))){
+				e.updateCache(index, Cache::STATE::EFails);
 				return false;
 			}else{
-				e.updateCache(Cache::STATE::EIntersects);
+				e.updateCache(index, Cache::STATE::EIntersects);
 			}
 		}
 		//Travel through the tree
 		if(sampler->nextFloat() < 0.5f){ // go left
-			e.cacheLeft();
 			node = node->getLeft();
-			idx  = 2*idx + 1;
-		}else{ // go right
-			e.cacheRight();
+			index  = 2*index + 1;
+		}else{ // go right;
 			node = node->getRight();
-			idx  = 2*idx + 2;
+			index  = 2*index + 2;
 		}
 		multiplier *= 2;
 		if(node == NULL)

@@ -535,45 +535,46 @@ private:
 	std::vector<bool> m_isNodeStateValid;
 	std::vector<bool> m_NodeState;
 
-	// FIXME: These data structures are not needed with good coding optimization
-	size_t m_currentNode;
-//	size_t m_triangleSize;
-//	size_t m_nodeSize;
-
 public:
 
 	Cache(size_t maxDepth, size_t primCount){
 		size_t m_nodeSize = pow(2, maxDepth) - 1;
-//		m_isTriangleStateValid.reserve(m_triangleSize);
-//		m_TriangleState.reserve(m_triangleSize);
-//		m_isNodeStateValid.reserve(m_nodeSize);
-//		m_NodeState.reserve(m_nodeSize);
 		m_isTriangleStateValid.assign(primCount, false);
 		m_TriangleState.assign(primCount, false);
 		m_isNodeStateValid.assign(m_nodeSize, false);
 		m_NodeState.assign(m_nodeSize, false);
 	}
 
-	STATE getState();
-
-	void setState(const STATE &state);
-
-	STATE getTriState(const size_t &index);
-
-	void setTriState(const size_t &index, const STATE &state);
-
-
-
-	inline void goLeft(){
-		m_currentNode = 2*m_currentNode+1;
+	STATE getState(const size_t &index){
+		if(m_isNodeStateValid[index]){
+			if(m_NodeState[index])
+				return STATE::EIntersects;
+			else
+				return STATE::EFails;
+		}
+		return STATE::ETBD;
 	}
 
-	inline void goRight(){
-		m_currentNode = 2*m_currentNode+2;
+	void setState(const size_t &index, const STATE &state){
+		m_isNodeStateValid[index] = true;
+		if(state == STATE::EIntersects)
+			m_NodeState[index] = true;
 	}
 
-	inline void reset(){
-		m_currentNode = 0;
+	STATE getTriState(const size_t &index){
+		if(m_isTriangleStateValid[index]){
+			if(m_TriangleState[index])
+				return STATE::EIntersects;
+			else
+				return STATE::EFails;
+		}
+		return STATE::ETBD;
+	}
+
+	void setTriState(const size_t &index, const STATE &state){
+		m_isTriangleStateValid[index] = true;
+		if(state == STATE::EIntersects)
+			m_TriangleState[index] = true;
 	}
 
 	~Cache(){
@@ -717,24 +718,12 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	bool isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const AABB& aabb) const;
 
-	inline Cache::STATE cacheCheck(){
-		return ellipsoidCache.getState();
+	inline Cache::STATE cacheCheck(const size_t &index){
+		return ellipsoidCache.getState(index);
 	}
 
-	inline void updateCache(const Cache::STATE &state){
-		return ellipsoidCache.setState(state);
-	}
-
-	inline void cacheLeft(){
-		ellipsoidCache.goLeft();
-	}
-
-	inline void cacheRight(){
-		ellipsoidCache.goRight();
-	}
-
-	inline void cacheReset(){
-		ellipsoidCache.reset();
+	inline void updateCache(const size_t &index, const Cache::STATE &state){
+		return ellipsoidCache.setState(index, state);
 	}
 
 	inline Cache::STATE cacheGetTriState(const size_t &index){
@@ -744,28 +733,6 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	inline void cacheSetTriState(const size_t &index, const Cache::STATE &state){
 		ellipsoidCache.setTriState(index, state);
 	}
-
-
-	//	inline bool isInside(float x, float y, float z) const{
-	//		Point P(x, y, z);
-	//		if(lengthSquared(T3D2Sphere(P)) < 1)
-	//			return true;
-	//		return false;
-	//	}
-	//
-	//	inline bool isInside(Point P) const{
-	//		if(lengthSquared(T3D2Sphere(P)) < 1)
-	//			return true;
-	//		return false;
-	//	}
-
-	//	inline Float length(Point P) const{
-	//		return (P-f1).length() + (P-f2).length();
-	//	}
-	//
-	//	inline bool isEllipticPoint(Point P) const{
-	//		return ((P-f1).length + (P-f2).length - Tau) < 0.01f);
-	//	}
 
 	/* Focal points */
 	PointType f1;
