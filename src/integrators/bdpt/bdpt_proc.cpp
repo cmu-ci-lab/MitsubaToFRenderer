@@ -375,6 +375,7 @@ public:
 						}
 
 						if(currentDecompositionType == Film::ETransientEllipse){
+							SLog(EError, "Cannot make Direct Ellipsoidal connections");
 							if(!combine || tempPathLength <= wr->m_decompositionMinBound){ // Adding additional vertex can only increase path length
 								Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
 								if(PathLengthRemaining < 0 || !(vs->EllipsoidalSampleBetween(scene, m_sampler, vs, vsEdge,

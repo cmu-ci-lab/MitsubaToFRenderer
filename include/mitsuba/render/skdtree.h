@@ -176,7 +176,7 @@ public:
 	/* comment appropriately*/
 	bool ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const;
 
-	bool recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const;
+	bool ellipsoidParseKDTree(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, ref<Sampler> sampler, void *temp) const;
 
 	void fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const;
 	//! @}

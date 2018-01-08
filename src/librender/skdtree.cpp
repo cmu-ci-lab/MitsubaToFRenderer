@@ -108,32 +108,13 @@ void ShapeKDTree::build() {
 	Log(m_logLevel, "");
 	KDAssert(idx == primCount);
 #endif
-
+	ref<Timer> timerBB = new Timer();
+	cout << "Constructing a Bounding Box Tree\n";
 	size_t maxDepth = getMaxDepth();
 	m_BBTree = new BBTree(maxDepth);
 	buildBBTree(m_nodes);
+	cout << "Finished -- took " << timerBB->getMilliseconds() << " ms.\n";
 //	printBBTree(m_nodes, 0);
-}
-
-/* Search the KD tree recursively starting from root. If both children are a hit, check both the children randomly */
-bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
-	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
-
-	Float positions[8][3] =		{m_aabb.min.x, m_aabb.min.y, m_aabb.min.z,
-								 m_aabb.max.x, m_aabb.min.y, m_aabb.min.z,
-								 m_aabb.min.x, m_aabb.max.y, m_aabb.min.z,
-								 m_aabb.max.x, m_aabb.max.y, m_aabb.min.z,
-								 m_aabb.min.x, m_aabb.min.y, m_aabb.max.z,
-								 m_aabb.max.x, m_aabb.min.y, m_aabb.max.z,
-								 m_aabb.min.x, m_aabb.max.y, m_aabb.max.z,
-								 m_aabb.max.x, m_aabb.max.y, m_aabb.max.z};
-
-	e.cacheReset(); // brings the current point to the root node.
-	if (recursiveEllipsoidIntersect(m_nodes, 0, e, value, positions, sampler, temp)) {
-		fillEllipticIntersectionRecord<true>(ray, temp, its);
-		return true;
-	}
-	return false;
 }
 
 void ShapeKDTree::buildBBTree(const KDNode* node){
@@ -195,7 +176,19 @@ void ShapeKDTree::printBBTree(const KDNode* node, const size_t& index) const{
 	cout << "End Inner Node; \n";
 }
 
-bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const{
+/* Search the KD tree start from root by randomly choosing one of the child node */
+bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
+	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
+
+	e.cacheReset(); // brings the cache current point to the root node.
+	if (ellipsoidParseKDTree(m_nodes, 0, e, value, sampler, temp)) {
+		fillEllipticIntersectionRecord<true>(ray, temp, its);
+		return true;
+	}
+	return false;
+}
+
+bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, ref<Sampler> sampler, void *temp) const{
 	IntersectionCache *cache =
 			static_cast<IntersectionCache *>(temp);
 	size_t idx = index;
@@ -226,7 +219,7 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 		}
 		multiplier *= 2;
 		if(node == NULL)
-			return false;
+			SLog(EError,"KD Node cannot become NULL");
 	}
 	//leaf code
 
@@ -262,148 +255,6 @@ bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& 
 	}
 	e.cacheSetTriState(primIdx,Cache::EFails);
 	return false;
-
-
-}
-
-//bool ShapeKDTree::recursiveEllipsoidIntersect(const KDNode* node, const size_t& index, Ellipsoid &e, Float &value, Float P[][3], ref<Sampler> sampler, void *temp) const{
-//
-//	IntersectionCache *cache =
-//		static_cast<IntersectionCache *>(temp);
-//	if(node == NULL)
-//		return false;
-//	Cache::STATE state = e.cacheCheck();
-//	if(state == Cache::STATE::EFails)
-//			return false;
-//
-//	if(state == Cache::STATE::ETBD){
-//		AABB currentAABB = m_BBTree->getAABB(index);
-//		if(!e.isBoxValid(currentAABB)){
-//			e.updateCache(Cache::STATE::EFails);
-//			return false;
-//		}else{
-//			e.updateCache(Cache::STATE::EIntersects);
-//		}
-//	}
-//
-//	if(node->isLeaf()){
-//		// leaf handling code:
-//		int l = (int)(node->getPrimStart());
-//		int u = (int)(node->getPrimEnd());
-//
-//		/*
-//		 * checks all the triangles in a random permutation. However, this approach will bias the estimate. Hence, currently testing the first random triangle only and adjusting weight according to the intersection
-//		 *
-//		std::vector<int> Permutation;
-//		auto it = Permutation.begin();
-//		for(int i = l;i < u; i++){
-//			it = Permutation.insert(it, i);
-//			it++;
-//		}
-//
-//		auto it1 = Permutation.begin();
-//		auto it2 = Permutation.end();
-//
-////		sampler->shuffle(it1,it2);
-////		//FixME: sampler->shuffle(it1,it2) code is not compiling. Copy pasted the same code here.
-//		for (it = it2 - 1; it > it1; --it)
-//					std::iter_swap(it, it1 + sampler->nextSize((size_t) (it-it1)));
-//
-//		for (auto x: Permutation) {
-//			const IndexType primIdx = m_indices[x];
-//			const TriAccel &ta = m_triAccel[primIdx];
-//			Float tempU;
-//			Float tempV;
-//			if(ta.ellipseIntersectTriangle(e, value, tempU, tempV, sampler)){
-//				cache->shapeIndex = ta.shapeIndex;
-//				cache->primIndex = ta.primIndex;
-//				cache->u = tempU;
-//				cache->v = tempV;
-//				return true;
-//			}
-//
-//		}
-//		*/
-//		int x = l+sampler->nextSize(u-l); //checkME
-//		const IndexType primIdx = m_indices[x];
-//		const TriAccel &ta = m_triAccel[primIdx];
-//		Float tempU;
-//		Float tempV;
-//
-//		if(e.cacheGetTriState(primIdx) == Cache::ETBD){
-//			// Do early rejection tests only once
-//			if(e.earlyTriangleReject(ta.A, ta.B, ta.C)){
-//				e.cacheSetTriState(primIdx,Cache::EFails);
-//				return false;
-//			}
-//		}
-//
-//		//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
-//		if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
-//			cout << "TA";
-//			e.cacheSetTriState(primIdx,Cache::EIntersects);
-//			cache->shapeIndex = ta.shapeIndex;
-//			cache->primIndex = ta.primIndex;
-//			cache->u = tempU;
-//			cache->v = tempV;
-//			value = value*(u-l);
-//			return true;
-//		}
-//		e.cacheSetTriState(primIdx,Cache::EFails);
-//		return false;
-//	}else{
-//
-//		if(sampler->nextFloat() < 0.5f){ // go left
-//			e.cacheLeft();
-//			if(recursiveEllipsoidIntersect(node->getLeft(), 2*index+1, e, value, P, sampler, temp)){
-//				value *= 2;
-//				return true;
-//			}
-//		}else{ // go right
-//			e.cacheRight();
-//			if(recursiveEllipsoidIntersect(node->getRight(), 2*index+2, e, value, P, sampler, temp)){
-//				value *= 2;
-//				return true;
-//			}
-//		}
-//	}
-//	return false;
-//}
-
-//direction=0 => Filling in the left one
-//direction=1 => Filling in the right one
-void ShapeKDTree::fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const{
-	int indices[4];
-	switch(axis){
-		case 0:{
-			if(direction == 0){
-				indices[0] = 1;indices[1] = 3;indices[2] = 5;indices[3] = 7;
-			}else{
-				indices[0] = 0;indices[1] = 2;indices[2] = 4;indices[3] = 6;
-			}
-			break;
-		}
-		case 1:{
-			if(direction == 0){
-				indices[0] = 2;indices[1] = 3;indices[2] = 6;indices[3] = 7;
-			}else{
-				indices[0] = 0;indices[1] = 1;indices[2] = 4;indices[3] = 5;
-			}
-			break;
-		}
-		case 2:{
-			if(direction == 0){
-				indices[0] = 4;indices[1] = 5;indices[2] = 6;indices[3] = 7;
-			}else{
-				indices[0] = 0;indices[1] = 1;indices[2] = 2;indices[3] = 3;
-			}
-			break;
-		}
-		default: SLog(EError,"axis should only be between 0 to 2");break;
-	}
-	for(int i=0;i<4;i++){
-		P[indices[i]][axis] =splitValue;
-	}
 }
 
 bool ShapeKDTree::rayIntersect(const Ray &ray, Intersection &its) const {
