@@ -536,31 +536,20 @@ private:
 	std::vector<bool> m_NodeState;
 
 	// FIXME: These data structures are not needed with good coding optimization
-	STATE *m_triangleState;
-	STATE *m_nodeState;
-
 	size_t m_currentNode;
-	size_t m_triangleSize;
-	size_t m_nodeSize;
+//	size_t m_triangleSize;
+//	size_t m_nodeSize;
 
 public:
 
 	Cache(size_t maxDepth, size_t primCount){
-		m_nodeSize = pow(2, maxDepth)-1;
-		m_triangleSize = primCount;
-		m_currentNode = 0;
-		m_triangleState = new STATE[m_triangleSize];
-		m_nodeState = new STATE[m_nodeSize];
-
-		memset(m_triangleState, STATE::ETBD, m_triangleSize);
-		memset(m_nodeState, STATE::ETBD, m_nodeSize);
-
+		size_t m_nodeSize = pow(2, maxDepth) - 1;
 //		m_isTriangleStateValid.reserve(m_triangleSize);
 //		m_TriangleState.reserve(m_triangleSize);
 //		m_isNodeStateValid.reserve(m_nodeSize);
 //		m_NodeState.reserve(m_nodeSize);
-		m_isTriangleStateValid.assign(m_triangleSize, false);
-		m_TriangleState.assign(m_triangleSize, false);
+		m_isTriangleStateValid.assign(primCount, false);
+		m_TriangleState.assign(primCount, false);
 		m_isNodeStateValid.assign(m_nodeSize, false);
 		m_NodeState.assign(m_nodeSize, false);
 	}
@@ -588,8 +577,6 @@ public:
 	}
 
 	~Cache(){
-		delete [] m_triangleState;
-		delete [] m_nodeState;
 	}
 
 };

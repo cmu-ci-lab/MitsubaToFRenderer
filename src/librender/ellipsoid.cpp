@@ -23,19 +23,13 @@ typedef policy<digits10<10> > my_pol_10;
 MTS_NAMESPACE_BEGIN
 
 Cache::STATE Cache::getState(){
-	STATE st;
 	if(m_isNodeStateValid[m_currentNode]){
 		if(m_NodeState[m_currentNode])
-			st = STATE::EIntersects;
+			return STATE::EIntersects;
 		else
-			st = STATE::EFails;
-	}else{
-		st = STATE::ETBD;
+			return STATE::EFails;
 	}
-	if(st != m_nodeState[m_currentNode]){
-		SLog(EError,"Cache states don't match");
-	}
-	return m_nodeState[m_currentNode];
+	return STATE::ETBD;
 }
 
 void Cache::setState(const STATE &state){
@@ -47,24 +41,16 @@ void Cache::setState(const STATE &state){
 	m_isNodeStateValid[m_currentNode] = true;
 	if(state == STATE::EIntersects)
 		m_NodeState[m_currentNode] = true;
-	m_nodeState[m_currentNode] = state;
-
 }
 
 Cache::STATE Cache::getTriState(const size_t &index){
-	STATE st;
 	if(m_isTriangleStateValid[index]){
 		if(m_TriangleState[index])
-			st = STATE::EIntersects;
+			return STATE::EIntersects;
 		else
-			st = STATE::EFails;
-	}else{
-		st = STATE::ETBD;
+			return STATE::EFails;
 	}
-	if(st != m_triangleState[index]){
-		SLog(EError,"Cache states don't match");
-	}
-	return m_triangleState[index];
+	return STATE::ETBD;
 }
 
 void Cache::setTriState(const size_t &index, const STATE &state){
@@ -76,7 +62,6 @@ void Cache::setTriState(const size_t &index, const STATE &state){
 	m_isTriangleStateValid[index] = true;
 	if(state == STATE::EIntersects)
 		m_TriangleState[index] = true;
-	m_triangleState[index] = state;
 }
 
 template <typename PointType, typename LengthType>
