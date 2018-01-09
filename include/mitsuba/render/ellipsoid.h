@@ -19,6 +19,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/core/matrix.h>
 
+#include <boost/dynamic_bitset.hpp>
 MTS_NAMESPACE_BEGIN
 
 
@@ -529,22 +530,27 @@ struct Cache{
 	};
 
 private:
-	std::vector<bool> m_isTriangleStateValid;
-	std::vector<bool> m_TriangleState;
+	boost::dynamic_bitset<> m_isTriangleStateValid;
+	boost::dynamic_bitset<> m_TriangleState;
 
-	std::vector<bool> m_isNodeStateValid;
-	std::vector<bool> m_NodeState;
+	boost::dynamic_bitset<> m_isNodeStateValid;
+	boost::dynamic_bitset<> m_NodeState;
 
 public:
 
-	Cache(size_t maxDepth, size_t primCount){
-		size_t m_nodeSize = pow(2, maxDepth) - 1;
-		m_isTriangleStateValid.assign(primCount, false);
-		m_TriangleState.assign(primCount, false);
-		m_isNodeStateValid.assign(m_nodeSize, false);
-		m_NodeState.assign(m_nodeSize, false);
+	Cache(size_t maxDepth, size_t primCount):
+		m_isTriangleStateValid(primCount),
+		m_TriangleState(primCount),
+		m_isNodeStateValid(pow(2, maxDepth) - 1),
+		m_NodeState(pow(2, maxDepth) - 1){
 	}
 
+	void reset(){
+		m_isTriangleStateValid.reset();
+		m_TriangleState.reset();
+		m_isNodeStateValid.reset();
+		m_NodeState.reset();
+	}
 	STATE getState(const size_t &index){
 		if(m_isNodeStateValid[index]){
 			if(m_NodeState[index])
