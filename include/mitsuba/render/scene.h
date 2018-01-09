@@ -189,8 +189,8 @@ public:
 	}
 
 	/* comment appropriately*/
-	inline bool ellipsoidIntersectAll(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
-		if(e.isDegenerate())
+	inline bool ellipsoidIntersectAll(Ellipsoid* e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
+		if(e->isDegenerate())
 			return false;
 		return m_kdtree->ellipsoidIntersect(e, value, ray, its, sampler);
 	}

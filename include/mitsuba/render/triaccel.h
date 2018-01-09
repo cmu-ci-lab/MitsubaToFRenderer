@@ -69,8 +69,8 @@ struct TriAccel {
 
 
 
-	bool ellipsoidIntersect(const Ellipsoid &e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
-		return e.ellipsoidIntersectTriangle(A, B, C, value, u, v, sampler);
+	bool ellipsoidIntersect(const Ellipsoid* e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
+		return e->ellipsoidIntersectTriangle(A, B, C, value, u, v, sampler);
 	}
 };
 

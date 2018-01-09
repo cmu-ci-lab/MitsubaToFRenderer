@@ -252,7 +252,7 @@ struct MTS_EXPORT_BIDIR PathVertex {
 			const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 			PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
 			Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
-			Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
+			Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 			ETransportMode mode, BDPTWorkResult *wr);
 
 	/**

@@ -177,7 +177,7 @@ void ShapeKDTree::printBBTree(const KDNode* node, const size_t& index) const{
 }
 
 /* Search the KD tree start from root by randomly choosing one of the child node */
-bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
+bool ShapeKDTree::ellipsoidIntersect(Ellipsoid* e, Float &value, Ray &ray, Intersection &its, ref<Sampler> sampler) const{
 	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
 
 	size_t rootIndex = 0;
@@ -188,22 +188,22 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid &e, Float &value, Ray &ray, Inter
 	return false;
 }
 
-bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid &e, Float &value, ref<Sampler> sampler, void *temp) const{
+bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
 	IntersectionCache *cache =
 			static_cast<IntersectionCache *>(temp);
 	int multiplier = 1;
 	while(!node->isLeaf()){
 		// Check BBox is valid
-		Cache::STATE state = e.cacheCheck(index);
+		Cache::STATE state = e->cacheCheck(index);
 		if(state == Cache::STATE::EFails)
 				return false;
 
 		if(state == Cache::STATE::ETBD){
-			if(!e.isBoxValid(m_BBTree->getAABB(index))){
-				e.updateCache(index, Cache::STATE::EFails);
+			if(!e->isBoxValid(m_BBTree->getAABB(index))){
+				e->updateCache(index, Cache::STATE::EFails);
 				return false;
 			}else{
-				e.updateCache(index, Cache::STATE::EIntersects);
+				e->updateCache(index, Cache::STATE::EIntersects);
 			}
 		}
 		//Travel through the tree
@@ -232,17 +232,17 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 	Float tempU;
 	Float tempV;
 
-	if(e.cacheGetTriState(primIdx) == Cache::ETBD){
+	if(e->cacheGetTriState(primIdx) == Cache::ETBD){
 		// Do early rejection tests only once
-		if(e.earlyTriangleReject(ta.A, ta.B, ta.C)){
-			e.cacheSetTriState(primIdx,Cache::EFails);
+		if(e->earlyTriangleReject(ta.A, ta.B, ta.C)){
+			e->cacheSetTriState(primIdx,Cache::EFails);
 			return false;
 		}
 	}
 
 	//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
-	if(e.cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
-		e.cacheSetTriState(primIdx,Cache::EIntersects);
+	if(e->cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+		e->cacheSetTriState(primIdx,Cache::EIntersects);
 		cache->shapeIndex = ta.shapeIndex;
 		cache->primIndex = ta.primIndex;
 		cache->u = tempU;
@@ -250,7 +250,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 		value = value*(u-l)*multiplier;
 		return true;
 	}
-	e.cacheSetTriState(primIdx,Cache::EFails);
+	e->cacheSetTriState(primIdx,Cache::EFails);
 	return false;
 }
 

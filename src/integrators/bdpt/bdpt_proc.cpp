@@ -61,6 +61,8 @@ public:
 		m_scene->setSampler(m_sampler);
 		m_scene->wakeup(NULL, m_resources);
 		m_scene->initializeBidirectional();
+
+		m_ellipsoid = new Ellipsoid(scene->getMaxDepth(), scene->getPrimitiveCount());
 	}
 
 	void process(const WorkUnit *workUnit, WorkResult *workResult, const bool &stop) {
@@ -448,7 +450,7 @@ public:
 																			   vtPred, vt, vtEdge,
 																			   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining, tempPathLength,
 																			   EllipticPathWeight, miWeight, value,
-																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos,
+																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos, m_ellipsoid,
 																			   EImportance, wr);
 							}
 							continue;
@@ -611,6 +613,8 @@ private:
 	MemoryPool m_pool;
 	BDPTConfiguration m_config;
 	HilbertCurve2D<uint8_t> m_hilbertCurve;
+
+	Ellipsoid *m_ellipsoid;
 };
 
 

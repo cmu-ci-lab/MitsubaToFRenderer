@@ -39,67 +39,7 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		PathVertex *succ, PathEdge *succEdge1, PathEdge *succEdge2, Float &pathLengthTarget,
 		Float &value,
 		ETransportMode mode, bool russianRoulette, Spectrum *throughput) {
-
-	if(mode != EImportance)
-		SLog(EError, "Ellipsoidal intersection called with sensor path");
-
-	Ray ray;
-	value = 1.0f;
-
-	memset(succEdge1, 0, sizeof(PathEdge));
-	memset(succ, 0, sizeof(PathVertex));
-	memset(succEdge2, 0, sizeof(PathEdge));
-
-	succEdge1->medium = (predEdge1 == NULL) ? NULL : predEdge1->medium;
-	rrWeight = 1.0f;
-
-	switch (type) {
-		case EEmitterSupernode: {
-			SLog(EError, "Ellipsoidal intersection called at emitter supernode. We do not have space to create additional node");
-		}
-		break;
-		case ESensorSupernode: {
-			SLog(EError, "Ellipsoidal intersection called at sensor supernode. We do not have space to create additional node");
-		}
-		break;
-		case ESensorSample: {
-			SLog(EError, "Ellipsoidal intersection called at sensor sample. We do not start from sensor path and should not have encountered this case");
-		}
-		break;
-		case EEmitterSample: {
-		}
-		case ESurfaceInteraction: {
-
-			size_t primCount = scene->getPrimitiveCount();
-			size_t maxDepth  = scene->getMaxDepth();
-
-			Ellipsoid e(pred1->getPosition(), pred2->getPosition(), pred1->getShadingNormal(), pred2->getShadingNormal(), pathLengthTarget, maxDepth, primCount); // TODO: remove memory of ellipse
-
-			ray.setOrigin(getIntersection().p);
-			Intersection &its = succ->getIntersection();
-
-			if(scene->ellipsoidIntersectAll(e, value, ray, its, sampler)){
-				succ->type = PathVertex::ESurfaceInteraction;
-				succ->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
-						its.shape->isEmitter() || its.shape->isSensor());
-				int interactions = 0; // FIXME: can we do better than this?
-
-				if(!(succEdge1->pathConnectAndCollapse(scene, predEdge1, pred1, succ, NULL, interactions)) || !(succEdge2->pathConnectAndCollapse(scene, succEdge1, succ, pred2, predEdge2, interactions)))
-					return false;
-			}else{
-				return false;
-			}
-			return true;
-		}
-		break;
-		case EMediumInteraction: {
-			SLog(EError, "Ellipsoidal intersection called with Medium interaction, which is not handled today");
-		}
-		break;
-		default:
-			SLog(EError, "Ellipsoidal intersection encountered an "
-				"unsupported vertex type (%i)!", type);
-	}
+	SLog(EError, "Not implemented");
 	return false;
 }
 
@@ -108,7 +48,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 		PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
 		Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
-		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos,
+		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 		ETransportMode mode, BDPTWorkResult *wr){
 
 	int subSamples = wr->m_subSamples; //Need to read this part from hdrfilm, just like samples. It can be adaptive in the future based on miWeight
@@ -149,9 +89,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		}
 		case ESurfaceInteraction: {
 
-			size_t primCount = scene->getPrimitiveCount();
-			size_t maxDepth  = scene->getMaxDepth();
-			Ellipsoid e(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget, maxDepth, primCount); // TODO: remove memory of ellipse
+			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget);
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = connectionVertex->getIntersection();
@@ -162,7 +100,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				vt->measure = vtOriginal;
 
 				EllipticPathWeight = 1.0f;
-				if(scene->ellipsoidIntersectAll(e, EllipticPathWeight, ray, its, sampler)){
+				if(scene->ellipsoidIntersectAll(m_ellipsoid, EllipticPathWeight, ray, its, sampler)){
 					connectionVertex->type = PathVertex::ESurfaceInteraction;
 					connectionVertex->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
 							its.shape->isEmitter() || its.shape->isSensor());

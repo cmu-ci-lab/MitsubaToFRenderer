@@ -538,7 +538,7 @@ private:
 
 public:
 
-	Cache(size_t maxDepth, size_t primCount):
+	Cache(const size_t& maxDepth, const size_t& primCount):
 		m_isTriangleStateValid(primCount),
 		m_TriangleState(primCount),
 		m_isNodeStateValid(pow(2, maxDepth) - 1),
@@ -595,9 +595,26 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau, const size_t maxDepth, const size_t primCount):
 			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau), ellipsoidCache(maxDepth, primCount){
-		// Algorithm to compute the T3D3D
+	}
 
-		a = tau/2.0;
+	TEllipsoid(const size_t& maxDepth, const size_t& primCount):
+			ellipsoidCache(maxDepth, primCount){
+	}
+
+	void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau){
+
+		//Initializations
+		PointType f1temp(p1);
+		PointType f2temp(p2);
+
+		f1 = f1temp;
+		f2 = f2temp;
+		f1_normal = p1_normal;
+		f2_normal = p2_normal;
+		Tau = tau;
+
+		//
+		a = Tau/2.0;
 		C = (f1 + f2) * 0.5;
 		b = (a*a-distanceSquared(C, f1));
 		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
