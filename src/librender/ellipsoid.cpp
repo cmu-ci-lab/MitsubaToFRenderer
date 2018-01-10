@@ -22,44 +22,12 @@ typedef policy<digits10<10> > my_pol_10;
 
 MTS_NAMESPACE_BEGIN
 
-Cache::STATE Cache::getState(const size_t &index){
-	if(m_isNodeStateValid[index]){
-		if(m_NodeState[index])
-			return STATE::EIntersects;
-		else
-			return STATE::EFails;
-	}
-	return STATE::ETBD;
-}
-
-void Cache::setState(const size_t &index, const STATE &state){
-	m_isNodeStateValid[index] = true;
-	if(state == STATE::EIntersects)
-		m_NodeState[index] = true;
-}
-
-Cache::STATE Cache::getTriState(const size_t &index){
-	if(m_isTriangleStateValid[index]){
-		if(m_TriangleState[index])
-			return STATE::EIntersects;
-		else
-			return STATE::EFails;
-	}
-	return STATE::ETBD;
-}
-
-void Cache::setTriState(const size_t &index, const STATE &state){
-	m_isTriangleStateValid[index] = true;
-	if(state == STATE::EIntersects)
-		m_TriangleState[index] = true;
-}
-
 template <typename PointType, typename LengthType>
 bool TEllipsoid<PointType, LengthType>::isBoxValid(const AABB& aabb) const{
 	if(!isBoxCuttingEllipsoid(aabb)){
 		return false;
 	}
-	if(isBoxOnNegativeHalfSpace(f1, f1_normal, aabb) || isBoxOnNegativeHalfSpace(f2, f2_normal, aabb) ){
+	if(isBoxOnNegativeHalfSpace(m_f1, m_f1Normal, aabb) || isBoxOnNegativeHalfSpace(m_f2, m_f2Normal, aabb) ){
 		return false;
 	}
 	if(isBoxInsideEllipsoid(aabb)){
@@ -571,11 +539,11 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 template <typename PointType, typename LengthType>
 bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const{
 
-	Point f1_Float(f1.x, f1.y, f1.z);
-	Point f2_Float(f2.x, f2.y, f2.z);
-	if(epsExclusiveLesserF(dot(f1_normal, a - f1_Float), 0) && epsExclusiveLesserF(dot(f1_normal, b - f1_Float), 0) && epsExclusiveLesserF(dot(f1_normal, c - f1_Float), 0))
+	Point f1_Float(m_f1.x, m_f1.y, m_f1.z);
+	Point f2_Float(m_f2.x, m_f2.y, m_f2.z);
+	if(epsExclusiveLesserF(dot(m_f1Normal, a - f1_Float), 0) && epsExclusiveLesserF(dot(m_f1Normal, b - f1_Float), 0) && epsExclusiveLesserF(dot(m_f1Normal, c - f1_Float), 0))
 		return true;
-	if(epsExclusiveLesserF(dot(f2_normal, a - f2_Float), 0) && epsExclusiveLesserF(dot(f2_normal, b - f2_Float), 0) && epsExclusiveLesserF(dot(f2_normal, c - f2_Float), 0))
+	if(epsExclusiveLesserF(dot(m_f2Normal, a - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, b - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, c - f2_Float), 0))
 		return true;
 
 	//FIXME: This code will fail if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately.
@@ -611,7 +579,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 
 	TVector3<LengthType> Center = dot(N,SphereA-Origin)*N;
 
-	TVector3<LengthType> O(Center[0]*this->a, Center[1]*this->b, Center[2]*this->b); // Note that O is position vector of the center of the ellipse
+	TVector3<LengthType> O(Center[0]*this->m_majorAxis, Center[1]*this->m_minorAxis, Center[2]*this->m_minorAxis); // Note that O is position vector of the center of the ellipse
 
 	FLOAT d = Center.lengthSquared();
 
@@ -635,7 +603,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 
 	FLOAT theta = 0.5 * atan2(2*TUD, UUD-TTD);
 	if(std::isnan(theta) || std::isinf(theta)){
-		SLog(EError,"Theta is not valid; TUD: %f, UUD: %f, TTD: %f; T: (%f, %f, %f); a:%f, b:%f\n", TUD, UUD, TTD, T[0], T[1], T[2], a, b);
+		SLog(EError,"Theta is not valid; TUD: %f, UUD: %f, TTD: %f; T: (%f, %f, %f); a:%f, b:%f\n", TUD, UUD, TTD, T[0], T[1], T[2], m_majorAxis, b);
 	}
 
 	TVector3<LengthType> NewX = T*cos(theta) - U*sin(theta);
@@ -714,7 +682,7 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 			for(size_t i=0; i < indices ; i++)
 				cout  << thetaMin[i] << " - " << thetaMax[i]  <<  "\n";
 			cout << "angle Found:" << angle << "\n";
-			cout << "Ellipsoid: f1(" << this->f1.x << "," << this->f1.y << "," << this->f1.z << "); f2(" << this->f2.x << "," << this->f2.y << "," << this->f2.z << "); Tau:"  <<  this->Tau  <<  "\n";
+			cout << "Ellipsoid: f1(" << this->m_f1.x << "," << this->m_f1.y << "," << this->m_f1.z << "); f2(" << this->m_f2.x << "," << this->m_f2.y << "," << this->m_f2.z << "); Tau:"  <<  this->m_tau  <<  "\n";
 			cout << "triA:(" << triA.x << "," << triA.y << "," << triA.z << ");\n";
 			cout << "triB:(" << triB.x << "," << triB.y << "," << triB.z << ");\n";
 			cout << "triC:(" << triC.x << "," << triC.y << "," << triC.z << ");\n";

@@ -531,34 +531,58 @@ struct Cache{
 
 private:
 	boost::dynamic_bitset<> m_isTriangleStateValid;
-	boost::dynamic_bitset<> m_TriangleState;
+	boost::dynamic_bitset<> m_triangleState;
 
 	boost::dynamic_bitset<> m_isNodeStateValid;
-	boost::dynamic_bitset<> m_NodeState;
+	boost::dynamic_bitset<> m_nodeState;
 
 public:
 
-	Cache(const size_t& maxDepth, const size_t& primCount):
+	inline Cache(const size_t& maxDepth, const size_t& primCount):
 		m_isTriangleStateValid(primCount),
-		m_TriangleState(primCount),
+		m_triangleState(primCount),
 		m_isNodeStateValid(pow(2, maxDepth) - 1),
-		m_NodeState(pow(2, maxDepth) - 1){
+		m_nodeState(pow(2, maxDepth) - 1){
 	}
 
-	void reset(){
+	inline void reset(){
 		m_isTriangleStateValid.reset();
-		m_TriangleState.reset();
+		m_triangleState.reset();
 		m_isNodeStateValid.reset();
-		m_NodeState.reset();
+		m_nodeState.reset();
 	}
 
-	STATE getState(const size_t &index);
+	inline STATE getState(const size_t &index) const{
+		if(m_isNodeStateValid[index]){
+			if(m_nodeState[index])
+				return STATE::EIntersects;
+			else
+				return STATE::EFails;
+		}
+		return STATE::ETBD;
+	}
 
-	void setState(const size_t &index, const STATE &state);
+	inline void setState(const size_t &index, const STATE &state){
+		m_isNodeStateValid[index] = true;
+		if(state == STATE::EIntersects)
+			m_nodeState[index] = true;
+	}
 
-	STATE getTriState(const size_t &index);
+	inline STATE getTriState(const size_t &index) const{
+		if(m_isTriangleStateValid[index]){
+			if(m_triangleState[index])
+				return STATE::EIntersects;
+			else
+				return STATE::EFails;
+		}
+		return STATE::ETBD;
+	}
 
-	void setTriState(const size_t &index, const STATE &state);
+	inline void setTriState(const size_t &index, const STATE &state){
+		m_isTriangleStateValid[index] = true;
+		if(state == STATE::EIntersects)
+			m_triangleState[index] = true;
+	}
 
 	~Cache(){
 	}
@@ -570,66 +594,66 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	typedef _PointType                  PointType;
 	typedef _LengthType                 LengthType;
 
-	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau, const size_t maxDepth, const size_t primCount):
-			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau), ellipsoidCache(maxDepth, primCount){
-		f1 = PointType(0, 0, 0);
-		f2 = PointType(0, 0, 0);
+	inline TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau, const size_t maxDepth, const size_t primCount):
+			m_f1(p1), m_f2(p2), m_f1Normal(p1_normal), m_f2Normal(p2_normal), m_tau(tau), m_ellipsoidCache(maxDepth, primCount){
+		m_f1 = PointType(0, 0, 0);
+		m_f2 = PointType(0, 0, 0);
 
 		/* Normals of the triangle containing f1 and f2 */
-		f1_normal = Normal(0.0f);
-		f2_normal = Normal(0.0f);
+		m_f1Normal = Normal(0.0f);
+		m_f2Normal = Normal(0.0f);
 
 		/* center of the ellipse */
-		C = PointType(0, 0, 0);
+		m_centre = PointType(0, 0, 0);
 
-		Tau = 0;
+		m_tau = 0;
 
-		a = 0;
-		b = 0;;
+		m_majorAxis = 0;
+		m_minorAxis = 0;;
 
-		degenerateEllipsoid = true;
+		m_degenerateEllipsoid = true;
 
 		Transform_FLOAT I;
-		T3D2Ellipsoid = I;
-		invT3D2Ellipsoid = I;
-		T3D2Sphere = I;
-		invT3D2Sphere = I;
+		m_T3D2Ellipsoid = I;
+		m_invT3D2Ellipsoid = I;
+		m_T3D2Sphere = I;
+		m_invT3D2Sphere = I;
 		m_aabb.min = PointType(0, 0, 0);
 		m_aabb.max = PointType(0, 0, 0);
-		degenerateEllipsoid = true;
+		m_degenerateEllipsoid = true;
 		//Initializations
 		PointType f1temp(p1);
 		PointType f2temp(p2);
 
-		f1 = f1temp;
-		f2 = f2temp;
-		f1_normal = p1_normal;
-		f2_normal = p2_normal;
-		Tau = tau;
+		m_f1 = f1temp;
+		m_f2 = f2temp;
+		m_f1Normal = p1_normal;
+		m_f2Normal = p2_normal;
+		m_tau = tau;
 
 		//
-		ellipsoidCache.reset();
-		a = Tau/2.0;
-		C = (f1 + f2) * 0.5;
-		b = (a*a-distanceSquared(C, f1));
-		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
-			degenerateEllipsoid = true;
+		m_ellipsoidCache.reset();
+		m_majorAxis = m_tau/2.0;
+		m_centre = (m_f1 + m_f2) * 0.5;
+		m_minorAxis = (m_majorAxis*m_majorAxis-distanceSquared(m_centre, m_f1));
+		if(m_minorAxis < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
+			m_degenerateEllipsoid = true;
 		else
-			degenerateEllipsoid = false;
-		if(degenerateEllipsoid)
+			m_degenerateEllipsoid = false;
+		if(m_degenerateEllipsoid)
 			return;
 
-		b = sqrt(b);
-		TVector3<LengthType> D = f2-f1;
-		TVector3<LengthType> Scale(1/a, 1/b, 1/b);
+		m_minorAxis = sqrt(m_minorAxis);
+		TVector3<LengthType> D = m_f2-m_f1;
+		TVector3<LengthType> Scale(1/m_majorAxis, 1/m_minorAxis, 1/m_minorAxis);
 		TVector3<LengthType> Rot(1.0, 0.0, 0.0);
-		TVector3<LengthType> Cv(-C);
+		TVector3<LengthType> Cv(-m_centre);
 
-		T3D2Ellipsoid 	 = Transform_FLOAT::rotateVector2Vector(D, Rot)*Transform_FLOAT::translate(Cv);
-		invT3D2Ellipsoid = T3D2Ellipsoid.inverse();
+		m_T3D2Ellipsoid 	 = Transform_FLOAT::rotateVector2Vector(D, Rot)*Transform_FLOAT::translate(Cv);
+		m_invT3D2Ellipsoid = m_T3D2Ellipsoid.inverse();
 
-		T3D2Sphere 	  = Transform_FLOAT::scale(Scale)*T3D2Ellipsoid;
-		invT3D2Sphere = T3D2Sphere.inverse();
+		m_T3D2Sphere 	  = Transform_FLOAT::scale(Scale)*m_T3D2Ellipsoid;
+		m_invT3D2Sphere = m_T3D2Sphere.inverse();
 
 		/*compute bounding box for the arbitrary oriented ellipse*/
 		/*Algo from http://blog.yiningkarlli.com/2013/02/bounding-boxes-for-ellipsoids.html*/
@@ -638,7 +662,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 					TVector4<LengthType>(0.0, 0.0, 1.0, 0.0),
 					TVector4<LengthType>(0.0, 0.0, 0.0,-1.0)
 								);
-		Matrix4x4_FLOAT MT, M = invT3D2Sphere.getMatrix();
+		Matrix4x4_FLOAT MT, M = m_invT3D2Sphere.getMatrix();
 		M.transpose(MT);
 		Matrix4x4_FLOAT R = M*S*MT;
 
@@ -672,95 +696,95 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		}
 	}
 
-	TEllipsoid(const size_t& maxDepth, const size_t& primCount):
-			ellipsoidCache(maxDepth, primCount){
+	inline TEllipsoid(const size_t& maxDepth, const size_t& primCount):
+			m_ellipsoidCache(maxDepth, primCount){
 		// zero everything
-		f1 = PointType(0, 0, 0);
-		f2 = PointType(0, 0, 0);
+		m_f1 = PointType(0, 0, 0);
+		m_f2 = PointType(0, 0, 0);
 
 		/* Normals of the triangle containing f1 and f2 */
-		f1_normal = Normal(0.0f);
-		f2_normal = Normal(0.0f);
+		m_f1Normal = Normal(0.0f);
+		m_f2Normal = Normal(0.0f);
 
 		/* center of the ellipse */
-		C = PointType(0, 0, 0);
+		m_centre = PointType(0, 0, 0);
 
-		Tau = 0;
+		m_tau = 0;
 
-		a = 0;
-		b = 0;;
+		m_majorAxis = 0;
+		m_minorAxis = 0;;
 
-		degenerateEllipsoid = true;
+		m_degenerateEllipsoid = true;
 
 		Transform_FLOAT I;
-		T3D2Ellipsoid = I;
-		invT3D2Ellipsoid = I;
-		T3D2Sphere = I;
-		invT3D2Sphere = I;
+		m_T3D2Ellipsoid = I;
+		m_invT3D2Ellipsoid = I;
+		m_T3D2Sphere = I;
+		m_invT3D2Sphere = I;
 		m_aabb.min = PointType(0, 0, 0);
 		m_aabb.max = PointType(0, 0, 0);
-		degenerateEllipsoid = true;
+		m_degenerateEllipsoid = true;
 	}
 
-	void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const Float tau){
-		f1 = PointType(0, 0, 0);
-		f2 = PointType(0, 0, 0);
+	inline void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const Float tau){
+		m_f1 = PointType(0, 0, 0);
+		m_f2 = PointType(0, 0, 0);
 
 		/* Normals of the triangle containing f1 and f2 */
-		f1_normal = Normal(0.0f);
-		f2_normal = Normal(0.0f);
+		m_f1Normal = Normal(0.0f);
+		m_f2Normal = Normal(0.0f);
 
 		/* center of the ellipse */
-		C = PointType(0, 0, 0);
+		m_centre = PointType(0, 0, 0);
 
-		Tau = 0;
+		m_tau = 0;
 
-		a = 0;
-		b = 0;;
+		m_majorAxis = 0;
+		m_minorAxis = 0;;
 
-		degenerateEllipsoid = true;
+		m_degenerateEllipsoid = true;
 
 		Transform_FLOAT I;
-		T3D2Ellipsoid = I;
-		invT3D2Ellipsoid = I;
-		T3D2Sphere = I;
-		invT3D2Sphere = I;
+		m_T3D2Ellipsoid = I;
+		m_invT3D2Ellipsoid = I;
+		m_T3D2Sphere = I;
+		m_invT3D2Sphere = I;
 		m_aabb.min = PointType(0, 0, 0);
 		m_aabb.max = PointType(0, 0, 0);
-		degenerateEllipsoid = true;
+		m_degenerateEllipsoid = true;
 		//Initializations
 		PointType f1temp(p1);
 		PointType f2temp(p2);
 
-		f1 = f1temp;
-		f2 = f2temp;
-		f1_normal = p1_normal;
-		f2_normal = p2_normal;
-		Tau = tau;
+		m_f1 = f1temp;
+		m_f2 = f2temp;
+		m_f1Normal = p1_normal;
+		m_f2Normal = p2_normal;
+		m_tau = tau;
 
 		//
-		ellipsoidCache.reset();
-		a = Tau/2.0;
-		C = (f1 + f2) * 0.5;
-		b = (a*a-distanceSquared(C, f1));
-		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
-			degenerateEllipsoid = true;
+		m_ellipsoidCache.reset();
+		m_majorAxis = m_tau/2.0;
+		m_centre = (m_f1 + m_f2) * 0.5;
+		m_minorAxis = (m_majorAxis*m_majorAxis-distanceSquared(m_centre, m_f1));
+		if(m_minorAxis < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
+			m_degenerateEllipsoid = true;
 		else
-			degenerateEllipsoid = false;
-		if(degenerateEllipsoid)
+			m_degenerateEllipsoid = false;
+		if(m_degenerateEllipsoid)
 			return;
 
-		b = sqrt(b);
-		TVector3<LengthType> D = f2-f1;
-		TVector3<LengthType> Scale(1/a, 1/b, 1/b);
+		m_minorAxis = sqrt(m_minorAxis);
+		TVector3<LengthType> D = m_f2-m_f1;
+		TVector3<LengthType> Scale(1/m_majorAxis, 1/m_minorAxis, 1/m_minorAxis);
 		TVector3<LengthType> Rot(1.0, 0.0, 0.0);
-		TVector3<LengthType> Cv(-C);
+		TVector3<LengthType> Cv(-m_centre);
 
-		T3D2Ellipsoid 	 = Transform_FLOAT::rotateVector2Vector(D, Rot)*Transform_FLOAT::translate(Cv);
-		invT3D2Ellipsoid = T3D2Ellipsoid.inverse();
+		m_T3D2Ellipsoid 	 = Transform_FLOAT::rotateVector2Vector(D, Rot)*Transform_FLOAT::translate(Cv);
+		m_invT3D2Ellipsoid = m_T3D2Ellipsoid.inverse();
 
-		T3D2Sphere 	  = Transform_FLOAT::scale(Scale)*T3D2Ellipsoid;
-		invT3D2Sphere = T3D2Sphere.inverse();
+		m_T3D2Sphere 	  = Transform_FLOAT::scale(Scale)*m_T3D2Ellipsoid;
+		m_invT3D2Sphere = m_T3D2Sphere.inverse();
 
 		/*compute bounding box for the arbitrary oriented ellipse*/
 		/*Algo from http://blog.yiningkarlli.com/2013/02/bounding-boxes-for-ellipsoids.html*/
@@ -769,7 +793,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 					TVector4<LengthType>(0.0, 0.0, 1.0, 0.0),
 					TVector4<LengthType>(0.0, 0.0, 0.0,-1.0)
 								);
-		Matrix4x4_FLOAT MT, M = invT3D2Sphere.getMatrix();
+		Matrix4x4_FLOAT MT, M = m_invT3D2Sphere.getMatrix();
 		M.transpose(MT);
 		Matrix4x4_FLOAT R = M*S*MT;
 
@@ -803,7 +827,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		}
 	}
 
-	inline bool isDegenerate() const { return degenerateEllipsoid; }
+	inline bool isDegenerate() const { return m_degenerateEllipsoid; }
 
 	/* Intersect the triangle formed by triA, triB, triC with the current Ellipsoid to create a sample whose barycentric co-ordinates are in u, v.
 	 * Value is probability of the sample ( = inverse of the length of the ellipsoid-triangle intersection) */
@@ -811,36 +835,39 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	/* Transforms a point from 3D space to Ellipsoid space*/
 	inline void transformToEllipsoid(const PointType &A, PointType &B) const{
-		B = T3D2Ellipsoid(A);
+		B = m_T3D2Ellipsoid(A);
 		return;
 	}
 
 	/* Transforms a point from Ellipsoid space to 3D space*/
 	inline void transformFromEllipsoid(const PointType &A, PointType &B) const{
-		B = invT3D2Ellipsoid(A);
+		B = m_invT3D2Ellipsoid(A);
 		return;
 	}
 
 	/* Transforms a point from 3D space to unit sphere space*/
 	inline void transformToSphere(const PointType &A, PointType &B) const{
-		B = T3D2Sphere(A);
+		B = m_T3D2Sphere(A);
 		return;
 	}
 
 	/* Transforms a point from unit sphere space to 3D space*/
 	inline void transformFromSphere(const PointType &A, PointType &B) const{
-		B = invT3D2Sphere(A);
+		B = m_invT3D2Sphere(A);
 		return;
 	}
 
 	/* Compute Weighted Inner Product on the Ellipsoid */
 	inline FLOAT weightedIP(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
-		return (A[0]*B[0]/(a*a) + A[1]*B[1]/(b*b) + A[2]*B[2]/(b*b));
+		return (A[0]*B[0]/(m_majorAxis*m_majorAxis) + A[1]*B[1]/(m_minorAxis*m_minorAxis) + A[2]*B[2]/(m_minorAxis*m_minorAxis));
 	}
 
 	/* Compute Weighted Inner Product on the Ellipsoid differential */
 	inline FLOAT weightedIPd(TVector3<LengthType> &A, TVector3<LengthType> &B) const{
-		return -(A[0]*B[0]/(a*a*a) + A[1]*B[1]*a/(b*b*b*b) + A[2]*B[2]*a/(b*b*b*b));
+		LengthType majorAxis3 = m_majorAxis * m_majorAxis * m_majorAxis;
+		LengthType minorAxis4 = m_minorAxis * m_minorAxis;
+		minorAxis4 = minorAxis4 * minorAxis4;
+		return -(A[0]*B[0]/majorAxis3 + A[1]*B[1]*m_majorAxis/minorAxis4 + A[2]*B[2]*m_majorAxis/minorAxis4);
 	}
 
 	/* Early rejection of the triangle if the triangle is not in the positive hyperspace of either of the focal points or if the focal points are not in the positive hyperspace of the triangle*/
@@ -870,45 +897,46 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	bool isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const AABB& aabb) const;
 
 	inline Cache::STATE cacheCheck(const size_t &index){
-		return ellipsoidCache.getState(index);
+		return m_ellipsoidCache.getState(index);
 	}
 
 	inline void updateCache(const size_t &index, const Cache::STATE &state){
-		ellipsoidCache.setState(index, state);
+		m_ellipsoidCache.setState(index, state);
 	}
 
 	inline Cache::STATE cacheGetTriState(const size_t &index){
-		return ellipsoidCache.getTriState(index);
+		return m_ellipsoidCache.getTriState(index);
 	}
 
 	inline void cacheSetTriState(const size_t &index, const Cache::STATE &state){
-		ellipsoidCache.setTriState(index, state);
+		m_ellipsoidCache.setTriState(index, state);
 	}
 
+private:
 	/* Focal points */
-	PointType f1;
-	PointType f2;
+	PointType m_f1;
+	PointType m_f2;
 
 	/* Normals of the triangle containing f1 and f2 */
-	Normal f1_normal;
-	Normal f2_normal;
+	Normal m_f1Normal;
+	Normal m_f2Normal;
 
-	/* center of the ellipse */
-	PointType  C;
+	/* center of the ellipsoid */
+	PointType  m_centre;
 
-	LengthType Tau;
+	LengthType m_tau;
 
 	/* Major and minor axis lengths */
-	LengthType a, b;
+	LengthType m_majorAxis, m_minorAxis;
 
-	bool degenerateEllipsoid;
+	bool m_degenerateEllipsoid;
 
-	Transform_FLOAT T3D2Ellipsoid;
-	Transform_FLOAT invT3D2Ellipsoid;
-	Transform_FLOAT T3D2Sphere;
-	Transform_FLOAT invT3D2Sphere;
+	Transform_FLOAT m_T3D2Ellipsoid;
+	Transform_FLOAT m_invT3D2Ellipsoid;
+	Transform_FLOAT m_T3D2Sphere;
+	Transform_FLOAT m_invT3D2Sphere;
 
-	Cache ellipsoidCache;
+	Cache m_ellipsoidCache;
 
 	struct BoundingBox{
 		PointType min;
@@ -919,7 +947,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 struct IntersectionRecord{
 	FLOAT theta;
 	bool directionOutside;
-	IntersectionRecord(FLOAT theta, bool directionOutside){
+	inline IntersectionRecord(FLOAT theta, bool directionOutside){
 		this->theta = theta;
 		this->directionOutside = directionOutside;
 	}
