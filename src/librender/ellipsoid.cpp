@@ -22,6 +22,38 @@ typedef policy<digits10<10> > my_pol_10;
 
 MTS_NAMESPACE_BEGIN
 
+Cache::STATE Cache::getState(const size_t &index){
+	if(m_isNodeStateValid[index]){
+		if(m_NodeState[index])
+			return STATE::EIntersects;
+		else
+			return STATE::EFails;
+	}
+	return STATE::ETBD;
+}
+
+void Cache::setState(const size_t &index, const STATE &state){
+	m_isNodeStateValid[index] = true;
+	if(state == STATE::EIntersects)
+		m_NodeState[index] = true;
+}
+
+Cache::STATE Cache::getTriState(const size_t &index){
+	if(m_isTriangleStateValid[index]){
+		if(m_TriangleState[index])
+			return STATE::EIntersects;
+		else
+			return STATE::EFails;
+	}
+	return STATE::ETBD;
+}
+
+void Cache::setTriState(const size_t &index, const STATE &state){
+	m_isTriangleStateValid[index] = true;
+	if(state == STATE::EIntersects)
+		m_TriangleState[index] = true;
+}
+
 template <typename PointType, typename LengthType>
 bool TEllipsoid<PointType, LengthType>::isBoxValid(const AABB& aabb) const{
 	if(!isBoxCuttingEllipsoid(aabb)){

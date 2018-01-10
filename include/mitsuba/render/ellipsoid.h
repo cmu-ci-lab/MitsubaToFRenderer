@@ -551,37 +551,14 @@ public:
 		m_isNodeStateValid.reset();
 		m_NodeState.reset();
 	}
-	STATE getState(const size_t &index){
-		if(m_isNodeStateValid[index]){
-			if(m_NodeState[index])
-				return STATE::EIntersects;
-			else
-				return STATE::EFails;
-		}
-		return STATE::ETBD;
-	}
 
-	void setState(const size_t &index, const STATE &state){
-		m_isNodeStateValid[index] = true;
-		if(state == STATE::EIntersects)
-			m_NodeState[index] = true;
-	}
+	STATE getState(const size_t &index);
 
-	STATE getTriState(const size_t &index){
-		if(m_isTriangleStateValid[index]){
-			if(m_TriangleState[index])
-				return STATE::EIntersects;
-			else
-				return STATE::EFails;
-		}
-		return STATE::ETBD;
-	}
+	void setState(const size_t &index, const STATE &state);
 
-	void setTriState(const size_t &index, const STATE &state){
-		m_isTriangleStateValid[index] = true;
-		if(state == STATE::EIntersects)
-			m_TriangleState[index] = true;
-	}
+	STATE getTriState(const size_t &index);
+
+	void setTriState(const size_t &index, const STATE &state);
 
 	~Cache(){
 	}
@@ -595,14 +572,65 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau, const size_t maxDepth, const size_t primCount):
 			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau), ellipsoidCache(maxDepth, primCount){
+		degenerateEllipsoid = true;
 	}
 
 	TEllipsoid(const size_t& maxDepth, const size_t& primCount):
 			ellipsoidCache(maxDepth, primCount){
+		// zero everything
+		f1 = PointType(0, 0, 0);
+		f2 = PointType(0, 0, 0);
+
+		/* Normals of the triangle containing f1 and f2 */
+		f1_normal = Normal(0.0f);
+		f2_normal = Normal(0.0f);
+
+		/* center of the ellipse */
+		C = PointType(0, 0, 0);
+
+		Tau = 0;
+
+		a = 0;
+		b = 0;;
+
+		degenerateEllipsoid = true;
+
+		Transform_FLOAT I;
+		T3D2Ellipsoid = I;
+		invT3D2Ellipsoid = I;
+		T3D2Sphere = I;
+		invT3D2Sphere = I;
+		m_aabb.min = PointType(0, 0, 0);
+		m_aabb.max = PointType(0, 0, 0);
+		degenerateEllipsoid = true;
 	}
 
-	void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau){
+	void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const Float tau){
+		f1 = PointType(0, 0, 0);
+		f2 = PointType(0, 0, 0);
 
+		/* Normals of the triangle containing f1 and f2 */
+		f1_normal = Normal(0.0f);
+		f2_normal = Normal(0.0f);
+
+		/* center of the ellipse */
+		C = PointType(0, 0, 0);
+
+		Tau = 0;
+
+		a = 0;
+		b = 0;;
+
+		degenerateEllipsoid = true;
+
+		Transform_FLOAT I;
+		T3D2Ellipsoid = I;
+		invT3D2Ellipsoid = I;
+		T3D2Sphere = I;
+		invT3D2Sphere = I;
+		m_aabb.min = PointType(0, 0, 0);
+		m_aabb.max = PointType(0, 0, 0);
+		degenerateEllipsoid = true;
 		//Initializations
 		PointType f1temp(p1);
 		PointType f2temp(p2);
@@ -614,6 +642,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 		Tau = tau;
 
 		//
+		ellipsoidCache.reset();
 		a = Tau/2.0;
 		C = (f1 + f2) * 0.5;
 		b = (a*a-distanceSquared(C, f1));
@@ -621,6 +650,9 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 			degenerateEllipsoid = true;
 		else
 			degenerateEllipsoid = false;
+		if(degenerateEllipsoid)
+			return;
+
 		b = sqrt(b);
 		TVector3<LengthType> D = f2-f1;
 		TVector3<LengthType> Scale(1/a, 1/b, 1/b);
@@ -673,7 +705,6 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 			m_aabb.min.x = temp1*(R.m[3][0] - temp2);
 		}
 	}
-
 
 	inline bool isDegenerate() const { return degenerateEllipsoid; }
 
@@ -746,7 +777,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	}
 
 	inline void updateCache(const size_t &index, const Cache::STATE &state){
-		return ellipsoidCache.setState(index, state);
+		ellipsoidCache.setState(index, state);
 	}
 
 	inline Cache::STATE cacheGetTriState(const size_t &index){

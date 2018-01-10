@@ -90,6 +90,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		case ESurfaceInteraction: {
 
 			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget);
+			if(m_ellipsoid->isDegenerate()){
+				return;
+			}
 
 			ray.setOrigin(getIntersection().p);
 			Intersection &its = connectionVertex->getIntersection();
