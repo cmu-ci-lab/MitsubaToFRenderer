@@ -89,6 +89,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		}
 		case ESurfaceInteraction: {
 
+			Ellipsoid e(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget, scene->getMaxDepth(), scene->getPrimitiveCount());
+
+
 			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget);
 			if(m_ellipsoid->isDegenerate()){
 				return;
@@ -103,7 +106,8 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				vt->measure = vtOriginal;
 
 				EllipticPathWeight = 1.0f;
-				if(scene->ellipsoidIntersectAll(m_ellipsoid, EllipticPathWeight, ray, its, sampler)){
+				if(scene->ellipsoidIntersectAll(&e, EllipticPathWeight, ray, its, sampler)){
+//					if(scene->ellipsoidIntersectAll(m_ellipsoid, EllipticPathWeight, ray, its, sampler)){
 					connectionVertex->type = PathVertex::ESurfaceInteraction;
 					connectionVertex->degenerate = !(its.getBSDF()->hasComponent(BSDF::ESmooth) ||
 							its.shape->isEmitter() || its.shape->isSensor());

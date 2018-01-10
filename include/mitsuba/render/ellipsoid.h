@@ -572,7 +572,104 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 
 	TEllipsoid(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const LengthType tau, const size_t maxDepth, const size_t primCount):
 			f1(p1), f2(p2), f1_normal(p1_normal), f2_normal(p2_normal), Tau(tau), ellipsoidCache(maxDepth, primCount){
+		f1 = PointType(0, 0, 0);
+		f2 = PointType(0, 0, 0);
+
+		/* Normals of the triangle containing f1 and f2 */
+		f1_normal = Normal(0.0f);
+		f2_normal = Normal(0.0f);
+
+		/* center of the ellipse */
+		C = PointType(0, 0, 0);
+
+		Tau = 0;
+
+		a = 0;
+		b = 0;;
+
 		degenerateEllipsoid = true;
+
+		Transform_FLOAT I;
+		T3D2Ellipsoid = I;
+		invT3D2Ellipsoid = I;
+		T3D2Sphere = I;
+		invT3D2Sphere = I;
+		m_aabb.min = PointType(0, 0, 0);
+		m_aabb.max = PointType(0, 0, 0);
+		degenerateEllipsoid = true;
+		//Initializations
+		PointType f1temp(p1);
+		PointType f2temp(p2);
+
+		f1 = f1temp;
+		f2 = f2temp;
+		f1_normal = p1_normal;
+		f2_normal = p2_normal;
+		Tau = tau;
+
+		//
+		ellipsoidCache.reset();
+		a = Tau/2.0;
+		C = (f1 + f2) * 0.5;
+		b = (a*a-distanceSquared(C, f1));
+		if(b < 1e-3) // Very thin ellipsoid will cause low value paths only with shadow vertex. FIXME: Biases measurements
+			degenerateEllipsoid = true;
+		else
+			degenerateEllipsoid = false;
+		if(degenerateEllipsoid)
+			return;
+
+		b = sqrt(b);
+		TVector3<LengthType> D = f2-f1;
+		TVector3<LengthType> Scale(1/a, 1/b, 1/b);
+		TVector3<LengthType> Rot(1.0, 0.0, 0.0);
+		TVector3<LengthType> Cv(-C);
+
+		T3D2Ellipsoid 	 = Transform_FLOAT::rotateVector2Vector(D, Rot)*Transform_FLOAT::translate(Cv);
+		invT3D2Ellipsoid = T3D2Ellipsoid.inverse();
+
+		T3D2Sphere 	  = Transform_FLOAT::scale(Scale)*T3D2Ellipsoid;
+		invT3D2Sphere = T3D2Sphere.inverse();
+
+		/*compute bounding box for the arbitrary oriented ellipse*/
+		/*Algo from http://blog.yiningkarlli.com/2013/02/bounding-boxes-for-ellipsoids.html*/
+		Matrix4x4_FLOAT S(TVector4<LengthType>(1.0, 0.0, 0.0, 0.0),
+					TVector4<LengthType>(0.0, 1.0, 0.0, 0.0),
+					TVector4<LengthType>(0.0, 0.0, 1.0, 0.0),
+					TVector4<LengthType>(0.0, 0.0, 0.0,-1.0)
+								);
+		Matrix4x4_FLOAT MT, M = invT3D2Sphere.getMatrix();
+		M.transpose(MT);
+		Matrix4x4_FLOAT R = M*S*MT;
+
+		FLOAT temp1, temp2;
+		if(R.m[3][3] < 0){
+			temp1 = 1/R.m[3][3];
+			temp2 = sqrt(R.m[3][2]*R.m[3][2] - (R.m[3][3]*R.m[2][2]));
+			m_aabb.max.z = temp1*(R.m[3][2] - temp2);
+			m_aabb.min.z = temp1*(R.m[3][2] + temp2);
+
+			temp2 = sqrt(R.m[3][1]*R.m[3][1] - (R.m[3][3]*R.m[1][1]));
+			m_aabb.max.y = temp1*(R.m[3][1] - temp2);
+			m_aabb.min.y = temp1*(R.m[3][1] + temp2);
+
+			temp2 = sqrt(R.m[3][0]*R.m[3][0] - (R.m[3][3]*R.m[0][0]));
+			m_aabb.max.x = temp1*(R.m[3][0] - temp2);
+			m_aabb.min.x = temp1*(R.m[3][0] + temp2);
+		}else{
+			temp1 = 1/R.m[3][3];
+			temp2 = sqrt(R.m[3][2]*R.m[3][2] - (R.m[3][3]*R.m[2][2]));
+			m_aabb.max.z = temp1*(R.m[3][2] + temp2);
+			m_aabb.min.z = temp1*(R.m[3][2] - temp2);
+
+			temp2 = sqrt(R.m[3][1]*R.m[3][1] - (R.m[3][3]*R.m[1][1]));
+			m_aabb.max.y = temp1*(R.m[3][1] + temp2);
+			m_aabb.min.y = temp1*(R.m[3][1] - temp2);
+
+			temp2 = sqrt(R.m[3][0]*R.m[3][0] - (R.m[3][3]*R.m[0][0]));
+			m_aabb.max.x = temp1*(R.m[3][0] + temp2);
+			m_aabb.min.x = temp1*(R.m[3][0] - temp2);
+		}
 	}
 
 	TEllipsoid(const size_t& maxDepth, const size_t& primCount):
