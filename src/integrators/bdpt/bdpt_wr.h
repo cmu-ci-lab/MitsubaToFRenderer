@@ -124,6 +124,10 @@ public:
 	Float m_decompositionBinWidth;
 	size_t m_frames;
 	size_t m_subSamples; // For elliptic sampling. Defaults to 1.
+
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
 };
 
 MTS_NAMESPACE_END

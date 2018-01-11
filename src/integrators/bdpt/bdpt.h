@@ -55,6 +55,10 @@ struct BDPTConfiguration {
 	size_t m_frames;
 	size_t m_subSamples;
 
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
+
 	inline BDPTConfiguration() { }
 
 	inline BDPTConfiguration(Stream *stream) {
@@ -78,6 +82,9 @@ struct BDPTConfiguration {
 		}
 		m_frames = stream->readSize();
 		m_subSamples = stream->readSize();
+		m_forceBounces = stream->readBool();
+		m_sBounces = stream->readUInt();
+		m_tBounces = stream->readUInt();
 	}
 
 	inline void serialize(Stream *stream) const {
@@ -95,6 +102,9 @@ struct BDPTConfiguration {
 		stream->writeFloat(m_decompositionBinWidth);
 		stream->writeSize(m_frames);
 		stream->writeSize(m_subSamples);
+		stream->writeBool(m_forceBounces);
+		stream->writeUInt(m_sBounces);
+		stream->writeUInt(m_tBounces);
 	}
 
 	void dump() const {
@@ -126,7 +136,11 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
 		SLog(EDebug, "   number of frames	   	     : %i", m_frames);
-		SLog(EDebug, "   number of subsamples		 : %i", m_frames);
+		SLog(EDebug, "   number of subsamples		 : %i", m_subSamples);
+		SLog(EDebug, "   Force Bounces		 	 : %i", m_forceBounces);
+		SLog(EDebug, "   S Bounce number		 : %i", m_sBounces);
+		SLog(EDebug, "   T Bounce number		 : %i", m_tBounces);
+
 		#if BDPT_DEBUG == 1
 			SLog(EDebug, "   Show weighted contributions : %s", showWeighted ? "yes" : "no");
 		#endif

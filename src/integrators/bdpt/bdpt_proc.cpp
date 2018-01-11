@@ -226,6 +226,9 @@ public:
 				maxT = std::min(maxT, m_config.maxDepth + 1 - s);
 
 			for (int t = maxT; t >= minT; --t) {
+				if(wr->m_forceBounces && (s != wr->m_sBounces || t != wr->m_tBounces)){
+					continue;
+				}
 				PathVertex
 					*vsPred = emitterSubpath.vertexOrNull(s-1),
 					*vtPred = sensorSubpath.vertexOrNull(t-1),
@@ -439,8 +442,9 @@ public:
 
 								vs->measure = vt->measure = EArea;
 
-								Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
-									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+								Float miWeight = 1.0;
+//								Path::miWeight(scene, emitterSubpath, &connectionEdge,
+//									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 
 								vs->measure = vsMeasure;
 								vt->measure = vtMeasure;
@@ -505,13 +509,9 @@ public:
 					}
 
 					/* Compute the multiple importance sampling weight */
-					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
-						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
-
-	//				if(wr->m_decompositionType != Film::ETransientEllipse && !(s==3 && t == 2))
-	//					continue;
-	//				else
-	//					miWeight = 1.0;
+//					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
+//						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+					Float miWeight = 1.0;
 
 					if (sampleDirect) {
 						/* Now undo the previous change */

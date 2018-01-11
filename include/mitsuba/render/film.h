@@ -90,6 +90,9 @@ public:
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
 	inline size_t getFrames() const {return m_frames; }
 	inline size_t getSubSamples() const {return m_subSamples; }
+	inline size_t getForceBounces() const {return m_forceBounces; }
+	inline size_t getSBounces() const {return m_sBounces; }
+	inline size_t getTBounces() const {return m_tBounces; }
 
 	/**
 	 * \brief Develop the contents of a subregion of the film and store
@@ -168,6 +171,10 @@ protected:
 	Float m_decompositionBinWidth;
 	size_t m_frames;
 	size_t m_subSamples;
+
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
 };
 
 MTS_NAMESPACE_END

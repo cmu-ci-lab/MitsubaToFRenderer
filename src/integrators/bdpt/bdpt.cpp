@@ -212,6 +212,10 @@ public:
 		m_config.m_frames = film->getFrames();
 		m_config.m_subSamples = film->getSubSamples();
 
+		m_config.m_forceBounces = film->getForceBounces();
+		m_config.m_sBounces  	= film->getSBounces();
+		m_config.m_tBounces 	= film->getTBounces();
+
 
 		if (m_config.maxDepth!=-1 && m_config.m_decompositionType == Film::EBounce){
 			if (m_config.maxDepth > m_config.m_decompositionMaxBound)
