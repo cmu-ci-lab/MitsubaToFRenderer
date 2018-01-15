@@ -116,12 +116,12 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				}
 				Spectrum currentValue(value);
 				if(vs->type == PathVertex::ESurfaceInteraction)
-					currentValue *= vs->eval(scene, vsPred, connectionVertex, ERadiance) *
-							connectionVertex->eval(scene, vs, vt, ERadiance) *
+					currentValue *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
+							connectionVertex->eval(scene, vs, vt, EImportance) *
 							vt->eval(scene, vtPred, connectionVertex, ERadiance);
 				else if(vs->type == PathVertex::EEmitterSample)
 					currentValue *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
-							connectionVertex->eval(scene, vs, vt, ERadiance) *
+							connectionVertex->eval(scene, vs, vt, EImportance) *
 							vt->eval(scene, vtPred, connectionVertex, ERadiance);
 				else
 					SLog(EError, "BDPT::eval(): Ellipsoidal Intersection Encountered an "

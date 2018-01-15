@@ -111,7 +111,7 @@ void ShapeKDTree::build() {
 	ref<Timer> timerBB = new Timer();
 	cout << "Constructing a Bounding Box Tree\n";
 	size_t maxDepth = getMaxDepth();
-	m_BBTree = new BBTree(maxDepth);
+	m_BBTree = new BBTree(maxDepth, primCount);
 	buildBBTree(m_nodes);
 	cout << "Finished -- took " << timerBB->getMilliseconds() << " ms.\n";
 //	printBBTree(m_nodes, 0);
@@ -129,6 +129,7 @@ void ShapeKDTree::buildBBTree(const KDNode* node){
 			m_BBTree->expandBy(ta.A);
 			m_BBTree->expandBy(ta.B);
 			m_BBTree->expandBy(ta.C);
+			m_BBTree->m_triangleRepetition[primIdx]++;
 		}
 	}else{
 		m_BBTree->goLeft();
@@ -247,7 +248,10 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 		cache->primIndex = ta.primIndex;
 		cache->u = tempU;
 		cache->v = tempV;
-		value = value*(u-l)*multiplier;
+		if(m_BBTree->m_triangleRepetition[primIdx] <= 0){
+			SLog(EError, "Triangle repetition of %i th triangle is not properly measured", primIdx);
+		}
+		value = value*(u-l)*multiplier/m_BBTree->m_triangleRepetition[primIdx];
 		return true;
 	}
 	e->cacheSetTriState(primIdx,Cache::EFails);

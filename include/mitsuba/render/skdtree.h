@@ -48,10 +48,14 @@ struct BBTree{
 	size_t m_currentNode;
 	size_t m_maxNodes;
 
-	BBTree(size_t& max_depth){
+	size_t *m_triangleRepetition;
+
+	BBTree(const size_t& max_depth, const size_t& primCount){
 		m_currentNode = 0;
 		m_maxNodes = pow(2, max_depth) + 1;
 		m_aabb = new AABB[m_maxNodes];
+		m_triangleRepetition = new size_t[primCount];
+		memset(m_triangleRepetition, 0, primCount);
 	}
 
 	~BBTree(){
