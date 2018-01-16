@@ -226,6 +226,9 @@ public:
 				maxT = std::min(maxT, m_config.maxDepth + 1 - s);
 
 			for (int t = maxT; t >= minT; --t) {
+				if(s == 0 || t == 0 || (wr->m_decompositionType == Film::ETransient && s==1 && t==1)){
+					continue; // hack to remove paths that are not taken care in transientEllipse
+				}
 				if(wr->m_forceBounces && (s != wr->m_sBounces || t != wr->m_tBounces)){
 					continue;
 				}

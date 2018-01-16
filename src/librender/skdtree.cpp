@@ -251,7 +251,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 		if(m_BBTree->m_triangleRepetition[primIdx] <= 0){
 			SLog(EError, "Triangle repetition of %i th triangle is not properly measured", primIdx);
 		}
-		value = value*(u-l)*multiplier/m_BBTree->m_triangleRepetition[primIdx];
+		value = value*(u-l)*multiplier/(double)m_BBTree->m_triangleRepetition[primIdx];
 		return true;
 	}
 	e->cacheSetTriState(primIdx,Cache::EFails);

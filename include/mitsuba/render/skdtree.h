@@ -55,7 +55,7 @@ struct BBTree{
 		m_maxNodes = pow(2, max_depth) + 1;
 		m_aabb = new AABB[m_maxNodes];
 		m_triangleRepetition = new size_t[primCount];
-		memset(m_triangleRepetition, 0, primCount);
+		memset(m_triangleRepetition, 0, primCount*sizeof(size_t));
 	}
 
 	~BBTree(){
