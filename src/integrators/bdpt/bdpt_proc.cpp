@@ -113,7 +113,7 @@ public:
 
 				int rrDepth = m_config.rrDepth;
 
-				if(result->m_forceBounces == Film::ETransientEllipse) // Ellipsoidal intersection creates a shadow bounce. Compensating the same
+				if(result->m_decompositionType == Film::ETransientEllipse) // Ellipsoidal intersection creates a shadow bounce. Compensating the same
 					rrDepth--;
 
 				/* Perform a random walk using alternating steps on each path */
