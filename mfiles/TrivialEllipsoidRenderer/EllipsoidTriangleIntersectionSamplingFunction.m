@@ -48,6 +48,10 @@ TUD = weightIP(T, U, a, b, b);
 UUD = weightIP(U, U, a, b, b);
 OOD = weightIP(O, O, a, b, b);
 
+
+% TOD = weightIP(T, O, a, b, b);
+% UOD = weightIP(U, O, a, b, b);
+
 % theta = .5 *atan2((UUD-TTD),2*TUD)-pi/4;
 % theta = .5 *atan2((UUD-TTD),2*TUD)-pi/4
 theta = .5*atan2(2*TUD,(UUD-TTD));
@@ -63,8 +67,10 @@ TranformEllipsoid2Ellipse = TranformEllipsoid2Ellipse * makehgtform('translate',
 
 %% Compute major axis and minor axis
 det = sqrt(4*TUD^2+(TTD-UUD)^2);
-m1 = sqrt(2 * (1-OOD)/(TTD+UUD-det));
-m2 = sqrt(2 * (1-OOD)/(TTD+UUD+det));
+DR_1 = (TTD+UUD-det);
+DR_2 = (TTD+UUD+det);
+m1 = sqrt(2 * (1-OOD)/DR_1);
+m2 = sqrt(2 * (1-OOD)/DR_2);
 k  = sqrt(1-m2*m2/(m1*m1));
 
 %% Compute transform to scale ellipse to circle
@@ -105,13 +111,29 @@ TTE = WeightedIP(T, T, -(1/a^3), -(a/b^4), -(a/b^4));
 TUE = WeightedIP(T, U, -(1/a^3), -(a/b^4), -(a/b^4));
 UUE = WeightedIP(U, U, -(1/a^3), -(a/b^4), -(a/b^4));
 OOE = WeightedIP(O, O, -(1/a^3), -(a/b^4), -(a/b^4));
-DR = (TTD+UUD-det);
 if(det < 1e-7)
-    dDR = TTE + UUE;
+    dDR_1 = TTE + UUE;
+    dDR_2 = TTE + UUE;
 else
-    dDR = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+    dDR_1 = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+    dDR_2 = TTE + UUE + (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
 end
 
-measure = (-DR*OOE-(1-OOD)*dDR)/(DR*DR)*sqrt(1-k*k)*theta_range;
+dOM = ([T(1)/(a*a) T(2)/(b*b) T(3)/(b*b); ...
+        U(1)/(a*a) U(2)/(b*b) U(3)/(b*b); ...
+           n(1)       n(2)       n(3); ...
+    ]);
+dOV = tau*0.5*[T(1)*O(1)/a^4+T(2)*O(2)/b^4+T(3)*O(3)/b^4; ...
+               U(1)*O(1)/a^4+U(2)*O(2)/b^4+U(3)*O(3)/b^4; ...
+               0; ...
+              ];
+
+dO = dOM\dOV;
+
+OdOD = weightIP(O, dO, a, b, b);
+NR   = (1-OOD);
+dNR  = -OOE - OdOD;
+
+measure = ( (DR_1*dNR-NR*dDR_1)/(DR_1*DR_1)*m2/m1*cos(theta)^2 + (DR_2*dNR-NR*dDR_2)/(DR_2*DR_2)*m1/m2*sin(theta)^2 )*theta_range;
 
 intersects = true;

@@ -624,9 +624,11 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 
 	// Compute major and minor axis
 	FLOAT det 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
-	FLOAT m1 	= sqrt(2 * (1-OOD)/(TTD+UUD-det)); // Major axis
-	FLOAT m2 	= sqrt(2 * (1-OOD)/(TTD+UUD+det)); // Minor axis
-	FLOAT k  	= sqrt(1-m2*m2/(m1*m1)); // eccentricity
+	FLOAT DR1  = TTD + UUD - det;
+	FLOAT DR2  = TTD + UUD + det;
+	FLOAT m1 	= sqrt(2 * (1-OOD)/DR1); // Major axis
+	FLOAT m2 	= sqrt(2 * (1-OOD)/DR2); // Minor axis
+//	FLOAT k  	= sqrt(1-m2*m2/(m1*m1)); // eccentricity
 
 	// Compute transform to scale ellipse to circle
 
@@ -658,14 +660,21 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		FLOAT TUE = weightedIPd(T, U);
 		FLOAT UUE = weightedIPd(U, U);
 		FLOAT OOE = weightedIPd(O, O);
-		FLOAT DR  = (TTD+UUD-det);
-		FLOAT dDR;
-		if(det < Eps)
-			dDR= TTE + UUE;
-		else
-			dDR= TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
-
-		value = ((-DR*OOE-(1-OOD)*dDR)*sqrt(1-k*k)*thetaRange)/(DR*DR);
+		FLOAT dDR1, dDR2;
+		if(det < Eps){
+			dDR1 = TTE + UUE;
+			dDR2 = dDR1;
+		}else{
+			FLOAT temp1 = TTE + UUE;
+			FLOAT temp2 = (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+			dDR1 = temp1 - temp2;
+			dDR2 = temp1 + temp2;
+		}
+		FLOAT dNR = -OOE;
+		FLOAT NR  = (1-OOD);
+		FLOAT cn2  = cos(angle), sn2 = sin(angle);
+		cn2 *= cn2; sn2 *= sn2;
+		value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2)*thetaRange;
 
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache to be compatible with mitsuba
 		Barycentric(Original, triA, triB, triC, u, v);
