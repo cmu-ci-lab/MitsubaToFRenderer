@@ -520,6 +520,8 @@ public:
 //					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
 //						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 					Float miWeight = 1.0;
+					if(!wr->m_forceBounces)
+						miWeight = 0.5;
 
 					if (sampleDirect) {
 						/* Now undo the previous change */
