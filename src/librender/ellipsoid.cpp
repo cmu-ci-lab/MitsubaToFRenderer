@@ -670,7 +670,18 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 			dDR1 = temp1 - temp2;
 			dDR2 = temp1 + temp2;
 		}
-		FLOAT dNR = -OOE;
+
+		Transform_FLOAT dOM(Matrix4x4_FLOAT({T.x/(m_majorAxis*m_majorAxis), T.y/(m_minorAxis*m_minorAxis), T.z/(m_minorAxis*m_minorAxis), 0.0,
+											 U.x/(m_majorAxis*m_majorAxis), U.y/(m_minorAxis*m_minorAxis), U.z/(m_minorAxis*m_minorAxis), 0.0,
+											 N.x, 							N.y, 						   N.z, 						  0.0,
+											 0.0, 							0.0, 						   0.0,							  1.0
+													}));
+
+		TVector3<LengthType> dOV(T.x*O.x/pow(m_majorAxis,4) + T.y*O.y/pow(m_minorAxis,4) + T.z*O.z/pow(m_minorAxis,4), U.x*O.x/pow(m_majorAxis,4) + U.y*O.y/pow(m_minorAxis,4) + U.z*O.z/pow(m_minorAxis,4),  0.0);
+		dOV *= m_tau/2;
+		TVector3<LengthType> dO = dOM.inverse()(dOV);
+		FLOAT OdOD= weightedIP(O, dO);
+		FLOAT dNR = - OOE - OdOD;
 		FLOAT NR  = (1-OOD);
 		FLOAT cn2  = cos(angle), sn2 = sin(angle);
 		cn2 *= cn2; sn2 *= sn2;
