@@ -2,7 +2,7 @@ function Transient = CircleRenderer_radiusRandomized(Time_min, Time_max, Time_re
 
 Time = Time_min:Time_res:Time_max;
 
-Transient = gpuArray.zeros(size(Time));
+Transient = zeros(size(Time));
 
 x_min_plane = -1;
 x_max_plane =  1;

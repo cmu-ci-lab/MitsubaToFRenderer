@@ -1,8 +1,8 @@
 clc, clear, close all
 
-Time_min = 3;
-Time_max = 6;
-Time_res =1e-4;
+Time_min = 3.9;
+Time_max = 5;
+Time_res =1e-2;
 
 Time = Time_min:Time_res:Time_max;
 
@@ -10,8 +10,8 @@ packets = 1;
 N = 1e6; % Total rays = packets*N;
 
 tic
-% PR = PhotonRenderer(Time_min, Time_max, Time_res, packets, N);
-SR = SurfaceRenderer(Time_min, Time_max, Time_res, packets, N);
+PR = PhotonRenderer(Time_min, Time_max, Time_res, packets, N);
+% SR = SurfaceRenderer(Time_min, Time_max, Time_res, packets, N);
 % CR = CircleRenderer(Time_min, Time_max, Time_res, packets, N);
 % CRT= CircleRenderer_timeRandomized(Time_min, Time_max, Time_res, packets, N);
 CRR= CircleRenderer_radiusRandomized(Time_min, Time_max, Time_res, packets, N);

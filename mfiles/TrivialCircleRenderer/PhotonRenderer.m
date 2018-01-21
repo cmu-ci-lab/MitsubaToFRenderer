@@ -4,7 +4,7 @@ function Transient = PhotonRenderer(Time_min, Time_max, Time_res, packets, N)
 % Time_res = 0.01;
 
 Time = Time_min:Time_res:Time_max;
-Transient = gpuArray.zeros(size(Time));
+Transient = zeros(size(Time));
 
 x_min_plane = -1;
 x_max_plane =  1;
@@ -16,8 +16,8 @@ z_plane = 2;
 % N = 1e7; % Total rays = packets*N;
 
 for i=1:packets
-    phi = 2*pi*gpuArray.rand(N,1);
-    theta = acos(gpuArray.rand(N,1));
+    phi = 2*pi*rand(N,1);
+    theta = acos(rand(N,1));
 
     direction = [sin(theta).*cos(phi) sin(theta).*sin(phi) cos(theta)];
 
