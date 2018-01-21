@@ -450,7 +450,7 @@ public:
 
 								vs->measure = vt->measure = EArea;
 
-								Float miWeight = 1/(s+t-1);
+								Float miWeight = 1.0/(s+t-1);
 //								Path::miWeight(scene, emitterSubpath, &connectionEdge,
 //									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 
@@ -519,7 +519,7 @@ public:
 					/* Compute the multiple importance sampling weight */
 //					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
 //						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
-					Float miWeight = 1/(s+t-1);
+					Float miWeight = 1.0/(s+t-1);
 
 					if (sampleDirect) {
 						/* Now undo the previous change */
