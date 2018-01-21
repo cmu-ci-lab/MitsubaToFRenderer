@@ -683,9 +683,10 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		FLOAT OdOD= weightedIP(O, dO);
 		FLOAT dNR = - OOE - OdOD;
 		FLOAT NR  = (1-OOD);
-		FLOAT cn2  = cos(angle), sn2 = sin(angle);
-		cn2 *= cn2; sn2 *= sn2;
-		value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2)*thetaRange;
+		FLOAT cn  = cos(angle), sn = sin(angle);
+		FLOAT cn2 = cn*cn;
+		FLOAT sn2 = sn*sn;
+		value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2 + dot(m2*cn*T - m1*sn*U, dO))*thetaRange;
 
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache to be compatible with mitsuba
 		Barycentric(Original, triA, triB, triC, u, v);
