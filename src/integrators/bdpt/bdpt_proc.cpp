@@ -83,6 +83,9 @@ public:
 		Path emitterSubpath;
 		Path sensorSubpath;
 
+		if(result->m_decompositionType == Film::ETransientEllipse) // Ellipsoidal intersection creates a shadow bounce. Compensating the same
+			m_config.maxDepth--;
+
 		/* Determine the necessary random walk depths based on properties of
 		   the endpoints */
 		int emitterDepth = m_config.maxDepth,
@@ -111,15 +114,10 @@ public:
 				emitterSubpath.initialize(m_scene, time, EImportance, m_pool);
 				sensorSubpath.initialize(m_scene, time, ERadiance, m_pool);
 
-				int rrDepth = m_config.rrDepth;
-
-				if(result->m_decompositionType == Film::ETransientEllipse) // Ellipsoidal intersection creates a shadow bounce. Compensating the same
-					rrDepth--;
-
 				/* Perform a random walk using alternating steps on each path */
 				Path::alternatingRandomWalkFromPixel(m_scene, m_sampler,result,
 					emitterSubpath, emitterDepth, sensorSubpath,
-					sensorDepth, offset, rrDepth, m_pool);
+					sensorDepth, offset, m_config.rrDepth, m_pool);
 
 				evaluate(result, emitterSubpath, sensorSubpath);
 
