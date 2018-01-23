@@ -1,9 +1,9 @@
-function [P, measure, intersects] = EllipsoidTriangleIntersectionSamplingFunction(p1, p2, tau, Polygon)
+function [P, measure, theta_range, intersects] = EllipsoidTriangleIntersectionSamplingFunction(p1, p2, tau, Polygon)
 
 intersects = false;
 P = [0,0,0,1];
 measure = 0;
-
+theta_range = 0;
 %% Compute the transform to center the ellipsoid at the origin and axis aligned with elliposoids axis
 a = tau/2;
 C = (p1 + p2)/2;
@@ -88,16 +88,17 @@ end
 %% Sample an angle in the theta_range
 cumsum_theta = cumsum(theta_max - theta_min);
 theta_range  = cumsum_theta(end);
-theta_s       = rand * theta_range;
-if(theta_s <= cumsum(1))
+theta_s      = rand * theta_range;
+if(theta_s <= cumsum_theta(1))
     theta = theta_min(1) + theta_s;
 else
     for i=2:indices
         if(theta_s <= cumsum_theta(i))
-            theta = theta_min(i) + theta_s - cumsum(i-1);
+            theta = theta_min(i) + theta_s - cumsum_theta(i-1);
         end
     end
 end
+% theta = 5.7936614171122658;
 
 %% Compute the point
 ellipticPoints = [m1*cos(theta);m2*sin(theta)];
@@ -105,6 +106,10 @@ ellipticPoints(3,:) = 0;
 ellipticPoints(4,:) = 1;
 % 
 P = inv(Tranform3D2Ellipsoid)*inv(TranformEllipsoid2Ellipse)*ellipticPoints;
+
+% if( abs(norm(P(1:3) - p1') + norm(P(1:3) - p2') -tau) > 1e-7)
+%     disp('Error in the generation of P')
+% end
 
 
 TTE = WeightedIP(T, T, -(1/a^3), -(a/b^4), -(a/b^4));
@@ -132,8 +137,40 @@ dO = dOM\dOV;
 
 OdOD = weightIP(O, dO, a, b, b);
 NR   = (1-OOD);
-dNR  = -OOE - OdOD;
+dNR  = -OOE - 2*OdOD;
 
-measure = ( (DR_1*dNR-NR*dDR_1)/(DR_1*DR_1)*m2/m1*cos(theta)^2 + (DR_2*dNR-NR*dDR_2)/(DR_2*DR_2)*m1/m2*sin(theta)^2 )*theta_range;
+%% Jacobian checks:
+% addpath('../CheckGrads');
+% e = 10^(-6);
+% specialparams = [T(1), T(2), T(3), U(1), U(2), U(3), n(1), n(2), n(3), PolygonEllipsoid(1,1), PolygonEllipsoid(2,1), PolygonEllipsoid(3,1), norm(C-p1)];
+% [dt, dh, dv] = checkgrad('TDerivationCheckFunction', tau, e, specialparams);
+% if(dt > 1e-5)
+%     disp(strcat('Error in T derivation, d:', num2str(dt), ' dh:', num2str(dh), ' dv:', num2str(dv)));
+% end
+% [du, dh, dv] = checkgrad('UDerivationCheckFunction', tau, e, specialparams);
+% if(du > 1e-5)
+%     disp(strcat('Error in U derivation, d:', num2str(du), ' dh:', num2str(dh), ' dv:', num2str(dv)));
+% end
+
+
+measure = ( (DR_1*dNR-NR*dDR_1)/(DR_1*DR_1)*m2/m1*cos(theta)^2 + (DR_2*dNR-NR*dDR_2)/(DR_2*DR_2)*m1/m2*sin(theta)^2 + (m2*cos(theta)*NewX' + m1*sin(theta)*NewY')*dO)*theta_range;
+
+% addpath('../autodiffGenerators');
+% specialparams = [T' U' n' PolygonEllipsoid(1:3,1)' PolygonEllipsoid(1:3,2)' PolygonEllipsoid(1:3,3)' norm(C-p1)];
+% Ellipseparams = [tau; theta];
+% measure = ComputeJacobianMeasure(Ellipseparams, specialparams) * theta_range;
+% measure = (1/ComputeJacobianMeasure(Ellipseparams, specialparams)) * theta_range;
+% measure = measure*area(PolygonEllipsoid(1:3,1)',PolygonEllipsoid(1:3,2),PolygonEllipsoid(1:3,3));
+
+% if( abs(measure-measure_precompute) > 1e-4)
+%     disp(strcat('Error in measure:', num2str(measure_precompute), ' vs ', num2str(measure)));  
+% end
 
 intersects = true;
+end
+
+function value = area(C1, C2, C3)
+    cr = cross(C1-C2, C1-C3);
+    value = 1/2*sqrt(cr(1)^2 + cr(2)^2 + cr(3)^2);
+end
+
