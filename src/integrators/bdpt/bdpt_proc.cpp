@@ -83,13 +83,14 @@ public:
 		Path emitterSubpath;
 		Path sensorSubpath;
 
-		if(result->m_decompositionType == Film::ETransientEllipse) // Ellipsoidal intersection creates a shadow bounce. Compensating the same
-			m_config.maxDepth--;
-
 		/* Determine the necessary random walk depths based on properties of
 		   the endpoints */
-		int emitterDepth = m_config.maxDepth,
-		    sensorDepth = m_config.maxDepth;
+		int maxDepth = m_config.maxDepth;
+		if(result->m_decompositionType == Film::ETransientEllipse)
+			maxDepth--;
+
+		int emitterDepth = maxDepth,
+		    sensorDepth = maxDepth;
 
 		/* Go one extra step if the sensor can be intersected */
 		if (!m_scene->hasDegenerateSensor() && emitterDepth != -1)
@@ -143,6 +144,9 @@ public:
 		const Scene *scene = m_scene;
 		PathVertex tempEndpoint, tempSample;
 		PathEdge tempEdge, connectionEdge;
+		int maxDepth = m_config.maxDepth;
+		if(wr->m_decompositionType == Film::ETransientEllipse)
+			maxDepth--;
 
 		/* For transient rendering */
 		PathEdge *connectionEdge1 = m_pool.allocEdge(),
@@ -226,7 +230,7 @@ public:
 			int minT = std::max(2-s, m_config.lightImage ? 0 : 2),
 			    maxT = (int) sensorSubpath.vertexCount() - 1;
 			if (m_config.maxDepth != -1)
-				maxT = std::min(maxT, m_config.maxDepth + 1 - s);
+				maxT = std::min(maxT, maxDepth + 1 - s);
 
 			for (int t = maxT; t >= minT; --t) {
 				if(s == 0 || t == 0 || (wr->m_decompositionType == Film::ETransient && s==1 && t==1)){
