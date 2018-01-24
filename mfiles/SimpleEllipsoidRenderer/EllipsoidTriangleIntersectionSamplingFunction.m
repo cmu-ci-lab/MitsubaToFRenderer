@@ -1,9 +1,8 @@
-function [P, measure, theta_range, intersects] = EllipsoidTriangleIntersectionSamplingFunction(p1, p2, tau, Polygon)
+function [P, measure, intersects] = EllipsoidTriangleIntersectionSamplingFunction(p1, p2, tau, Polygon)
 
 intersects = false;
 P = [0,0,0,1];
 measure = 0;
-theta_range = 0;
 %% Compute the transform to center the ellipsoid at the origin and axis aligned with elliposoids axis
 a = tau/2;
 C = (p1 + p2)/2;
@@ -66,9 +65,9 @@ TranformEllipsoid2Ellipse(4,4) = 1;
 TranformEllipsoid2Ellipse = TranformEllipsoid2Ellipse * makehgtform('translate',-O);
 
 %% Compute major axis and minor axis
-det = sqrt(4*TUD^2+(TTD-UUD)^2);
-DR_1 = (TTD+UUD-det);
-DR_2 = (TTD+UUD+det);
+Delta = sqrt(4*TUD^2+(TTD-UUD)^2);
+DR_1 = (TTD+UUD-Delta);
+DR_2 = (TTD+UUD+Delta);
 m1 = sqrt(2 * (1-OOD)/DR_1);
 m2 = sqrt(2 * (1-OOD)/DR_2);
 k  = sqrt(1-m2*m2/(m1*m1));
@@ -98,7 +97,6 @@ else
         end
     end
 end
-% theta = 5.7936614171122658;
 
 %% Compute the point
 ellipticPoints = [m1*cos(theta);m2*sin(theta)];
@@ -116,14 +114,16 @@ TTE = WeightedIP(T, T, -(1/a^3), -(a/b^4), -(a/b^4));
 TUE = WeightedIP(T, U, -(1/a^3), -(a/b^4), -(a/b^4));
 UUE = WeightedIP(U, U, -(1/a^3), -(a/b^4), -(a/b^4));
 OOE = WeightedIP(O, O, -(1/a^3), -(a/b^4), -(a/b^4));
-if(det < 1e-7)
+dDelta = (1/Delta)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+if(Delta < 1e-7)
     dDR_1 = TTE + UUE;
     dDR_2 = TTE + UUE;
 else
-    dDR_1 = TTE + UUE - (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
-    dDR_2 = TTE + UUE + (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
+    dDR_1 = TTE + UUE - dDelta;
+    dDR_2 = TTE + UUE + dDelta;
 end
 
+%Calculate dO
 dOM = ([T(1)/(a*a) T(2)/(b*b) T(3)/(b*b); ...
         U(1)/(a*a) U(2)/(b*b) U(3)/(b*b); ...
            n(1)       n(2)       n(3); ...
@@ -132,12 +132,18 @@ dOV = tau*0.5*[T(1)*O(1)/a^4+T(2)*O(2)/b^4+T(3)*O(3)/b^4; ...
                U(1)*O(1)/a^4+U(2)*O(2)/b^4+U(3)*O(3)/b^4; ...
                0; ...
               ];
-
 dO = dOM\dOV;
 
 OdOD = weightIP(O, dO, a, b, b);
 NR   = (1-OOD);
 dNR  = -OOE - 2*OdOD;
+
+msnthetadtheta = (Delta*(UUE-TTE)-dDelta*(UUD-TTD))/Delta^2;
+cnthetadtheta  = 2 * (Delta*TUE-dDelta*TUD)/Delta^2;
+dTN  = T*msnthetadtheta - U*cnthetadtheta;
+dUN  = T*cnthetadtheta  + U*msnthetadtheta ;
+
+dAxis = O'*(dTN*m2*cos(theta) + dUN*m1*sin(theta));
 
 %% Jacobian checks:
 % addpath('../CheckGrads');
@@ -153,7 +159,7 @@ dNR  = -OOE - 2*OdOD;
 % end
 
 
-measure = ( (DR_1*dNR-NR*dDR_1)/(DR_1*DR_1)*m2/m1*cos(theta)^2 + (DR_2*dNR-NR*dDR_2)/(DR_2*DR_2)*m1/m2*sin(theta)^2 + (m2*cos(theta)*NewX' + m1*sin(theta)*NewY')*dO)*theta_range;
+measure = ( (DR_1*dNR-NR*dDR_1)/(DR_1*DR_1)*m2/m1*cos(theta)^2 + (DR_2*dNR-NR*dDR_2)/(DR_2*DR_2)*m1/m2*sin(theta)^2 + (m2*cos(theta)*NewX' + m1*sin(theta)*NewY')*dO + dAxis)*theta_range;
 
 % addpath('../autodiffGenerators');
 % specialparams = [T' U' n' PolygonEllipsoid(1:3,1)' PolygonEllipsoid(1:3,2)' PolygonEllipsoid(1:3,3)' norm(C-p1)];
@@ -168,9 +174,9 @@ measure = ( (DR_1*dNR-NR*dDR_1)/(DR_1*DR_1)*m2/m1*cos(theta)^2 + (DR_2*dNR-NR*dD
 
 intersects = true;
 end
-
-function value = area(C1, C2, C3)
-    cr = cross(C1-C2, C1-C3);
-    value = 1/2*sqrt(cr(1)^2 + cr(2)^2 + cr(3)^2);
-end
+% 
+% function value = area(C1, C2, C3)
+%     cr = cross(C1-C2, C1-C3);
+%     value = 1/2*sqrt(cr(1)^2 + cr(2)^2 + cr(3)^2);
+% end
 

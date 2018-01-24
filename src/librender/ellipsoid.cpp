@@ -623,9 +623,9 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 	invEllipsoid2Ellipse = Ellipsoid2Ellipse.inverse();
 
 	// Compute major and minor axis
-	FLOAT det 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
-	FLOAT DR1  = TTD + UUD - det;
-	FLOAT DR2  = TTD + UUD + det;
+	FLOAT Delta 	= sqrt(4*TUD*TUD+(TTD-UUD)*(TTD-UUD));
+	FLOAT DR1  = TTD + UUD - Delta;
+	FLOAT DR2  = TTD + UUD + Delta;
 	FLOAT m1 	= sqrt(2 * (1-OOD)/DR1); // Major axis
 	FLOAT m2 	= sqrt(2 * (1-OOD)/DR2); // Minor axis
 //	FLOAT k  	= sqrt(1-m2*m2/(m1*m1)); // eccentricity
@@ -660,15 +660,15 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		FLOAT TUE = weightedIPd(T, U);
 		FLOAT UUE = weightedIPd(U, U);
 		FLOAT OOE = weightedIPd(O, O);
+		FLOAT dDelta = (1/Delta)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
 		FLOAT dDR1, dDR2;
-		if(det < Eps){
+		if(Delta < Eps){
 			dDR1 = TTE + UUE;
 			dDR2 = dDR1;
 		}else{
 			FLOAT temp1 = TTE + UUE;
-			FLOAT temp2 = (1/det)*(4*TUD*TUE + (TTE-UUE)*(TTD-UUD));
-			dDR1 = temp1 - temp2;
-			dDR2 = temp1 + temp2;
+			dDR1 = temp1 - dDelta;
+			dDR2 = temp1 + dDelta;
 		}
 
 		Transform_FLOAT dOM(Matrix4x4_FLOAT({T.x/(m_majorAxis*m_majorAxis), T.y/(m_minorAxis*m_minorAxis), T.z/(m_minorAxis*m_minorAxis), 0.0,
@@ -681,12 +681,20 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		dOV *= m_tau/2;
 		TVector3<LengthType> dO = dOM.inverse()(dOV);
 		FLOAT OdOD= weightedIP(O, dO);
-		FLOAT dNR = - OOE - OdOD;
+
 		FLOAT NR  = (1-OOD);
+		FLOAT dNR = - OOE - OdOD;
 		FLOAT cn  = cos(angle), sn = sin(angle);
 		FLOAT cn2 = cn*cn;
 		FLOAT sn2 = sn*sn;
-		value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2 + dot(m2*cn*NewX + m1*sn*NewY, dO))*thetaRange;
+
+		FLOAT msnthetadtheta = (Delta*(UUE-TTE)-dDelta*(UUD-TTD))/Delta^2;
+		FLOAT cnthetadtheta  = 2 * (Delta*TUE-dDelta*TUD)/Delta^2;
+		FLOAT dTN  			 = T*msnthetadtheta - U*cnthetadtheta;
+		FLOAT dUN  			 = T*cnthetadtheta  + U*msnthetadtheta ;
+		FLOAT dAxis 		 = dot(O, dTN*m2*cn + dUN*m1*sn);
+
+		value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2 + dot(m2*cn*NewX + m1*sn*NewY, dO) + dAxis)*thetaRange;
 
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache to be compatible with mitsuba
 		Barycentric(Original, triA, triB, triC, u, v);
