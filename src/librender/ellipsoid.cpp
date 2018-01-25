@@ -541,13 +541,11 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 
 	Point f1_Float(m_f1.x, m_f1.y, m_f1.z);
 	Point f2_Float(m_f2.x, m_f2.y, m_f2.z);
+	if(epsExclusiveLesserF(dot(N, f1_Float - a), 0) || epsExclusiveLesserF(dot(N, f2_Float - a), 0) )
+		return true;
 	if(epsExclusiveLesserF(dot(m_f1Normal, a - f1_Float), 0) && epsExclusiveLesserF(dot(m_f1Normal, b - f1_Float), 0) && epsExclusiveLesserF(dot(m_f1Normal, c - f1_Float), 0))
 		return true;
 	if(epsExclusiveLesserF(dot(m_f2Normal, a - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, b - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, c - f2_Float), 0))
-		return true;
-
-	//FIXME: This code will fail if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately.
-	if(epsExclusiveLesserF(dot(N, f1_Float - a), 0) || epsExclusiveLesserF(dot(N, f2_Float - a), 0) )
 		return true;
 
 	return false;
