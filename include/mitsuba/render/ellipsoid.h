@@ -871,7 +871,7 @@ template <typename _PointType, typename _LengthType> struct TEllipsoid{
 	}
 
 	/* Early rejection of the triangle if the triangle is not in the positive hyperspace of either of the focal points or if the focal points are not in the positive hyperspace of the triangle*/
-	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
+	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N) const;
 
 	/*Convert intersections found by ellipsoid intersection algorithm into barycentric co-ordinates for the rest of mitsuba code to work*/
 	void Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;

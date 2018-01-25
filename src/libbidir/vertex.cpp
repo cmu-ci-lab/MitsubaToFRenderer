@@ -89,7 +89,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		}
 		case ESurfaceInteraction: {
 
-			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getShadingNormal(), vt->getShadingNormal(), pathLengthTarget);
+			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getGeometricNormal(), vt->getGeometricNormal(), pathLengthTarget);
 			if(m_ellipsoid->isDegenerate()){
 				return;
 			}

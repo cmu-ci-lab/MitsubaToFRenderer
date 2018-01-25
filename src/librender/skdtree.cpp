@@ -126,9 +126,19 @@ void ShapeKDTree::buildBBTree(const KDNode* node){
 						last = node->getPrimEnd(); entry != last; entry++) {
 			const IndexType primIdx = m_indices[entry];
 			const TriAccel &ta = m_triAccel[primIdx];
-			m_BBTree->expandBy(ta.A);
-			m_BBTree->expandBy(ta.B);
-			m_BBTree->expandBy(ta.C);
+
+			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+			const Triangle *triangles = mesh->getTriangles();
+			const Point *positions = mesh->getVertexPositions();
+
+			const Triangle &tri = triangles[ta.primIndex];
+			const Point &A = positions[tri.idx[0]];
+			const Point &B = positions[tri.idx[1]];
+			const Point &C = positions[tri.idx[2]];
+
+			m_BBTree->expandBy(A);
+			m_BBTree->expandBy(B);
+			m_BBTree->expandBy(C);
 			m_BBTree->m_triangleRepetition[primIdx]++;
 		}
 	}else{
@@ -151,9 +161,19 @@ void ShapeKDTree::printBBTree(const KDNode* node, const size_t& index) const{
 				last = node->getPrimEnd(); entry != last; entry++) {
 			const IndexType primIdx = m_indices[entry];
 			const TriAccel &ta = m_triAccel[primIdx];
-			cout << "A: (" << ta.A.x << ", " << ta.A.y << ", " << ta.A.z << "); ";
-			cout << "B: (" << ta.B.x << ", " << ta.B.y << ", " << ta.B.z << "); ";
-			cout << "C: (" << ta.C.x << ", " << ta.C.y << ", " << ta.C.z << ");\n";
+
+			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+			const Triangle *triangles = mesh->getTriangles();
+			const Point *positions = mesh->getVertexPositions();
+
+			const Triangle &tri = triangles[ta.primIndex];
+			const Point &A = positions[tri.idx[0]];
+			const Point &B = positions[tri.idx[1]];
+			const Point &C = positions[tri.idx[2]];
+
+			cout << "A: (" << A.x << ", " << A.y << ", " << A.z << "); ";
+			cout << "B: (" << B.x << ", " << B.y << ", " << B.z << "); ";
+			cout << "C: (" << C.x << ", " << C.y << ", " << C.z << ");\n";
 		}
 		cout << "End Leaf Node; \n";
 		return;
@@ -233,16 +253,31 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 	Float tempU;
 	Float tempV;
 
+	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+	const Triangle *triangles = mesh->getTriangles();
+	const Point *positions = mesh->getVertexPositions();
+	const Normal *normals = mesh->getVertexNormals();
+
+	const Triangle &tri = triangles[ta.primIndex];
+	const Point &A = positions[tri.idx[0]];
+	const Point &B = positions[tri.idx[1]];
+	const Point &C = positions[tri.idx[2]];
+
 	if(e->cacheGetTriState(primIdx) == Cache::ETBD){
+		Normal N = cross(B-A, C-A);
+		if(normals != NULL){
+			if(dot(normals[tri.idx[0]], N) < 0)
+				N = -N;
+		}
 		// Do early rejection tests only once
-		if(e->earlyTriangleReject(ta.A, ta.B, ta.C)){
+		if(e->earlyTriangleReject(A, B, C, N)){
 			e->cacheSetTriState(primIdx,Cache::EFails);
 			return false;
 		}
 	}
 
 	//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
-	if(e->cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && ta.ellipsoidIntersect(e, value, tempU, tempV, sampler)){
+	if(e->cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && e->ellipsoidIntersectTriangle(A, B, C, value, tempU, tempV, sampler)){
 		e->cacheSetTriState(primIdx,Cache::EIntersects);
 		cache->shapeIndex = ta.shapeIndex;
 		cache->primIndex = ta.primIndex;

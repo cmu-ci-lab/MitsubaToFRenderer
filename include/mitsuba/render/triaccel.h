@@ -21,7 +21,6 @@
 #define __MITSUBA_RENDER_TRIACCEL_H_
 
 #include <mitsuba/render/trimesh.h>
-#include <mitsuba/render/ellipsoid.h>
 #include <mitsuba/render/sampler.h>
 #include <vector>
 #include <math.h>
@@ -54,12 +53,6 @@ struct TriAccel {
 	uint32_t shapeIndex;
 	uint32_t primIndex;
 
-	//FIXME: The raw Points are needed for transient rendering. Will double the space of the triangle. Need to think of a better alternative. Also, we should store the transform if it is going to speed the computations - Adithya
-	Point A;
-	Point B;
-	Point C;
-
-
 	/// Construct from vertex data. Returns '1' if there was a failure
 	inline int load(const Point &A, const Point &B, const Point &C);
 
@@ -67,21 +60,10 @@ struct TriAccel {
 	FINLINE bool rayIntersect(const Ray &ray, Float mint, Float maxt,
 		Float &u, Float &v, Float &t) const;
 
-
-
-	bool ellipsoidIntersect(const Ellipsoid* e, Float &value, Float &u, Float &v, ref<Sampler> sampler) const {
-		return e->ellipsoidIntersectTriangle(A, B, C, value, u, v, sampler);
-	}
 };
 
 inline int TriAccel::load(const Point &A, const Point &B, const Point &C) {
 	static const int waldModulo[4] = { 1, 2, 0, 1 };
-
-	//FIXME: The raw Points are needed for transient rendering. Will double the space of the triangle. Need to think of a better alternative. Also, we should store the transform if it is going to speed the computations - Adithya
-	this->A = A;
-	this->B = B;
-	this->C = C;
-
 
 	Vector b = C-A, c = B-A, N = cross(c, b);
 

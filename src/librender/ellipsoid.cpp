@@ -537,7 +537,7 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const{
+bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N) const{
 
 	Point f1_Float(m_f1.x, m_f1.y, m_f1.z);
 	Point f2_Float(m_f2.x, m_f2.y, m_f2.z);
@@ -547,7 +547,6 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 		return true;
 
 	//FIXME: This code will fail if the normal direction is opposite. An accurate (and not so effective) test is to check that the focal points are on the same side of the plane. However, this code is working accurately.
-	Normal N = cross(b-a, c-a);
 	if(epsExclusiveLesserF(dot(N, f1_Float - a), 0) || epsExclusiveLesserF(dot(N, f2_Float - a), 0) )
 		return true;
 
@@ -737,7 +736,7 @@ template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointT
 
 template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const AABB& aabb) const;
 
-template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c) const;
+template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N) const;
 
 template void TEllipsoid<Point3d, double>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
 
