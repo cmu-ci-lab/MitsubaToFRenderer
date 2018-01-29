@@ -47,7 +47,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		const PathVertex *vsPred, PathVertex *vs, const PathEdge *vsEdge,
 		const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 		PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
-		Float &EllipticPathWeight, Float &miWeight, const Spectrum &value,
+		Float &EllipticPathWeight, Float &miWeight, const Spectrum &value, Spectrum &total_value,
 		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 		ETransportMode mode, BDPTWorkResult *wr){
 
@@ -129,26 +129,35 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 					currentValue /= subSamples;
 					if (!vt->getSamplePosition(connectionVertex, samplePos))
 						continue;
-					currentValue.toLinearRGB(temp[0],temp[1],temp[2]);
-					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-					wr->putLightSample(samplePos, l_sampleDecompositionValue);
-					//reset the l_sampleDecompositionValue
-					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
-					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
-					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+					if(wr->m_modulationType == Film::ENone){
+						//Place the currentValue in the appropriate time bin of the light image
+						currentValue.toLinearRGB(temp[0],temp[1],temp[2]);
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+						wr->putLightSample(samplePos, l_sampleDecompositionValue);
+						//reset the l_sampleDecompositionValue
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+					}else{
+						wr->putLightSample(samplePos, currentValue);
+					}
 				}else{
 					cumulativeValue += currentValue;
 				}
 			}
 			if(!islightSamplePath && !cumulativeValue.isZero()){
 				cumulativeValue /= subSamples;
-//				cumulativeValue *= value;
-				cumulativeValue.toLinearRGB(temp[0],temp[1],temp[2]);
-				sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-				sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-				sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+
+				if(wr->m_modulationType == Film::ENone){
+					cumulativeValue.toLinearRGB(temp[0],temp[1],temp[2]);
+					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+				}else{
+					total_value += cumulativeValue;
+				}
 			}
 
 		}

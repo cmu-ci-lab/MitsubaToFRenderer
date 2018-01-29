@@ -75,6 +75,30 @@ Film::Film(const Properties &props)
 	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
 	m_subSamples = props.getSize("subSamples", 1);
 
+	std::string modulationType = boost::to_lower_copy(
+					props.getString("modulation", "none"));
+	if (modulationType == "none") {
+		m_modulationType = ENone;
+	} else if (modulationType == "sine") {
+		m_modulationType = ESine;
+	} else if (modulationType == "square") {
+		m_modulationType = ESquare;
+	} else if (modulationType == "hamiltonian") {
+		m_modulationType = EHamiltonian;
+	} else if (modulationType == "mseq") {
+		m_modulationType = EMSeq;
+	} else if (modulationType == "depthselective") {
+		m_modulationType = EDepthSelective;
+	} else {
+		Log(EError, "The \"modulation\" parameter must be equal to"
+			"either \"none\", \"square\", or \"hamiltonian\", or \"mseq\", or \"depthselective\"!");
+	}
+	m_omega 		= props.getFloat("omega",1);
+	m_phase 		= props.getFloat("phase",0);
+	m_P				= props.getInteger("P",32);
+	m_neighbors		= props.getInteger("neighbors",3);
+
+
 	m_forceBounces 	= props.getBoolean("forceBounce", false);
 	m_sBounces  	= props.getInteger("sBounce", 0);
 	m_tBounces 		= props.getInteger("tBounce", 0);

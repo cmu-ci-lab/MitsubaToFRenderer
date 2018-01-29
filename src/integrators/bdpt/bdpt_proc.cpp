@@ -156,7 +156,9 @@ public:
 
 		bool combine = false; // combine Ellipsoidal and BDPT?
 		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths */
-		Float pathLengthTarget = wr->m_decompositionMinBound+(wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*m_sampler->nextFloat();
+
+		Float pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
+//		Float pathLengthTarget = wr->m_decompositionMinBound+(wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*m_sampler->nextFloat();
 
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;
@@ -463,7 +465,7 @@ public:
 								 vs->EllipsoidalSampleBetween(scene, m_sampler, vsPred, vs, vsEdge,
 																			   vtPred, vt, vtEdge,
 																			   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining, tempPathLength,
-																			   EllipticPathWeight, miWeight, value,
+																			   EllipticPathWeight, miWeight, value, sampleValue,
 																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos, m_ellipsoid,
 																			   EImportance, wr);
 							}
@@ -589,15 +591,14 @@ public:
 
 					if ( currentDecompositionType == Film::ESteadyState){
 						if (t >= 2)
-	//						sampleValue += value * 0;
-						sampleValue += value * miWeight;
+							sampleValue += value * miWeight;
 						else
-							wr->putLightSample(samplePos, value * miWeight); //FIXME: Direct paths from camera (t=1) are not taken care of.
+							wr->putLightSample(samplePos, value * miWeight);
 					}
 				}
 			}
 		}
-		if (wr->m_decompositionType == Film::ESteadyState) {
+		if (wr->m_decompositionType == Film::ESteadyState || (wr->m_decompositionType == Film::ETransientEllipse && wr->m_modulationType != Film::ENone)) {
 			wr->putSample(initialSamplePos, sampleValue);
 		} else {
 			sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;

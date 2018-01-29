@@ -212,6 +212,12 @@ public:
 		m_config.m_frames = film->getFrames();
 		m_config.m_subSamples = film->getSubSamples();
 
+		m_config.m_modulationType = film->getToFModulationType();
+		m_config.m_omega		  = film->getToFOmega();
+		m_config.m_phase 		  = film->getToFPhase();
+		m_config.m_P			  = film->getToFP();
+		m_config.m_neighbors	  = film->getToFNeighbors();
+
 		m_config.m_forceBounces = film->getForceBounces();
 		m_config.m_sBounces  	= film->getSBounces();
 		m_config.m_tBounces 	= film->getTBounces();

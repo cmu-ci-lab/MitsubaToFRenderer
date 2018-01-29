@@ -57,6 +57,19 @@ public:
 
 	};
 
+	/**
+	 * This enumeration determines all the modulation types of the time-of-flight (TransientEllipse Renderer)
+	 */
+	enum EModulationType {
+		// None is same as rendering the entire TransientEllipse
+		ENone 			= 0x00,
+		ESine 			= 0x01,
+		ESquare			= 0x02,
+		EHamiltonian	= 0x03,
+		EMSeq			= 0x04,
+		EDepthSelective = 0x05,
+	};
+
 	/// Ignoring the crop window, return the resolution of the underlying sensor
 	inline const Vector2i &getSize() const { return m_size; }
 
@@ -90,6 +103,13 @@ public:
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
 	inline size_t getFrames() const {return m_frames; }
 	inline size_t getSubSamples() const {return m_subSamples; }
+
+	inline EModulationType getToFModulationType() const {return m_modulationType;}
+	inline Float getToFOmega() const {return m_omega;}
+	inline Float getToFPhase() const {return m_phase;}
+	inline Float getToFP() const {return m_P;}
+	inline Float getToFNeighbors() const {return m_neighbors;}
+
 	inline size_t getForceBounces() const {return m_forceBounces; }
 	inline size_t getSBounces() const {return m_sBounces; }
 	inline size_t getTBounces() const {return m_tBounces; }
@@ -171,6 +191,13 @@ protected:
 	Float m_decompositionBinWidth;
 	size_t m_frames;
 	size_t m_subSamples;
+	// For special case of ToF Renderer
+	EModulationType m_modulationType;
+	Float m_omega;
+	Float m_phase;
+	int   m_P;		   // For M-sequences and depth-selective camera
+	int   m_neighbors; // For depth-selective camera;
+
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;

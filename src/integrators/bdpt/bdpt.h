@@ -54,6 +54,13 @@ struct BDPTConfiguration {
 	Float m_decompositionBinWidth;
 	size_t m_frames;
 	size_t m_subSamples;
+	// For special case of ToF Renderer
+	Film::EModulationType m_modulationType;
+	Float m_omega;
+	Float m_phase;
+	int   m_P;		   // For M-sequences and depth-selective camera
+	int   m_neighbors; // For depth-selective camera;
+
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;
@@ -82,6 +89,14 @@ struct BDPTConfiguration {
 		}
 		m_frames = stream->readSize();
 		m_subSamples = stream->readSize();
+
+		m_modulationType = (Film::EModulationType) stream->readUInt();
+		m_omega 		 = stream->readFloat();
+		m_phase 		 = stream->readFloat();
+		m_P				 = stream->readInt();
+		m_neighbors		 = stream->readInt();
+
+
 		m_forceBounces = stream->readBool();
 		m_sBounces = stream->readUInt();
 		m_tBounces = stream->readUInt();
@@ -102,6 +117,13 @@ struct BDPTConfiguration {
 		stream->writeFloat(m_decompositionBinWidth);
 		stream->writeSize(m_frames);
 		stream->writeSize(m_subSamples);
+
+		stream->writeUInt(m_modulationType);
+		stream->writeFloat(m_omega);
+		stream->writeFloat(m_phase);
+		stream->writeInt(m_P);
+		stream->writeInt(m_neighbors);
+
 		stream->writeBool(m_forceBounces);
 		stream->writeUInt(m_sBounces);
 		stream->writeUInt(m_tBounces);
