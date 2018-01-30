@@ -146,7 +146,8 @@ public:
 
 		/* Check if all sample values are valid */
 		for (int i=0; i<channels; ++i) {
-			if (EXPECT_NOT_TAKEN((!std::isfinite(value[i]) || value[i] < 0) && m_warn))
+//			if (EXPECT_NOT_TAKEN((!std::isfinite(value[i]) || value[i] < 0) && m_warn))
+			if (EXPECT_NOT_TAKEN((!std::isfinite(value[i])) && m_warn))
 				goto bad_sample;
 		}
 
