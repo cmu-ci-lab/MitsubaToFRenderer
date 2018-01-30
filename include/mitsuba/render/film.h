@@ -105,7 +105,7 @@ public:
 	inline size_t getSubSamples() const {return m_subSamples; }
 
 	inline EModulationType getToFModulationType() const {return m_modulationType;}
-	inline Float getToFOmega() const {return m_omega;}
+	inline Float getToFLambda() const {return m_lambda;}
 	inline Float getToFPhase() const {return m_phase;}
 	inline Float getToFP() const {return m_P;}
 	inline Float getToFNeighbors() const {return m_neighbors;}
@@ -193,7 +193,7 @@ protected:
 	size_t m_subSamples;
 	// For special case of ToF Renderer
 	EModulationType m_modulationType;
-	Float m_omega;
+	Float m_lambda;
 	Float m_phase;
 	int   m_P;		   // For M-sequences and depth-selective camera
 	int   m_neighbors; // For depth-selective camera;

@@ -70,7 +70,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 	connectionEdge1->medium = (vsEdge == NULL) ? NULL : vsEdge->medium;
 
-	size_t binIndex = floor((pathLengthTarget + currentPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+	Float totalPathLength = pathLengthTarget + currentPathLength;
+
+	size_t binIndex = floor((totalPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
 
 	switch (type) {
 		case EEmitterSupernode: {
@@ -122,7 +124,8 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				vs->measure = vt->measure = EArea;
 				currentValue *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
 								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
-				currentValue *= EllipticPathWeight * (wr->m_decompositionMaxBound-wr->m_decompositionMinBound);
+
+				currentValue *= EllipticPathWeight * wr->getSamplingWeight(totalPathLength);
 				if(currentValue.isZero())
 					continue;
 				if(islightSamplePath){

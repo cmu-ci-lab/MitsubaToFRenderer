@@ -93,11 +93,13 @@ Film::Film(const Properties &props)
 		Log(EError, "The \"modulation\" parameter must be equal to"
 			"either \"none\", \"square\", or \"hamiltonian\", or \"mseq\", or \"depthselective\"!");
 	}
-	m_omega 		= props.getFloat("omega",1);
+	m_lambda 		= props.getFloat("lambda",1);
 	m_phase 		= props.getFloat("phase",0);
 	m_P				= props.getInteger("P",32);
 	m_neighbors		= props.getInteger("neighbors",3);
-
+	if(m_modulationType == ENone){
+		m_frames = 1;
+	}
 
 	m_forceBounces 	= props.getBoolean("forceBounce", false);
 	m_sBounces  	= props.getInteger("sBounce", 0);

@@ -41,10 +41,12 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_subSamples = conf.m_subSamples;
 
 	m_modulationType = conf.m_modulationType;
-	m_omega  		 = conf.m_omega;
+	m_lambda  		 = conf.m_lambda;
 	m_phase  		 = conf.m_phase;
 	m_P  		 	 = conf.m_P;
-	m_neighbors 	 = conf.m_neighbors; ;
+	m_neighbors 	 = conf.m_neighbors;
+	m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(10000); // evaluates trapezoidal rules with n = 10000
+
 
 	m_forceBounces = conf.m_forceBounces;
 	m_sBounces = conf.m_sBounces;
@@ -135,64 +137,14 @@ void BDPTWorkResult::dump(const BDPTConfiguration &conf,
 }
 #endif
 
-Float BDPTWorkResult::mSeq(Float t, Float phase) const{
-	t = t + phase*m_omega*INV_PI/2;
-	t = fmod(t, m_omega);
-	if(t < m_omega/m_P){
-		return 1 - t*(m_P-1)/m_omega;
-	}else if(t > (1 - 1/m_P)*m_omega){
-		return 1 - (m_omega - t)*(m_P - 1)/m_omega;
-	}else
-		return 1/m_P;
-}
-
-Float BDPTWorkResult::correlationFunction(Float t) const {
-	switch(m_modulationType){
-		case Film::ENone:{
-			SLog(EError, "Cannot call correlation function when the modulation type is not defined");
-			break;
-		}
-		case Film::ESine:{
-			t = t + m_phase*m_omega*INV_PI/2;
-			return cos(m_omega*t*INV_PI/2);
-			break;
-		}
-		case Film::ESquare:{
-			t = t + m_phase*m_omega*INV_PI/2;
-			return 4/m_omega*(fabs(fmod(t, m_omega)-m_omega/2) - m_omega/4);
-			break;
-		}
-		case Film::EHamiltonian:{
-			t = t + m_phase*m_omega*INV_PI/2;
-			t = fmod(t, m_omega);
-			if(t < m_omega/6){
-				return 6*t/m_omega;
-			}else if(t < m_omega/2 	&& t >= m_omega/6){
-				return 1.0;
-			}else if(t < 2*m_omega/3 	&& t >= m_omega/2){
-				return 1 - (t - m_omega/2)*6/m_omega;
-			}else{
-				return 0;
-			}
-			break;
-		}
-		case Film::EMSeq:{
-			return mSeq(t, m_phase);
-			break;
-		}
-		case Film::EDepthSelective:{
-			Float value = 0;
-			for(int i = 0; i < m_neighbors; i++){
-				value += mSeq(t, m_phase + i*m_omega/m_P);
-			}
-			value -= (m_neighbors-1)/m_P;
-			return value;
-			break;
-		}
-		default:
-			SLog(EError, "Modulation type is not defined");
+Float BDPTWorkResult::areaUnderCorrelationGraph(int n) const{
+	Float h = (m_decompositionMaxBound-m_decompositionMinBound)/(n-1);
+	Float value = 0.5*( fabs(correlationFunction(m_decompositionMaxBound))+ fabs(correlationFunction(m_decompositionMinBound)));
+	for(int i=2; i < n; i++){
+		value += fabs(correlationFunction( m_decompositionMinBound + h*(i-1) ));
 	}
-	return 0;
+	value *= h;
+	return value;
 }
 
 Float BDPTWorkResult::samplePathLengthTarget(ref<Sampler> sampler) const {
@@ -207,12 +159,11 @@ Float BDPTWorkResult::samplePathLengthTarget(ref<Sampler> sampler) const {
 				return t;
 			}
 			rejects++;
-			if(rejects > 1000){
-				SLog(EError, "Rejects exceed 1000.");
+			if(rejects > 10000){
+				SLog(EError, "Rejects exceed 10000.");
 			}
 		}
 	}
-
 }
 
 void BDPTWorkResult::load(Stream *stream) {
@@ -232,7 +183,7 @@ void BDPTWorkResult::load(Stream *stream) {
 	m_subSamples = stream->readSize();
 
 	m_modulationType = (Film::EModulationType) stream->readUInt();
-	m_omega 		 = stream->readFloat();
+	m_lambda 		 = stream->readFloat();
 	m_phase 		 = stream->readFloat();
 	m_P				 = stream->readInt();
 	m_neighbors		 = stream->readInt();
@@ -259,7 +210,7 @@ void BDPTWorkResult::save(Stream *stream) const {
 	stream->writeSize(m_subSamples);
 
 	stream->writeUInt(m_modulationType);
-	stream->writeFloat(m_omega);
+	stream->writeFloat(m_lambda);
 	stream->writeFloat(m_phase);
 	stream->writeInt(m_P);
 	stream->writeInt(m_neighbors);

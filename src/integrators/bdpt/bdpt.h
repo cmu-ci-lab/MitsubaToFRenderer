@@ -56,7 +56,7 @@ struct BDPTConfiguration {
 	size_t m_subSamples;
 	// For special case of ToF Renderer
 	Film::EModulationType m_modulationType;
-	Float m_omega;
+	Float m_lambda;
 	Float m_phase;
 	int   m_P;		   // For M-sequences and depth-selective camera
 	int   m_neighbors; // For depth-selective camera;
@@ -91,7 +91,7 @@ struct BDPTConfiguration {
 		m_subSamples = stream->readSize();
 
 		m_modulationType = (Film::EModulationType) stream->readUInt();
-		m_omega 		 = stream->readFloat();
+		m_lambda 		 = stream->readFloat();
 		m_phase 		 = stream->readFloat();
 		m_P				 = stream->readInt();
 		m_neighbors		 = stream->readInt();
@@ -119,7 +119,7 @@ struct BDPTConfiguration {
 		stream->writeSize(m_subSamples);
 
 		stream->writeUInt(m_modulationType);
-		stream->writeFloat(m_omega);
+		stream->writeFloat(m_lambda);
 		stream->writeFloat(m_phase);
 		stream->writeInt(m_P);
 		stream->writeInt(m_neighbors);
