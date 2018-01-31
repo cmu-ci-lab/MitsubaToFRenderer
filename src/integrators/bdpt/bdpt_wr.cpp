@@ -45,8 +45,10 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_phase  		 = conf.m_phase;
 	m_P  		 	 = conf.m_P;
 	m_neighbors 	 = conf.m_neighbors;
-	m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(10000); // evaluates trapezoidal rules with n = 10000
-
+	if(m_decompositionType == Film::ETransientEllipse && m_modulationType != Film::ENone)
+		m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(10000); // evaluates trapezoidal rules with n = 10000
+	else
+		m_areaUnderCorrelationGraph = 0;
 
 	m_forceBounces = conf.m_forceBounces;
 	m_sBounces = conf.m_sBounces;
