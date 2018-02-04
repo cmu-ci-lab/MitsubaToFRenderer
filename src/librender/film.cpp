@@ -97,7 +97,7 @@ Film::Film(const Properties &props)
 	m_phase 		= props.getFloat("phase",0);
 	m_P				= props.getInteger("P",32);
 	m_neighbors		= props.getInteger("neighbors",3);
-	if(m_decompositionType == ETransientEllipse && m_modulationType != ENone){
+	if( (m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && m_modulationType != ENone){
 		m_frames = 1;
 	}
 

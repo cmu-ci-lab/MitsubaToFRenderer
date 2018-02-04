@@ -45,7 +45,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_phase  		 = conf.m_phase;
 	m_P  		 	 = conf.m_P;
 	m_neighbors 	 = conf.m_neighbors;
-	if(m_decompositionType == Film::ETransientEllipse && m_modulationType != Film::ENone)
+	if( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && m_modulationType != Film::ENone)
 		m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(10000); // evaluates trapezoidal rules with n = 10000
 	else
 		m_areaUnderCorrelationGraph = 0;
@@ -54,7 +54,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_sBounces = conf.m_sBounces;
 	m_tBounces = conf.m_tBounces;
 
-	if (conf.m_decompositionType == Film::ESteadyState || (conf.m_decompositionType == Film::ETransientEllipse && conf.m_modulationType != Film::ENone)) {
+	if (conf.m_decompositionType == Film::ESteadyState || ( (conf.m_decompositionType == Film::ETransient || conf.m_decompositionType == Film::ETransientEllipse) && conf.m_modulationType != Film::ENone)) {
 		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
 	} else {
 		m_block = new ImageBlock(Bitmap::EMultiSpectrumAlphaWeight, blockSize,
@@ -69,7 +69,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 		   full-resolution version, since contributions of s==0
 		   and s==1 paths can affect any pixel of this bitmap */
 
-		if (conf.m_decompositionType == Film::ESteadyState || (conf.m_decompositionType == Film::ETransientEllipse && conf.m_modulationType != Film::ENone)) {
+		if (conf.m_decompositionType == Film::ESteadyState || ((conf.m_decompositionType == Film::ETransient || conf.m_decompositionType == Film::ETransientEllipse) && conf.m_modulationType != Film::ENone)) {
 			m_lightImage = new ImageBlock(Bitmap::ESpectrum,
 				conf.cropSize, rfilter);
 		} else {
