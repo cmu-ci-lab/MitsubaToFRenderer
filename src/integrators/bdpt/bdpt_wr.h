@@ -146,15 +146,6 @@ public:
 		return 0;
 	}
 
-	Float getDirectWeight(Float t) const{
-		if(m_modulationType == Film::ENone){
-			SLog(EError, "getDirectWeight() without modulation should not be called");
-		}else{
-			return correlationFunction(t)/m_areaUnderCorrelationGraph;
-		}
-		return 0;
-	}
-
 	Float getSamplingWeight(Float t) const{
 		if(m_modulationType == Film::ENone){
 			return (m_decompositionMaxBound-m_decompositionMinBound);

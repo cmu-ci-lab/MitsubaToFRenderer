@@ -556,7 +556,7 @@ public:
 
 
 					if(currentDecompositionType == Film::ETransient && wr->m_modulationType != Film::ENone)
-							miWeight *= wr->getDirectWeight(pathLength);
+							miWeight *= wr->correlationFunction(pathLength);
 					else{
 						// Update sampleTransientValue
 						size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
