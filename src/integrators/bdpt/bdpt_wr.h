@@ -94,7 +94,7 @@ public:
 		}else if(t > (1 - 1/m_P)*m_lambda){
 			return 1 - (m_lambda - t)*(m_P - 1)/m_lambda;
 		}else
-			return 1/m_P;
+			return 1.0/m_P;
 	}
 
 	Float correlationFunction(Float t) const {
@@ -134,9 +134,9 @@ public:
 			case Film::EDepthSelective:{
 				Float value = 0;
 				for(int i = 0; i < m_neighbors; i++){
-					value += mSeq(t, m_phase + i*m_lambda/m_P);
+					value += mSeq(t, m_phase + i*(2*M_PI)/m_P);
 				}
-				value -= (m_neighbors-1)/m_P;
+				value -= (float)(m_neighbors-1)/m_P;
 				return value;
 				break;
 			}
@@ -152,7 +152,8 @@ public:
 		}else{
 			// We should compute Area/correlationFunction(t);
 //			return m_areaUnderCorrelationGraph/correlationFunction(t);
-			return copysignf(1.0, correlationFunction(t));
+			Float result = copysignf(1.0, correlationFunction(t))*m_areaUnderCorrelationGraph;
+			return result;
 		}
 		return 0;
 	}
