@@ -152,7 +152,7 @@ public:
 		}else{
 			// We should compute Area/correlationFunction(t);
 //			return m_areaUnderCorrelationGraph/correlationFunction(t);
-			return copysignf(1.0, correlationFunction(t))*m_areaUnderCorrelationGraph;
+			return copysignf(1.0, correlationFunction(t));
 		}
 		return 0;
 	}
