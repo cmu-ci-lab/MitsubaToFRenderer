@@ -91,7 +91,7 @@ public:
 		t = fmod(t, m_lambda);
 		if(t < m_lambda/m_P){
 			return 1 - t*(m_P-1)/m_lambda;
-		}else if(t > (1 - 1/m_P)*m_lambda){
+		}else if(t > (1 - 1.0/m_P)*m_lambda){
 			return 1 - (m_lambda - t)*(m_P - 1)/m_lambda;
 		}else
 			return 1.0/m_P;
