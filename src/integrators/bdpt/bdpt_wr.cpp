@@ -161,8 +161,8 @@ Float BDPTWorkResult::samplePathLengthTarget(ref<Sampler> sampler) const {
 				return t;
 			}
 			rejects++;
-			if(rejects > 10000){
-				SLog(EError, "Rejects exceed 10000.");
+			if(rejects > 1e6){
+				SLog(EError, "Rejects exceed 1e6.");
 			}
 		}
 	}

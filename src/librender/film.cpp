@@ -94,7 +94,7 @@ Film::Film(const Properties &props)
 			"either \"none\", \"square\", or \"hamiltonian\", or \"mseq\", or \"depthselective\"!");
 	}
 	m_lambda 		= props.getFloat("lambda",1);
-	m_phase 		= props.getFloat("phase",0);
+	m_phase 		= props.getFloat("phase",0)*M_PI/180;
 	m_P				= props.getInteger("P",32);
 	m_neighbors		= props.getInteger("neighbors",3);
 	if( (m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && m_modulationType != ENone){
