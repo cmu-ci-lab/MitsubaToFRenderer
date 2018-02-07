@@ -144,7 +144,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
 					}else{
-						wr->putLightSample(samplePos, currentValue);
+						wr->putLightSample(samplePos, currentValue * miWeight);
 					}
 				}else{
 					cumulativeValue += currentValue;
@@ -159,7 +159,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
 				}else{
-					total_value += cumulativeValue;
+					total_value += cumulativeValue * miWeight;
 				}
 			}
 
