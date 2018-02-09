@@ -213,32 +213,111 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 	IntersectionCache *cache =
 			static_cast<IntersectionCache *>(temp);
 	int multiplier = 1;
-	while(!node->isLeaf()){
-		// Check BBox is valid
-		Cache::STATE state = e->cacheCheck(index);
-		if(state == Cache::STATE::EFails)
-				return false;
 
-		if(state == Cache::STATE::ETBD){
-			if(!e->isBoxValid(m_BBTree->getAABB(index))){
+	//Check root node
+	Cache::STATE state = e->cacheCheck(index);
+
+	if(state == Cache::STATE::EFails)
+			return false;
+
+	if(state == Cache::STATE::ETBD){
+		if(!e->isBoxValid(m_BBTree->getAABB(index))){
+			e->updateCache(index, Cache::STATE::EFails);
+			return false;
+		}else{
+			e->updateCache(index, Cache::STATE::EIntersects);
+		}
+	}
+
+	bool leftNodeIntersects  = false;
+	bool rightNodeIntersects = false;
+
+	while(!node->isLeaf()){
+		// check if left node intersects
+		state = e->cacheCheck(2*index + 1);
+		if(state == Cache::STATE::EFails){
+			leftNodeIntersects = false;
+		}else if(state == Cache::STATE::EIntersects){
+			leftNodeIntersects = true;
+		}else{
+			if(!e->isBoxValid(m_BBTree->getAABB(2*index + 1))){
 				e->updateCache(index, Cache::STATE::EFails);
-				return false;
+				leftNodeIntersects = false;
 			}else{
 				e->updateCache(index, Cache::STATE::EIntersects);
+				leftNodeIntersects = true;
 			}
 		}
-		//Travel through the tree
-		if(sampler->nextFloat() < 0.5f){ // go left
-			node = node->getLeft();
-			index  = 2*index + 1;
-		}else{ // go right;
+
+		// check if right node intersects
+		state = e->cacheCheck(2*index + 2);
+		if(state == Cache::STATE::EFails){
+			rightNodeIntersects = false;
+		}else if(state == Cache::STATE::EIntersects){
+			rightNodeIntersects = true;
+		}else{
+			if(!e->isBoxValid(m_BBTree->getAABB(2*index + 2))){
+				e->updateCache(index, Cache::STATE::EFails);
+				rightNodeIntersects = false;
+			}else{
+				e->updateCache(index, Cache::STATE::EIntersects);
+				rightNodeIntersects = true;
+			}
+		}
+
+		if(leftNodeIntersects){
+			if(rightNodeIntersects){
+				//both nodes intersect, so sample a node randomly
+				if(sampler->nextFloat() < 0.5f){ // go left
+					node = node->getLeft();
+					index  = 2*index + 1;
+				}else{ // go right
+					node = node->getRight();
+					index  = 2*index + 2;
+				}
+				multiplier *= 2;
+			}else{
+				//Only leftNode intersects
+				node = node->getLeft();
+				index  = 2*index + 1;
+			}
+		}else if(rightNodeIntersects){
+			//Only rightNode intersects
 			node = node->getRight();
 			index  = 2*index + 2;
+		}else{
+			// no intersection
+			return 0;
 		}
-		multiplier *= 2;
-		if(node == NULL)
-			SLog(EError,"KD Node cannot become NULL");
 	}
+
+	// Old algorithm for tree parsing
+//	while(!node->isLeaf()){
+//		// Check BBox is valid
+//		Cache::STATE state = e->cacheCheck(index);
+//		if(state == Cache::STATE::EFails)
+//				return false;
+//
+//		if(state == Cache::STATE::ETBD){
+//			if(!e->isBoxValid(m_BBTree->getAABB(index))){
+//				e->updateCache(index, Cache::STATE::EFails);
+//				return false;
+//			}else{
+//				e->updateCache(index, Cache::STATE::EIntersects);
+//			}
+//		}
+//		//Travel through the tree
+//		if(sampler->nextFloat() < 0.5f){ // go left
+//			node = node->getLeft();
+//			index  = 2*index + 1;
+//		}else{ // go right;
+//			node = node->getRight();
+//			index  = 2*index + 2;
+//		}
+//		multiplier *= 2;
+//		if(node == NULL)
+//			SLog(EError,"KD Node cannot become NULL");
+//	}
 	//leaf code
 
 	int l = (int)(node->getPrimStart());
