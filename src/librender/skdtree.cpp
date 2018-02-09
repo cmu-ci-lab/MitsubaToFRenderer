@@ -287,7 +287,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 			index  = 2*index + 2;
 		}else{
 			// no intersection
-			return 0;
+			return false;
 		}
 	}
 
@@ -326,37 +326,95 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 	if(!(l < u))
 		return false;
 
-	int x = l+sampler->nextSize(u-l); //checkME
+	// Find all intersecting triangles
+	int intersectingTriangles[u-l];
+	int countIntersectingTriangles = 0;
+	for(int x = l; x < u; x++){
+		const IndexType &primIdx = m_indices[x];
+		const Cache::STATE state = e->cacheCheck(index);
+		const TriAccel &ta = m_triAccel[primIdx];
+
+		if(state == Cache::EFails || ta.k == KNoTriangleFlag){
+			//continue
+		}else if(state == Cache::EIntersects){
+			intersectingTriangles[x-l] = x;
+			countIntersectingTriangles ++;
+		}else{
+			//gather the required data structures
+			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+			const Triangle *triangles = mesh->getTriangles();
+			const Point *positions = mesh->getVertexPositions();
+			const Normal *normals = mesh->getVertexNormals();
+
+			const Triangle &tri = triangles[ta.primIndex];
+			const Point &A = positions[tri.idx[0]];
+			const Point &B = positions[tri.idx[1]];
+			const Point &C = positions[tri.idx[2]];
+			Normal N = cross(B-A, C-A);
+			if(normals != NULL){
+				if(dot(normals[tri.idx[0]], N) < 0)
+					N = -N;
+			}
+			if(e->earlyTriangleReject(A, B, C, N)){
+				e->cacheSetTriState(primIdx,Cache::EFails);
+			}else{
+				// The statement below in not exactly correct, but then even if we sample this triangle in the future, the full-ellipsoid intersection will change this state to false. Till then, we can sample this triangle and additionally, we don't have to unnecessarily do the early test for this triangle again and again.
+				e->cacheSetTriState(primIdx,Cache::EIntersects);
+				intersectingTriangles[x-l] = x;
+				countIntersectingTriangles ++;
+			}
+		}
+	}
+	if(countIntersectingTriangles == 0)
+		return false;
+
+	//sample a triangle from the intersecting triangles
+	int x = intersectingTriangles[sampler->nextSize(countIntersectingTriangles)];
 	const IndexType &primIdx = m_indices[x];
 	const TriAccel &ta = m_triAccel[primIdx];
-	Float tempU;
-	Float tempV;
 
 	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
 	const Triangle *triangles = mesh->getTriangles();
 	const Point *positions = mesh->getVertexPositions();
-	const Normal *normals = mesh->getVertexNormals();
 
 	const Triangle &tri = triangles[ta.primIndex];
 	const Point &A = positions[tri.idx[0]];
 	const Point &B = positions[tri.idx[1]];
 	const Point &C = positions[tri.idx[2]];
 
-	if(e->cacheGetTriState(primIdx) == Cache::ETBD){
-		Normal N = cross(B-A, C-A);
-		if(normals != NULL){
-			if(dot(normals[tri.idx[0]], N) < 0)
-				N = -N;
-		}
-		// Do early rejection tests only once
-		if(e->earlyTriangleReject(A, B, C, N)){
-			e->cacheSetTriState(primIdx,Cache::EFails);
-			return false;
-		}
-	}
+// Old code that sample a triangle randomly
+//	int x = l+sampler->nextSize(u-l);
+//	const IndexType &primIdx = m_indices[x];
+//	const TriAccel &ta = m_triAccel[primIdx];
 
-	//If a fake triangle is sampled, skip it. FIXME: Better to not even sample fake triangles. Trade-off between checking all triangles vs creating sample and dropping it
-	if(e->cacheGetTriState(primIdx) != Cache::EFails && ta.k != KNoTriangleFlag && e->ellipsoidIntersectTriangle(A, B, C, value, tempU, tempV, sampler)){
+//	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+//	const Triangle *triangles = mesh->getTriangles();
+//	const Point *positions = mesh->getVertexPositions();
+//	const Normal *normals = mesh->getVertexNormals();
+
+//	const Triangle &tri = triangles[ta.primIndex];
+//	const Point &A = positions[tri.idx[0]];
+//	const Point &B = positions[tri.idx[1]];
+//	const Point &C = positions[tri.idx[2]];
+//	if(e->cacheGetTriState(primIdx) == Cache::ETBD){
+
+//		Normal N = cross(B-A, C-A);
+//		if(normals != NULL){
+//			if(dot(normals[tri.idx[0]], N) < 0)
+//				N = -N;
+//		}
+//		// Do early rejection tests only once
+//		if(e->earlyTriangleReject(A, B, C, N)){
+//			e->cacheSetTriState(primIdx,Cache::EFails);
+//			return false;
+//		}
+//	}
+
+
+	Float tempU;
+	Float tempV;
+
+	if(e->ellipsoidIntersectTriangle(A, B, C, value, tempU, tempV, sampler)){
 		e->cacheSetTriState(primIdx,Cache::EIntersects);
 		cache->shapeIndex = ta.shapeIndex;
 		cache->primIndex = ta.primIndex;
