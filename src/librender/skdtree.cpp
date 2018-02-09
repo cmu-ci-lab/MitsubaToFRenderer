@@ -337,7 +337,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 		if(state == Cache::EFails || ta.k == KNoTriangleFlag){
 			//continue
 		}else if(state == Cache::EIntersects){
-			intersectingTriangles[x-l] = x;
+			intersectingTriangles[countIntersectingTriangles] = x;
 			countIntersectingTriangles ++;
 		}else{
 			//gather the required data structures
@@ -360,7 +360,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 			}else{
 				// The statement below in not exactly correct, but then even if we sample this triangle in the future, the full-ellipsoid intersection will change this state to false. Till then, we can sample this triangle and additionally, we don't have to unnecessarily do the early test for this triangle again and again.
 				e->cacheSetTriState(primIdx,Cache::EIntersects);
-				intersectingTriangles[x-l] = x;
+				intersectingTriangles[countIntersectingTriangles] = x;
 				countIntersectingTriangles ++;
 			}
 		}
