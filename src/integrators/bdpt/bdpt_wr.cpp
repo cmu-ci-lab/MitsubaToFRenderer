@@ -40,12 +40,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_frames = conf.m_frames;
 	m_subSamples = conf.m_subSamples;
 
-	m_modulationType = conf.m_modulationType;
-	m_lambda  		 = conf.m_lambda;
-	m_phase  		 = conf.m_phase;
-	m_P  		 	 = conf.m_P;
-	m_neighbors 	 = conf.m_neighbors;
-	if( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && m_modulationType != Film::ENone)
+	if( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)
 		m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(100000); // evaluates trapezoidal rules with n = 10000
 	else
 		m_areaUnderCorrelationGraph = 0;
@@ -54,7 +49,9 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_sBounces = conf.m_sBounces;
 	m_tBounces = conf.m_tBounces;
 
-	if (conf.m_decompositionType == Film::ESteadyState || ( (conf.m_decompositionType == Film::ETransient || conf.m_decompositionType == Film::ETransientEllipse) && conf.m_modulationType != Film::ENone)) {
+	pathLengthSampler = conf.pathLengthSampler;
+
+	if (m_decompositionType == Film::ESteadyState || ( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)) {
 		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
 	} else {
 		m_block = new ImageBlock(Bitmap::EMultiSpectrumAlphaWeight, blockSize,
@@ -69,7 +66,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 		   full-resolution version, since contributions of s==0
 		   and s==1 paths can affect any pixel of this bitmap */
 
-		if (conf.m_decompositionType == Film::ESteadyState || ((conf.m_decompositionType == Film::ETransient || conf.m_decompositionType == Film::ETransientEllipse) && conf.m_modulationType != Film::ENone)) {
+		if (m_decompositionType == Film::ESteadyState || ((m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)) {
 			m_lightImage = new ImageBlock(Bitmap::ESpectrum,
 				conf.cropSize, rfilter);
 		} else {
@@ -139,35 +136,6 @@ void BDPTWorkResult::dump(const BDPTConfiguration &conf,
 }
 #endif
 
-Float BDPTWorkResult::areaUnderCorrelationGraph(int n) const{
-	Float h = (m_decompositionMaxBound-m_decompositionMinBound)/(n-1);
-	Float value = 0.5*( fabs(correlationFunction(m_decompositionMaxBound))+ fabs(correlationFunction(m_decompositionMinBound)));
-	for(int i=2; i < n; i++){
-		value += fabs(correlationFunction( m_decompositionMinBound + h*(i-1) ));
-	}
-	value *= h;
-	return value;
-}
-
-Float BDPTWorkResult::samplePathLengthTarget(ref<Sampler> sampler) const {
-	int rejects = 0;
-	if(m_modulationType == Film::ENone)
-		return m_decompositionMinBound+(m_decompositionMaxBound-m_decompositionMinBound)*sampler->nextFloat();
-	else{
-		while(true){
-			Float t = m_decompositionMinBound+(m_decompositionMaxBound-m_decompositionMinBound)*sampler->nextFloat();
-			Float r = sampler->nextFloat();
-			if(r < fabs(correlationFunction(t))){
-				return t;
-			}
-			rejects++;
-			if(rejects > 1e6){
-				SLog(EError, "Rejects exceed 1e6.");
-			}
-		}
-	}
-}
-
 void BDPTWorkResult::load(Stream *stream) {
 #if BDPT_DEBUG == 1
 	for (size_t i=0; i<m_debugBlocks.size(); ++i)
@@ -183,12 +151,6 @@ void BDPTWorkResult::load(Stream *stream) {
 	m_decompositionBinWidth = stream->readFloat();
 	m_frames = stream->readSize();
 	m_subSamples = stream->readSize();
-
-	m_modulationType = (Film::EModulationType) stream->readUInt();
-	m_lambda 		 = stream->readFloat();
-	m_phase 		 = stream->readFloat();
-	m_P				 = stream->readInt();
-	m_neighbors		 = stream->readInt();
 
 	m_forceBounces = stream->readBool();
 	m_sBounces = stream->readUInt();
@@ -210,12 +172,6 @@ void BDPTWorkResult::save(Stream *stream) const {
 	stream->writeFloat(m_decompositionBinWidth);
 	stream->writeSize(m_frames);
 	stream->writeSize(m_subSamples);
-
-	stream->writeUInt(m_modulationType);
-	stream->writeFloat(m_lambda);
-	stream->writeFloat(m_phase);
-	stream->writeInt(m_P);
-	stream->writeInt(m_neighbors);
 
 	stream->writeBool(m_forceBounces);
 	stream->writeUInt(m_sBounces);

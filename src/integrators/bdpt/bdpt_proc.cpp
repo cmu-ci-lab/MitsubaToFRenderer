@@ -555,7 +555,7 @@ public:
 
 
 
-					if(currentDecompositionType == Film::ETransient && wr->m_modulationType != Film::ENone)
+					if(currentDecompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)
 							miWeight *= wr->correlationFunction(pathLength);
 					else{
 						// Update sampleTransientValue
@@ -594,7 +594,7 @@ public:
 						}
 					}
 
-					if ( currentDecompositionType == Film::ESteadyState  || (wr->m_decompositionType == Film::ETransient && wr->m_modulationType != Film::ENone)){
+					if ( currentDecompositionType == Film::ESteadyState  || (wr->m_decompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)){
 						if (t >= 2)
 							sampleValue += value * miWeight;
 						else
@@ -603,7 +603,7 @@ public:
 				}
 			}
 		}
-		if (wr->m_decompositionType == Film::ESteadyState || ( (wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) && wr->m_modulationType != Film::ENone)) {
+		if (wr->m_decompositionType == Film::ESteadyState || ( (wr->m_decompositionType == Film::ETransient || wr->m_decompositionType == Film::ETransientEllipse) && wr->getModulationType() != PathLengthSampler::ENone)) {
 			wr->putSample(initialSamplePos, sampleValue);
 		} else {
 			sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;

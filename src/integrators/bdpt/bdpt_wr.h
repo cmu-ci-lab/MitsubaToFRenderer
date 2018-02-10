@@ -22,6 +22,7 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/core/fresolver.h>
 #include "bdpt.h"
+#include <mitsuba/render/pathlengthsampler.h>
 
 MTS_NAMESPACE_BEGIN
 
@@ -80,82 +81,23 @@ public:
 		m_lightImage->put(sample, spec, 1.0f);
 	}
 
-//	inline Float samplePathLengthTarget(ref<Sampler> sampler) const {
-//		return m_decompositionMinBound+(m_decompositionMaxBound-m_decompositionMinBound)*sampler->nextFloat();
-//	}
-	Float areaUnderCorrelationGraph(int n) const;
-	Float samplePathLengthTarget(ref<Sampler> sampler) const;
-
-	Float mSeq(Float t, Float phase) const{
-		t = t + phase*m_lambda*INV_PI/2;
-		t = fmod(t, m_lambda);
-		if(t < m_lambda/m_P){
-			return 1 - t*(m_P-1)/m_lambda;
-		}else if(t > (1 - 1.0/m_P)*m_lambda){
-			return 1 - (m_lambda - t)*(m_P - 1)/m_lambda;
-		}else
-			return 1.0/m_P;
+	inline Float areaUnderCorrelationGraph(int n) const{
+		return pathLengthSampler->areaUnderCorrelationGraph(n);
 	}
-
-	Float correlationFunction(Float t) const {
-		switch(m_modulationType){
-			case Film::ENone:{
-				SLog(EError, "Cannot call correlation function when the modulation type is not defined");
-				break;
-			}
-			case Film::ESine:{
-				t = t + m_phase*m_lambda*INV_PI/2;
-				return cos(t*2*M_PI/m_lambda);
-				break;
-			}
-			case Film::ESquare:{
-				t = t + m_phase*m_lambda*INV_PI/2;
-				return 4/m_lambda*(fabs(fmod(t, m_lambda)-m_lambda/2) - m_lambda/4);
-				break;
-			}
-			case Film::EHamiltonian:{
-				t = t + m_phase*m_lambda*INV_PI/2;
-				t = fmod(t, m_lambda);
-				if(t < m_lambda/6){
-					return 6*t/m_lambda;
-				}else if(t < m_lambda/2 	&& t >= m_lambda/6){
-					return 1.0;
-				}else if(t < 2*m_lambda/3 	&& t >= m_lambda/2){
-					return 1 - (t - m_lambda/2)*6/m_lambda;
-				}else{
-					return 0;
-				}
-				break;
-			}
-			case Film::EMSeq:{
-				return mSeq(t, m_phase);
-				break;
-			}
-			case Film::EDepthSelective:{
-				Float value = 0;
-				for(int i = 0; i < m_neighbors; i++){
-					value += mSeq(t, m_phase + i*(2*M_PI)/m_P);
-				}
-				value -= (float)(m_neighbors-1)/m_P;
-				return value;
-				break;
-			}
-			default:
-				SLog(EError, "Modulation type is not defined");
-		}
-		return 0;
+	inline Float samplePathLengthTarget(ref<Sampler> sampler) const{
+		return pathLengthSampler->samplePathLengthTarget(sampler);
 	}
-
-	Float getSamplingWeight(Float t) const{
-		if(m_modulationType == Film::ENone){
-			return (m_decompositionMaxBound-m_decompositionMinBound);
-		}else{
-			// We should compute Area/correlationFunction(t);
-//			return m_areaUnderCorrelationGraph/correlationFunction(t);
-			Float result = copysignf(1.0, correlationFunction(t))*m_areaUnderCorrelationGraph;
-			return result;
-		}
-		return 0;
+	inline Float mSeq(Float t, Float phase) const{
+		return pathLengthSampler->mSeq(t, phase);
+	}
+	inline Float correlationFunction(Float t) const {
+		return pathLengthSampler->correlationFunction(t);
+	}
+	inline Float getSamplingWeight(Float t) const{
+		return pathLengthSampler->getSamplingWeight(t);
+	}
+	inline PathLengthSampler::EModulationType getModulationType() const{
+		return pathLengthSampler->getModulationType();
 	}
 
 	inline const ImageBlock *getImageBlock() const {
@@ -204,12 +146,13 @@ public:
 	size_t m_subSamples; // For elliptic sampling. Defaults to 1.
 
 	// For special case of ToF Renderer
-	Film::EModulationType m_modulationType;
 	Float m_lambda;
 	Float m_phase;
 	int   m_P;		   // For M-sequences and depth-selective camera
 	int   m_neighbors; // For depth-selective camera;
 	Float m_areaUnderCorrelationGraph;
+
+	PathLengthSampler *pathLengthSampler;
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;

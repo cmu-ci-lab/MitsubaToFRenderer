@@ -291,35 +291,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 		}
 	}
 
-	// Old algorithm for tree parsing
-//	while(!node->isLeaf()){
-//		// Check BBox is valid
-//		Cache::STATE state = e->cacheCheck(index);
-//		if(state == Cache::STATE::EFails)
-//				return false;
-//
-//		if(state == Cache::STATE::ETBD){
-//			if(!e->isBoxValid(m_BBTree->getAABB(index))){
-//				e->updateCache(index, Cache::STATE::EFails);
-//				return false;
-//			}else{
-//				e->updateCache(index, Cache::STATE::EIntersects);
-//			}
-//		}
-//		//Travel through the tree
-//		if(sampler->nextFloat() < 0.5f){ // go left
-//			node = node->getLeft();
-//			index  = 2*index + 1;
-//		}else{ // go right;
-//			node = node->getRight();
-//			index  = 2*index + 2;
-//		}
-//		multiplier *= 2;
-//		if(node == NULL)
-//			SLog(EError,"KD Node cannot become NULL");
-//	}
 	//leaf code
-
 	int l = (int)(node->getPrimStart());
 	int u = (int)(node->getPrimEnd());
 
@@ -382,35 +354,6 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 	const Point &B = positions[tri.idx[1]];
 	const Point &C = positions[tri.idx[2]];
 
-// Old code that sample a triangle randomly
-//	int x = l+sampler->nextSize(u-l);
-//	const IndexType &primIdx = m_indices[x];
-//	const TriAccel &ta = m_triAccel[primIdx];
-
-//	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
-//	const Triangle *triangles = mesh->getTriangles();
-//	const Point *positions = mesh->getVertexPositions();
-//	const Normal *normals = mesh->getVertexNormals();
-
-//	const Triangle &tri = triangles[ta.primIndex];
-//	const Point &A = positions[tri.idx[0]];
-//	const Point &B = positions[tri.idx[1]];
-//	const Point &C = positions[tri.idx[2]];
-//	if(e->cacheGetTriState(primIdx) == Cache::ETBD){
-
-//		Normal N = cross(B-A, C-A);
-//		if(normals != NULL){
-//			if(dot(normals[tri.idx[0]], N) < 0)
-//				N = -N;
-//		}
-//		// Do early rejection tests only once
-//		if(e->earlyTriangleReject(A, B, C, N)){
-//			e->cacheSetTriState(primIdx,Cache::EFails);
-//			return false;
-//		}
-//	}
-
-
 	Float tempU;
 	Float tempV;
 
@@ -423,7 +366,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 		if(m_BBTree->m_triangleRepetition[primIdx] <= 0){
 			SLog(EError, "Triangle repetition of %i th triangle is not properly measured", primIdx);
 		}
-		value = value*(u-l)*multiplier/(double)m_BBTree->m_triangleRepetition[primIdx];
+		value = value*countIntersectingTriangles*multiplier/(double)m_BBTree->m_triangleRepetition[primIdx];
 		return true;
 	}
 	e->cacheSetTriState(primIdx,Cache::EFails);

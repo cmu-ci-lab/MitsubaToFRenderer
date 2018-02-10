@@ -132,7 +132,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 					currentValue /= subSamples;
 					if (!vt->getSamplePosition(connectionVertex, samplePos))
 						continue;
-					if(wr->m_modulationType == Film::ENone){
+					if(wr->getModulationType() == PathLengthSampler::ENone){
 						//Place the currentValue in the appropriate time bin of the light image
 						currentValue.toLinearRGB(temp[0],temp[1],temp[2]);
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
@@ -153,7 +153,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 			if(!islightSamplePath && !cumulativeValue.isZero()){
 				cumulativeValue /= subSamples;
 
-				if(wr->m_modulationType == Film::ENone){
+				if(wr->getModulationType() == PathLengthSampler::ENone){
 					cumulativeValue.toLinearRGB(temp[0],temp[1],temp[2]);
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;

@@ -22,6 +22,7 @@
 
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/pathlengthsampler.h>
 
 MTS_NAMESPACE_BEGIN
 
@@ -55,19 +56,6 @@ public:
 		/// Transient light transport (decomposition by pathlength with elliptic constraints)
 		ETransientEllipse		  = 0x03,
 
-	};
-
-	/**
-	 * This enumeration determines all the modulation types of the time-of-flight (TransientEllipse Renderer)
-	 */
-	enum EModulationType {
-		// None is same as rendering the entire TransientEllipse
-		ENone 			= 0x00,
-		ESine 			= 0x01,
-		ESquare			= 0x02,
-		EHamiltonian	= 0x03,
-		EMSeq			= 0x04,
-		EDepthSelective = 0x05,
 	};
 
 	/// Ignoring the crop window, return the resolution of the underlying sensor
@@ -104,11 +92,7 @@ public:
 	inline size_t getFrames() const {return m_frames; }
 	inline size_t getSubSamples() const {return m_subSamples; }
 
-	inline EModulationType getToFModulationType() const {return m_modulationType;}
-	inline Float getToFLambda() const {return m_lambda;}
-	inline Float getToFPhase() const {return m_phase;}
-	inline Float getToFP() const {return m_P;}
-	inline Float getToFNeighbors() const {return m_neighbors;}
+	inline PathLengthSampler* getPathLengthSampler() const {return pathLengthSampler;}
 
 	inline size_t getForceBounces() const {return m_forceBounces; }
 	inline size_t getSBounces() const {return m_sBounces; }
@@ -191,13 +175,9 @@ protected:
 	Float m_decompositionBinWidth;
 	size_t m_frames;
 	size_t m_subSamples;
-	// For special case of ToF Renderer
-	EModulationType m_modulationType;
-	Float m_lambda;
-	Float m_phase;
-	int   m_P;		   // For M-sequences and depth-selective camera
-	int   m_neighbors; // For depth-selective camera;
 
+	// For special case of ToF Renderer
+	PathLengthSampler *pathLengthSampler;
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;
