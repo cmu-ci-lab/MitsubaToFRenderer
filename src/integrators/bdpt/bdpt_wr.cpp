@@ -40,6 +40,8 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_frames = conf.m_frames;
 	m_subSamples = conf.m_subSamples;
 
+	pathLengthSampler = conf.pathLengthSampler;
+
 	if( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)
 		m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(100000); // evaluates trapezoidal rules with n = 10000
 	else
@@ -48,8 +50,6 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_forceBounces = conf.m_forceBounces;
 	m_sBounces = conf.m_sBounces;
 	m_tBounces = conf.m_tBounces;
-
-	pathLengthSampler = conf.pathLengthSampler;
 
 	if (m_decompositionType == Film::ESteadyState || ( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)) {
 		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
