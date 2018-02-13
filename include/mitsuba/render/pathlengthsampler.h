@@ -29,35 +29,6 @@ public:
 		return m_modulationType;
 	}
 
-	inline Float areaUnderCorrelationGraph(int n) const{
-		Float h = (m_decompositionMaxBound-m_decompositionMinBound)/(n-1);
-		Float value = 0.5*( fabs(correlationFunction(m_decompositionMaxBound))+ fabs(correlationFunction(m_decompositionMinBound)));
-		for(int i=2; i < n; i++){
-			value += fabs(correlationFunction( m_decompositionMinBound + h*(i-1) ));
-		}
-		value *= h;
-		return value;
-	}
-
-	inline Float samplePathLengthTarget(ref<Sampler> sampler) const{
-		int rejects = 0;
-		if(m_modulationType == ENone)
-			return m_decompositionMinBound+(m_decompositionMaxBound-m_decompositionMinBound)*sampler->nextFloat();
-		else{
-			while(true){
-				Float t = m_decompositionMinBound+(m_decompositionMaxBound-m_decompositionMinBound)*sampler->nextFloat();
-				Float r = sampler->nextFloat();
-				if(r < fabs(correlationFunction(t))){
-					return t;
-				}
-				rejects++;
-				if(rejects > 1e6){
-					SLog(EError, "Rejects exceed 1e6.");
-				}
-			}
-		}
-	}
-
 	inline Float mSeq(Float t, Float phase) const{
 		t = t + phase*m_lambda*INV_PI/2;
 		t = fmod(t, m_lambda);
@@ -78,6 +49,10 @@ public:
 		}
 		return 0;
 	}
+
+	Float areaUnderCorrelationGraph(int n) const;
+
+	Float samplePathLengthTarget(ref<Sampler> sampler) const;
 
 	Float correlationFunction(Float t) const;
 
