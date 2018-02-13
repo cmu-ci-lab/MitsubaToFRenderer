@@ -750,6 +750,6 @@ template FLOAT TEllipsoid<Point3d, double>::ellipticCurveSampling(const FLOAT k,
 
 template bool TEllipsoid<Point3d, double>::ellipsoidIntersectTriangle(const Point &triA, const Point &triB, const Point &triC, Float &value, Float &u, Float &v, ref<Sampler> sampler) const;
 
-template struct TEllipsoid<Point3d, double>;
+template class MTS_EXPORT_RENDER TEllipsoid<Point3d, double>;
 
 MTS_NAMESPACE_END

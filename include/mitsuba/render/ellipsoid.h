@@ -590,7 +590,8 @@ public:
 };
 
 
-template <typename _PointType, typename _LengthType> struct TEllipsoid{
+template <typename _PointType, typename _LengthType> class MTS_EXPORT_RENDER TEllipsoid{
+public:
 	typedef _PointType                  PointType;
 	typedef _LengthType                 LengthType;
 
