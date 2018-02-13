@@ -10,7 +10,7 @@
 MTS_NAMESPACE_BEGIN
 
 
-class MTS_EXPORT_RENDER PathLengthSampler{
+class MTS_EXPORT_RENDER PathLengthSampler : public ConfigurableObject {
 	/**
 	 * This enumeration determines all the modulation types of the time-of-flight (TransientEllipse Renderer)
 	 */
@@ -24,46 +24,6 @@ public:
 		EMSeq			= 0x04,
 		EDepthSelective = 0x05,
 	};
-
-private:
-
-	Float m_decompositionMinBound;
-	Float m_decompositionMaxBound;
-
-	Float m_lambda;
-	Float m_phase;
-	int   m_P;		   // For M-sequences and depth-selective camera
-	int   m_neighbors; // For depth-selective camera;
-	Float m_areaUnderCorrelationGraph;
-	EModulationType m_modulationType;
-
-public:
-	PathLengthSampler(const Float decompositionMinBound, const Float decompositionMaxBound, const std::string modulationType, const Float lambda, const Float phase, const Float P, const int neighbors):
-		m_decompositionMinBound(decompositionMinBound),
-		m_decompositionMaxBound(decompositionMaxBound),
-		m_lambda(lambda),
-		m_phase(phase),
-		m_P(P),
-		m_neighbors(neighbors){
-			if (modulationType == "none") {
-				m_modulationType = ENone;
-			} else if (modulationType == "sine") {
-				m_modulationType = ESine;
-			} else if (modulationType == "square") {
-				m_modulationType = ESquare;
-			} else if (modulationType == "hamiltonian") {
-				m_modulationType = EHamiltonian;
-			} else if (modulationType == "mseq") {
-				m_modulationType = EMSeq;
-			} else if (modulationType == "depthselective") {
-				m_modulationType = EDepthSelective;
-			} else {
-				SLog(EError, "The \"modulation\" parameter must be equal to"
-					"either \"none\", \"square\", or \"hamiltonian\", or \"mseq\", or \"depthselective\"!");
-			}
-
-			m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(1e6); // use a million point numerical approximation
-	}
 
 	inline EModulationType getModulationType() const{
 		return m_modulationType;
@@ -120,6 +80,48 @@ public:
 	}
 
 	Float correlationFunction(Float t) const;
+
+	// =============================================================
+	//! @{ \name ConfigurableObject interface
+	// =============================================================
+
+	/// Add a child node
+	virtual void addChild(const std::string &name, ConfigurableObject *child);
+
+	/// Add an unnamed child
+	inline void addChild(ConfigurableObject *child) { addChild("", child); }
+
+	/// Configure the film
+	virtual void configure();
+
+	/// Serialize this film to a binary data stream
+	virtual void serialize(Stream *stream, InstanceManager *manager) const;
+
+	//! @}
+	// =============================================================
+
+	MTS_DECLARE_CLASS()
+//public:
+
+	/// Create a PathLengthSampler
+	PathLengthSampler(const Properties &props);
+
+	/// Unserialize a PathLengthSampler
+	PathLengthSampler(Stream *stream, InstanceManager *manager);
+
+	/// Virtual destructor
+	virtual ~PathLengthSampler();
+
+protected:
+	Float m_decompositionMinBound;
+	Float m_decompositionMaxBound;
+
+	Float m_lambda;
+	Float m_phase;
+	int   m_P;		   // For M-sequences and depth-selective camera
+	int   m_neighbors; // For depth-selective camera;
+	Float m_areaUnderCorrelationGraph;
+	EModulationType m_modulationType;
 };
 MTS_NAMESPACE_END
 

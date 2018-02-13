@@ -75,15 +75,8 @@ Film::Film(const Properties &props)
 	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
 	m_subSamples = props.getSize("subSamples", 1);
 
-	std::string modulationType = boost::to_lower_copy(
-					props.getString("modulation", "none"));
-	Float lambda 		= props.getFloat("lambda",1);
-	Float phase 		= props.getFloat("phase",0)*M_PI/180;
-	Float P				= props.getInteger("P",32);
-	Float neighbors		= props.getInteger("neighbors",3);
-	pathLengthSampler =  new PathLengthSampler(m_decompositionMinBound, m_decompositionMaxBound, modulationType, lambda, phase, P, neighbors);
-
-	if( (m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && pathLengthSampler->getModulationType()!= PathLengthSampler::ENone){
+	m_pathLengthSampler = new PathLengthSampler(props);
+	if( (m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && m_pathLengthSampler->getModulationType()!= PathLengthSampler::ENone){
 		m_frames = 1;
 	}
 
@@ -109,6 +102,7 @@ Film::Film(Stream *stream, InstanceManager *manager)
 	m_sBounces = stream->readUInt();
 	m_tBounces = stream->readUInt();
 	m_filter = static_cast<ReconstructionFilter *>(manager->getInstance(stream));
+	m_pathLengthSampler = static_cast<PathLengthSampler *>(manager->getInstance(stream));
 }
 
 Film::~Film() { }
@@ -129,6 +123,7 @@ void Film::serialize(Stream *stream, InstanceManager *manager) const {
 	stream->writeUInt(m_sBounces);
 	stream->writeUInt(m_tBounces);
 	manager->serialize(stream, m_filter.get());
+	manager->serialize(stream, m_pathLengthSampler.get());
 }
 
 void Film::addChild(const std::string &name, ConfigurableObject *child) {
@@ -137,7 +132,10 @@ void Film::addChild(const std::string &name, ConfigurableObject *child) {
 	if (cClass->derivesFrom(MTS_CLASS(ReconstructionFilter))) {
 		Assert(m_filter == NULL);
 		m_filter = static_cast<ReconstructionFilter *>(child);
-	} else {
+	} else if (cClass->derivesFrom(MTS_CLASS(PathLengthSampler))) {
+		Assert(m_pathLengthSampler == NULL);
+		m_pathLengthSampler = static_cast<PathLengthSampler *>(child);
+	}else {
 		Log(EError, "Film: Invalid child node! (\"%s\")",
 			cClass->getName().c_str());
 	}

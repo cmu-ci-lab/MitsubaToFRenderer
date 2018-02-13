@@ -55,7 +55,7 @@ struct BDPTConfiguration {
 	size_t m_frames;
 	size_t m_subSamples;
 
-	PathLengthSampler *pathLengthSampler;
+	ref<PathLengthSampler> pathLengthSampler;
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;

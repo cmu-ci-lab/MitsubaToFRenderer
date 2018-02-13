@@ -92,7 +92,7 @@ public:
 	inline size_t getFrames() const {return m_frames; }
 	inline size_t getSubSamples() const {return m_subSamples; }
 
-	inline PathLengthSampler* getPathLengthSampler() const {return pathLengthSampler;}
+	ref<PathLengthSampler> getPathLengthSampler() {return m_pathLengthSampler;}
 
 	inline size_t getForceBounces() const {return m_forceBounces; }
 	inline size_t getSBounces() const {return m_sBounces; }
@@ -177,7 +177,7 @@ protected:
 	size_t m_subSamples;
 
 	// For special case of ToF Renderer
-	PathLengthSampler *pathLengthSampler;
+	ref<PathLengthSampler> m_pathLengthSampler;
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;

@@ -145,14 +145,7 @@ public:
 	size_t m_frames;
 	size_t m_subSamples; // For elliptic sampling. Defaults to 1.
 
-	// For special case of ToF Renderer
-	Float m_lambda;
-	Float m_phase;
-	int   m_P;		   // For M-sequences and depth-selective camera
-	int   m_neighbors; // For depth-selective camera;
-	Float m_areaUnderCorrelationGraph;
-
-	PathLengthSampler *pathLengthSampler;
+	ref<PathLengthSampler> pathLengthSampler;
 
 	bool m_forceBounces;
 	unsigned int m_sBounces;

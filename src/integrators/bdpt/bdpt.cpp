@@ -201,7 +201,7 @@ public:
 			int sceneResID, int sensorResID, int samplerResID) {
 		ref<Scheduler> scheduler = Scheduler::getInstance();
 		ref<Sensor> sensor = scene->getSensor();
-		const Film *film = sensor->getFilm();
+		Film *film = sensor->getFilm();
 		size_t sampleCount = scene->getSampler()->getSampleCount();
 		size_t nCores = scheduler->getCoreCount();
 

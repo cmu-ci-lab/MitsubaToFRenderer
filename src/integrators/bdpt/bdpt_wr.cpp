@@ -42,11 +42,6 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 
 	pathLengthSampler = conf.pathLengthSampler;
 
-	if( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)
-		m_areaUnderCorrelationGraph = areaUnderCorrelationGraph(100000); // evaluates trapezoidal rules with n = 10000
-	else
-		m_areaUnderCorrelationGraph = 0;
-
 	m_forceBounces = conf.m_forceBounces;
 	m_sBounces = conf.m_sBounces;
 	m_tBounces = conf.m_tBounces;
