@@ -448,7 +448,8 @@ public:
 						if(!combine || tempPathLength <= wr->m_decompositionMinBound){
 							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
 
-							if(!value.isZero() && PathLengthRemaining > 0){
+	//							if(!value.isZero() && PathLengthRemaining > 0){
+							if(!value.isZero()){
 								EMeasure vsMeasure = vs->measure;
 								EMeasure vtMeasure = vt->measure;
 

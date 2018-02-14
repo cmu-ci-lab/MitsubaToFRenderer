@@ -50,6 +50,10 @@ public:
 		return 0;
 	}
 
+	Float areaUnderRestrictedCorrelationGraph(Float plMin, Float plMax, int n) const;
+
+	Float sampleRestrictedPathLengthTarget(Float plMin, Float plMax, ref<Sampler> sampler);
+
 	Float areaUnderCorrelationGraph(int n) const;
 
 	Float samplePathLengthTarget(ref<Sampler> sampler) const;

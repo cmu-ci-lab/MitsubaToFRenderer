@@ -84,18 +84,27 @@ public:
 	inline Float areaUnderCorrelationGraph(int n) const{
 		return pathLengthSampler->areaUnderCorrelationGraph(n);
 	}
+
 	inline Float samplePathLengthTarget(ref<Sampler> sampler) const{
 		return pathLengthSampler->samplePathLengthTarget(sampler);
 	}
+
+	inline Float sampleRestrictedPathLengthTarget(Float plMin, Float plMax, ref<Sampler> sampler){
+		return pathLengthSampler->sampleRestrictedPathLengthTarget(plMin, plMax, sampler);
+	}
+
 	inline Float mSeq(Float t, Float phase) const{
 		return pathLengthSampler->mSeq(t, phase);
 	}
+
 	inline Float correlationFunction(Float t) const {
 		return pathLengthSampler->correlationFunction(t);
 	}
+
 	inline Float getSamplingWeight(Float t) const{
 		return pathLengthSampler->getSamplingWeight(t);
 	}
+
 	inline PathLengthSampler::EModulationType getModulationType() const{
 		return pathLengthSampler->getModulationType();
 	}

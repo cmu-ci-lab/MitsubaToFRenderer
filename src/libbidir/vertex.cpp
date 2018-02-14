@@ -70,9 +70,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 	connectionEdge1->medium = (vsEdge == NULL) ? NULL : vsEdge->medium;
 
-	Float totalPathLength = pathLengthTarget + currentPathLength;
+//	Float totalPathLength = pathLengthTarget + currentPathLength;
 
-	size_t binIndex = floor((totalPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+//	size_t binIndex = floor((totalPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
 
 	switch (type) {
 		case EEmitterSupernode: {
@@ -90,6 +90,29 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		case EEmitterSample: {
 		}
 		case ESurfaceInteraction: {
+
+			const AABB aabbEntireScene = scene->getAABB();
+			Float proposedDecompositionMaxBound = FLT_MIN;
+
+			// Focal points
+			const Point &f1 = vs->getPosition();
+			const Point &f2 = vs->getPosition();
+			for(int i=0; i < 8; i++){
+				const Point &corner = aabbEntireScene.getCorner(i);
+				Float temp = distance(f1, corner) + distance(f2, corner);
+				if(temp > proposedDecompositionMaxBound)
+					proposedDecompositionMaxBound = temp;
+			}
+
+			Float proposedDecompositionMinBound = fmax(currentPathLength + distance(f1, f2), wr->m_decompositionMinBound);
+			proposedDecompositionMaxBound = fmin(currentPathLength+proposedDecompositionMaxBound, wr->m_decompositionMaxBound);
+
+			Float totalPathLength = wr->sampleRestrictedPathLengthTarget(proposedDecompositionMinBound, proposedDecompositionMaxBound, sampler);
+
+			size_t binIndex = floor((totalPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+
+			pathLengthTarget = totalPathLength-currentPathLength;
+
 
 			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getGeometricNormal(), vt->getGeometricNormal(), pathLengthTarget);
 			if(m_ellipsoid->isDegenerate()){
