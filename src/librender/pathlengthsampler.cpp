@@ -113,13 +113,7 @@ Float PathLengthSampler::correlationFunction(Float t) const {
 }
 
 Float PathLengthSampler::areaUnderCorrelationGraph(int n) const{
-	Float h = (m_decompositionMaxBound-m_decompositionMinBound)/(n-1);
-	Float value = 0.5*( fabs(correlationFunction(m_decompositionMaxBound))+ fabs(correlationFunction(m_decompositionMinBound)));
-	for(int i=2; i < n; i++){
-		value += fabs(correlationFunction( m_decompositionMinBound + h*(i-1) ));
-	}
-	value *= h;
-	return value;
+	return areaUnderRestrictedCorrelationGraph(m_decompositionMinBound, m_decompositionMaxBound, n);
 }
 
 Float PathLengthSampler::samplePathLengthTarget(ref<Sampler> sampler) const{
@@ -143,13 +137,48 @@ Float PathLengthSampler::samplePathLengthTarget(ref<Sampler> sampler) const{
 
 
 Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(Float plMin, Float plMax, int n) const{
-	Float h = (plMax-plMin)/(n-1);
-	Float value = 0.5*( fabs(correlationFunction(plMax))+ fabs(correlationFunction(plMin)));
-	for(int i=2; i < n; i++){
-		value += fabs(correlationFunction( plMin + h*(i-1) ));
+
+	switch(m_modulationType){
+		case ENone:{
+			SLog(EError, "Cannot call correlation function when the modulation type is not defined");
+			break;
+		}
+		case ESine:{
+			Float thetaMin 	= plMin * 2 * M_PI/m_lambda + m_phase;
+			Float AreaMin  	= floor(thetaMin * INV_TWOPI) * 4;
+			thetaMin -= floor(thetaMin * INV_TWOPI) * 2 * M_PI;
+			if(thetaMin < M_PI/2){
+				AreaMin += sin(thetaMin);
+			}else if(thetaMin < 3*M_PI/2){
+				AreaMin += 2 - sin(thetaMin);
+			}else{
+				AreaMin += 4 + sin(thetaMin);
+			}
+
+			Float thetaMax 	= plMax * 2 * M_PI/m_lambda + m_phase;
+			Float AreaMax  	= floor(thetaMax * INV_TWOPI) * 4;
+			thetaMax -= floor(thetaMax * INV_TWOPI) * 2 * M_PI;
+			if(thetaMax < M_PI/2){
+				AreaMax += sin(thetaMax);
+			}else if(thetaMax < 3*M_PI/2){
+				AreaMax += 2 - sin(thetaMax);
+			}else{
+				AreaMax += 4 + sin(thetaMax);
+			}
+
+			return (m_lambda * INV_TWOPI * (AreaMax - AreaMin));
+			break;
+		}
+		default:
+			Float h = (plMax-plMin)/(n-1);
+			Float value = 0.5*( fabs(correlationFunction(plMax))+ fabs(correlationFunction(plMin)));
+			for(int i=2; i < n; i++){
+				value += fabs(correlationFunction( plMin + h*(i-1) ));
+			}
+			value *= h;
+			return value;
 	}
-	value *= h;
-	return value;
+	return 0;
 }
 
 Float PathLengthSampler::sampleRestrictedPathLengthTarget(Float plMin, Float plMax, ref<Sampler> sampler){
