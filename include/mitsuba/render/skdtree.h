@@ -182,6 +182,8 @@ public:
 
 	bool ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
 
+	bool ellipsoidParseKDTreeTillLevelL(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
+
 	void fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const;
 	//! @}
 	// =============================================================

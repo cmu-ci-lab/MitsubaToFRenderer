@@ -202,12 +202,95 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid* e, Float &value, Ray &ray, Inter
 	uint8_t temp[MTS_KD_INTERSECTION_TEMP];
 
 	size_t rootIndex = 0;
-	if (ellipsoidParseKDTree(m_nodes, rootIndex, e, value, sampler, temp)) {
+//	if (ellipsoidParseKDTree(m_nodes, rootIndex, e, value, sampler, temp)) {
+	if (ellipsoidParseKDTreeTillLevelL(m_nodes, rootIndex, e, value, sampler, temp)) {
 		fillEllipticIntersectionRecord<true>(ray, temp, its);
 		return true;
 	}
 	return false;
 }
+
+bool ShapeKDTree::ellipsoidParseKDTreeTillLevelL(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
+	IntersectionCache *cache =
+				static_cast<IntersectionCache *>(temp);
+	int multiplier = 1;
+
+	SizeType primCount = getPrimitiveCount();
+	int intersectingTriangles[primCount];
+	int countIntersectingTriangles = 0;
+	for(int x = 0; x < primCount; x++){
+		const IndexType &primIdx = m_indices[x];
+		const Cache::STATE state = e->cacheCheck(index);
+		const TriAccel &ta = m_triAccel[primIdx];
+
+		if(state == Cache::EFails || ta.k == KNoTriangleFlag){
+			//continue
+		}else if(state == Cache::EIntersects){
+			intersectingTriangles[countIntersectingTriangles] = x;
+			countIntersectingTriangles ++;
+		}else{
+			//gather the required data structures
+			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+			const Triangle *triangles = mesh->getTriangles();
+			const Point *positions = mesh->getVertexPositions();
+			const Normal *normals = mesh->getVertexNormals();
+
+			const Triangle &tri = triangles[ta.primIndex];
+			const Point &A = positions[tri.idx[0]];
+			const Point &B = positions[tri.idx[1]];
+			const Point &C = positions[tri.idx[2]];
+			Normal N = cross(B-A, C-A);
+			if(normals != NULL){
+				if(dot(normals[tri.idx[0]], N) < 0)
+					N = -N;
+			}
+			if(e->earlyTriangleReject(A, B, C, N)){
+				e->cacheSetTriState(primIdx,Cache::EFails);
+			}else{
+				// The statement below in not exactly correct, but then even if we sample this triangle in the future, the full-ellipsoid intersection will change this state to false. Till then, we can sample this triangle and additionally, we don't have to unnecessarily do the early test for this triangle again and again.
+				e->cacheSetTriState(primIdx,Cache::EIntersects);
+				intersectingTriangles[countIntersectingTriangles] = x;
+				countIntersectingTriangles ++;
+			}
+		}
+	}
+	if(countIntersectingTriangles == 0)
+		return false;
+
+	//sample a triangle from the intersecting triangles
+	int x = intersectingTriangles[sampler->nextSize(countIntersectingTriangles)];
+	const IndexType &primIdx = m_indices[x];
+	const TriAccel &ta = m_triAccel[primIdx];
+
+	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+	const Triangle *triangles = mesh->getTriangles();
+	const Point *positions = mesh->getVertexPositions();
+
+	const Triangle &tri = triangles[ta.primIndex];
+	const Point &A = positions[tri.idx[0]];
+	const Point &B = positions[tri.idx[1]];
+	const Point &C = positions[tri.idx[2]];
+
+	Float tempU;
+	Float tempV;
+
+	if(e->ellipsoidIntersectTriangle(A, B, C, value, tempU, tempV, sampler)){
+		e->cacheSetTriState(primIdx,Cache::EIntersects);
+		cache->shapeIndex = ta.shapeIndex;
+		cache->primIndex = ta.primIndex;
+		cache->u = tempU;
+		cache->v = tempV;
+		if(m_BBTree->m_triangleRepetition[primIdx] <= 0){
+			SLog(EError, "Triangle repetition of %i th triangle is not properly measured", primIdx);
+		}
+		value = value*countIntersectingTriangles*multiplier;
+		return true;
+	}
+	e->cacheSetTriState(primIdx,Cache::EFails);
+	return false;
+}
+
+
 
 bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
 	IntersectionCache *cache =
