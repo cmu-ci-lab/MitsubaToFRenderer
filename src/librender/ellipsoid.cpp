@@ -548,6 +548,25 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	if(epsExclusiveLesserF(dot(m_f2Normal, a - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, b - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, c - f2_Float), 0))
 		return true;
 
+	PointType spherePtA, spherePtB, spherePtC;
+	transformToSphere(a, spherePtA);
+	transformToSphere(b, spherePtB);
+	transformToSphere(c, spherePtC);
+	if( epsExclusiveLesser(lengthSquared(spherePtA), 1) && epsExclusiveLesser(lengthSquared(spherePtB), 1) && epsExclusiveLesser(lengthSquared(spherePtC), 1)){
+		return true;
+	}
+
+	PointType Origin(0.0, 0.0, 0.0);
+	TVector3<LengthType> Center = dot(N,spherePtA-Origin)*N;
+
+	TVector3<LengthType> O(Center[0]*this->m_majorAxis, Center[1]*this->m_minorAxis, Center[2]*this->m_minorAxis); // Note that O is position vector of the center of the ellipse
+
+	FLOAT d = Center.lengthSquared();
+
+	if(d > 1){ // ellipsoid does not intersect the plane
+		return true;
+	}
+
 	return false;
 }
 
