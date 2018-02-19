@@ -564,10 +564,9 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	PointType Origin(0.0, 0.0, 0.0);
 
 	TVector3<LengthType> Nd(N.x, N.y, N.z);
+	Nd = normalize(Nd);
 
 	TVector3<LengthType> Center = dot(Nd,spherePtA-Origin)*Nd;
-
-	TVector3<LengthType> O(Center[0]*this->m_majorAxis, Center[1]*this->m_minorAxis, Center[2]*this->m_minorAxis); // Note that O is position vector of the center of the ellipse
 
 	FLOAT d = Center.lengthSquared();
 
