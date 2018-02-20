@@ -184,7 +184,7 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(Float plMin, Float 
 Float PathLengthSampler::sampleRestrictedPathLengthTarget(Float plMin, Float plMax, ref<Sampler> sampler){
 	int rejects = 0;
 	if(m_modulationType == ENone){
-		m_areaUnderCorrelationGraph = plMax-plMax;
+		m_areaUnderCorrelationGraph = plMax-plMin;
 		return plMin+(plMax-plMin)*sampler->nextFloat();
 	}
 	else{

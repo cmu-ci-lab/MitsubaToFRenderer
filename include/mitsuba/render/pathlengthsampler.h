@@ -42,7 +42,7 @@ public:
 
 	inline Float getSamplingWeight(Float t) const{
 		if(m_modulationType == ENone){
-			return (m_decompositionMaxBound-m_decompositionMinBound);
+			return m_areaUnderCorrelationGraph;
 		}else{
 			Float result = copysignf(1.0, correlationFunction(t))*m_areaUnderCorrelationGraph;
 			return result;

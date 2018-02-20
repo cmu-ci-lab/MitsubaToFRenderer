@@ -107,6 +107,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 			Float proposedDecompositionMinBound = fmax(currentPathLength + distance(f1, f2), wr->m_decompositionMinBound);
 			proposedDecompositionMaxBound = fmin(currentPathLength+proposedDecompositionMaxBound, wr->m_decompositionMaxBound);
 
+			if(proposedDecompositionMaxBound < proposedDecompositionMinBound)
+				return;
+
 			Float totalPathLength = wr->sampleRestrictedPathLengthTarget(proposedDecompositionMinBound, proposedDecompositionMaxBound, sampler);
 
 			size_t binIndex = floor((totalPathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
