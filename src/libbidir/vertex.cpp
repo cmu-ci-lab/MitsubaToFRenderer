@@ -96,7 +96,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 			// Focal points
 			const Point &f1 = vs->getPosition();
-			const Point &f2 = vs->getPosition();
+			const Point &f2 = vt->getPosition();
 			for(int i=0; i < 8; i++){
 				const Point &corner = aabbEntireScene.getCorner(i);
 				Float temp = distance(f1, corner) + distance(f2, corner);
