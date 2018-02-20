@@ -563,7 +563,7 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 
 	PointType Origin(0.0, 0.0, 0.0);
 
-	TVector3<LengthType> Nd = cross(spherePtB - spherePtA, SpherePtC - SpherePtA);
+	TVector3<LengthType> Nd = cross(spherePtB - spherePtA, spherePtC - spherePtA);
 	Nd = normalize(Nd);
 
 	TVector3<LengthType> Center = dot(Nd,spherePtA-Origin)*Nd;
