@@ -140,7 +140,7 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(Float plMin, Float 
 
 	switch(m_modulationType){
 		case ENone:{
-			SLog(EError, "Cannot call correlation function when the modulation type is not defined");
+			return plMax - plMin;
 			break;
 		}
 		case ESine:{
