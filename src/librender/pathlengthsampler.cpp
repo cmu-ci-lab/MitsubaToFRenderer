@@ -155,6 +155,28 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(const Float& plMin,
 			return (m_lambda * INV_TWOPI * (AreaMax - AreaMin));
 			break;
 		}
+		case ESquare:{
+			Float thetaMin 	= plMin + m_phase * m_lambda * INV_TWOPI;
+			Float AreaMin  	= floor(2 * thetaMin/m_lambda) * m_lambda/4;
+			thetaMin -= floor(2 * thetaMin/m_lambda) * m_lambda/2;
+			if(thetaMin < m_lambda/4){
+				AreaMin += thetaMin * (1 - 2/m_lambda * thetaMin);
+			}else{
+				AreaMin += m_lambda/4 - thetaMin * (1 - 2/m_lambda * thetaMin);
+			}
+
+			Float thetaMax 	= plMax + m_phase * m_lambda * INV_TWOPI;
+			Float AreaMax  	= floor(2 * thetaMax/m_lambda) * m_lambda/4;
+			thetaMax -= floor(2 * thetaMax/m_lambda) * m_lambda/2;
+			if(thetaMax < m_lambda/4){
+				AreaMax += thetaMax * (1 - 2/m_lambda * thetaMax);
+			}else{
+				AreaMax += m_lambda/4 - thetaMax * (1 - 2/m_lambda * thetaMax);
+			}
+
+			return (AreaMax - AreaMin);
+			break;
+		}
 		default:
 			Float h = (plMax-plMin)/(n-1);
 			Float value = 0.5*( fabs(correlationFunction(plMax))+ fabs(correlationFunction(plMin)));
