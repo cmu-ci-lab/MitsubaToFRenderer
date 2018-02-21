@@ -93,16 +93,16 @@ public:
 		return pathLengthSampler->sampleRestrictedPathLengthTarget(plMin, plMax, sampler);
 	}
 
-	inline Float mSeq(Float t, Float phase) const{
+	inline Float mSeq(const Float& t, const Float& phase) const{
 		return pathLengthSampler->mSeq(t, phase);
 	}
 
-	inline Float correlationFunction(Float t) const {
+	inline Float correlationFunction(const Float& t) const {
 		return pathLengthSampler->correlationFunction(t);
 	}
 
-	inline Float getSamplingWeight(Float t) const{
-		return pathLengthSampler->getSamplingWeight(t);
+	inline Float getSamplingWeight(const Float& plMin, const Float& plMax, const Float& t) const{
+		return pathLengthSampler->getSamplingWeight(plMin, plMax, t);
 	}
 
 	inline PathLengthSampler::EModulationType getModulationType() const{

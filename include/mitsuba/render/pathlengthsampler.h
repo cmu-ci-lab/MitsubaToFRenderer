@@ -29,36 +29,37 @@ public:
 		return m_modulationType;
 	}
 
-	inline Float mSeq(Float t, Float phase) const{
-		t = t + phase*m_lambda*INV_PI/2;
-		t = fmod(t, m_lambda);
-		if(t < m_lambda/m_P){
-			return 1 - t*(m_P-1)/m_lambda;
-		}else if(t > (1 - 1.0/m_P)*m_lambda){
-			return 1 - (m_lambda - t)*(m_P - 1)/m_lambda;
+	inline Float mSeq(const Float& t, const Float& phase) const{
+		Float pathLength = t;
+		pathLength = pathLength + phase*m_lambda*INV_PI/2;
+		pathLength = fmod(pathLength, m_lambda);
+		if(pathLength < m_lambda/m_P){
+			return 1 - pathLength*(m_P-1)/m_lambda;
+		}else if(pathLength > (1 - 1.0/m_P)*m_lambda){
+			return 1 - (m_lambda - pathLength)*(m_P - 1)/m_lambda;
 		}else
 			return 1.0/m_P;
 	}
 
-	inline Float getSamplingWeight(Float t) const{
+	inline Float getSamplingWeight(const Float& plMin, const Float& plMax, const Float& t) const{
 		if(m_modulationType == ENone){
-			return m_areaUnderCorrelationGraph;
+			return areaUnderRestrictedCorrelationGraph(plMin, plMax, 1e6);
 		}else{
-			Float result = copysignf(1.0, correlationFunction(t))*m_areaUnderCorrelationGraph;
+			Float result = copysignf(1.0, correlationFunction(t))*areaUnderRestrictedCorrelationGraph(plMin, plMax, 1e6);
 			return result;
 		}
 		return 0;
 	}
 
-	Float areaUnderRestrictedCorrelationGraph(Float plMin, Float plMax, int n) const;
+	Float areaUnderRestrictedCorrelationGraph(const Float& plMin, const Float& plMax, const int& n) const;
 
-	Float sampleRestrictedPathLengthTarget(Float plMin, Float plMax, ref<Sampler> sampler);
+	Float sampleRestrictedPathLengthTarget(const Float& plMin, const Float& plMax, ref<Sampler> sampler) const;
 
-	Float areaUnderCorrelationGraph(int n) const;
+	Float areaUnderCorrelationGraph(const int& n) const;
 
 	Float samplePathLengthTarget(ref<Sampler> sampler) const;
 
-	Float correlationFunction(Float t) const;
+	Float correlationFunction(const Float& t) const;
 
 	// =============================================================
 	//! @{ \name ConfigurableObject interface
