@@ -194,7 +194,6 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(const Float& plMin,
 				AreaMin += (m_neighbors-1)*m_lambda*inv_P + m_lambda*inv_P/2*(1 - inv_P) + inv_P*((1 - inv_P)*m_lambda - (m_neighbors-1)*m_lambda*inv_P) + (2-m_P)*(plMinTemp- ( 1 - inv_P)*m_lambda) + 1/(2*m_lambda) * (plMinTemp*plMinTemp - (1 - inv_P)*(1 - inv_P)*m_lambda*m_lambda)*(m_P-1);
 			}
 
-
 			Float plMaxTemp = plMax + m_phase * m_lambda * INV_TWOPI;
 			Float AreaMax  	= floor(plMaxTemp/m_lambda) * (m_lambda*inv_P*(m_neighbors + 1 - m_neighbors*inv_P));
 			plMaxTemp -= floor(plMaxTemp/m_lambda) * m_lambda;
@@ -208,16 +207,6 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(const Float& plMin,
 			}else{
 				AreaMax += (m_neighbors-1)*m_lambda*inv_P + m_lambda*inv_P/2*(1 - inv_P) + inv_P*((1 - inv_P)*m_lambda - (m_neighbors-1)*m_lambda*inv_P) + (2-m_P)*(plMaxTemp- ( 1 - inv_P)*m_lambda) + 1/(2*m_lambda) * (plMaxTemp*plMaxTemp - (1 - inv_P)*(1 - inv_P)*m_lambda*m_lambda)*(m_P-1);
 			}
-
-
-			Float h = (plMax-plMin)/(n-1);
-			Float value = 0.5*( fabs(correlationFunction(plMax))+ fabs(correlationFunction(plMin)));
-			for(int i=2; i < n; i++){
-				value += fabs(correlationFunction( plMin + h*(i-1) ));
-			}
-			value *= h;
-
-			cout << "Error:" << AreaMax - AreaMin - value << "\n";
 
 			return (AreaMax - AreaMin);
 
