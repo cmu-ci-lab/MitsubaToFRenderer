@@ -101,7 +101,7 @@ Float PathLengthSampler::correlationFunction(const Float& t) const {
 		case EDepthSelective:{
 			Float value = 0;
 			for(int i = 0; i < m_neighbors; i++){
-				value += mSeq(pathLength, m_phase + i*(2*M_PI)/m_P);
+				value += mSeq(pathLength, m_phase - i*(2*M_PI)/m_P);
 			}
 			value -= (float)(m_neighbors-1)/m_P;
 			return value;
@@ -156,25 +156,71 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(const Float& plMin,
 			break;
 		}
 		case ESquare:{
-			Float thetaMin 	= plMin + m_phase * m_lambda * INV_TWOPI;
-			Float AreaMin  	= floor(2 * thetaMin/m_lambda) * m_lambda/4;
-			thetaMin -= floor(2 * thetaMin/m_lambda) * m_lambda/2;
-			if(thetaMin < m_lambda/4){
-				AreaMin += thetaMin * (1 - 2/m_lambda * thetaMin);
+			Float plMinTemp = plMin + m_phase * m_lambda * INV_TWOPI;
+			Float AreaMin  	= floor(2 * plMinTemp/m_lambda) * m_lambda/4;
+			plMinTemp -= floor(2 * plMinTemp/m_lambda) * m_lambda/2;
+			if(plMinTemp < m_lambda/4){
+				AreaMin += plMinTemp * (1 - 2/m_lambda * plMinTemp);
 			}else{
-				AreaMin += m_lambda/4 - thetaMin * (1 - 2/m_lambda * thetaMin);
+				AreaMin += m_lambda/4 - plMinTemp * (1 - 2/m_lambda * plMinTemp);
 			}
 
-			Float thetaMax 	= plMax + m_phase * m_lambda * INV_TWOPI;
-			Float AreaMax  	= floor(2 * thetaMax/m_lambda) * m_lambda/4;
-			thetaMax -= floor(2 * thetaMax/m_lambda) * m_lambda/2;
-			if(thetaMax < m_lambda/4){
-				AreaMax += thetaMax * (1 - 2/m_lambda * thetaMax);
+			Float plMaxTemp = plMax + m_phase * m_lambda * INV_TWOPI;
+			Float AreaMax  	= floor(2 * plMaxTemp/m_lambda) * m_lambda/4;
+			plMaxTemp -= floor(2 * plMaxTemp/m_lambda) * m_lambda/2;
+			if(plMaxTemp < m_lambda/4){
+				AreaMax += plMaxTemp * (1 - 2/m_lambda * plMaxTemp);
 			}else{
-				AreaMax += m_lambda/4 - thetaMax * (1 - 2/m_lambda * thetaMax);
+				AreaMax += m_lambda/4 - plMaxTemp * (1 - 2/m_lambda * plMaxTemp);
 			}
 
 			return (AreaMax - AreaMin);
+			break;
+		}
+		case EDepthSelective:{
+			Float inv_P = 1/(Float)m_P;
+
+			Float plMinTemp = plMin + m_phase * m_lambda * INV_TWOPI;
+			Float AreaMin  	= floor(plMinTemp/m_lambda) * (m_lambda*inv_P*(m_neighbors + 1 - m_neighbors*inv_P));
+			plMinTemp -= floor(plMinTemp/m_lambda) * m_lambda;
+
+			if(plMinTemp < (m_neighbors-1)*m_lambda*inv_P){
+				AreaMin += plMinTemp;
+			}else if(plMinTemp >= (m_neighbors-1)*m_lambda*inv_P && plMinTemp < m_neighbors*m_lambda*inv_P){
+				AreaMin += (m_neighbors-1)*m_lambda*inv_P + (1 + (m_neighbors-1)*(1 - inv_P))*(plMinTemp - (m_neighbors-1)*m_lambda*inv_P) - (m_P-1)/(2*m_lambda)*(plMinTemp*plMinTemp - (pow((m_neighbors-1)*m_lambda*inv_P,2)));
+			}else if(plMinTemp >= (m_neighbors)*m_lambda*inv_P && plMinTemp < (1 - inv_P)*m_lambda){
+				AreaMin += (m_neighbors-1)*m_lambda*inv_P + m_lambda*inv_P/2*(1 - inv_P) + inv_P*(plMinTemp - (m_neighbors-1)*m_lambda*inv_P);
+			}else{
+				AreaMin += (m_neighbors-1)*m_lambda*inv_P + m_lambda*inv_P/2*(1 - inv_P) + inv_P*((1 - inv_P)*m_lambda - (m_neighbors-1)*m_lambda*inv_P) + (2-m_P)*(plMinTemp- ( 1 - inv_P)*m_lambda) + 1/(2*m_lambda) * (plMinTemp*plMinTemp - (1 - inv_P)*(1 - inv_P)*m_lambda*m_lambda)*(m_P-1);
+			}
+
+
+			Float plMaxTemp = plMax + m_phase * m_lambda * INV_TWOPI;
+			Float AreaMax  	= floor(plMaxTemp/m_lambda) * (m_lambda*inv_P*(m_neighbors + 1 - m_neighbors*inv_P));
+			plMaxTemp -= floor(plMaxTemp/m_lambda) * m_lambda;
+
+			if(plMaxTemp < (m_neighbors-1)*m_lambda*inv_P){
+				AreaMax += plMaxTemp;
+			}else if(plMaxTemp >= (m_neighbors-1)*m_lambda*inv_P && plMaxTemp < m_neighbors*m_lambda*inv_P){
+				AreaMax += (m_neighbors-1)*m_lambda*inv_P + (1 + (m_neighbors-1)*(1 - inv_P))*(plMaxTemp - (m_neighbors-1)*m_lambda*inv_P) - (m_P-1)/(2*m_lambda)*(plMaxTemp*plMaxTemp - (pow((m_neighbors-1)*m_lambda*inv_P,2)));
+			}else if(plMaxTemp >= (m_neighbors)*m_lambda*inv_P && plMaxTemp < (1 - inv_P)*m_lambda){
+				AreaMax += (m_neighbors-1)*m_lambda*inv_P + m_lambda*inv_P/2*(1 - inv_P) + inv_P*(plMaxTemp - (m_neighbors-1)*m_lambda*inv_P);
+			}else{
+				AreaMax += (m_neighbors-1)*m_lambda*inv_P + m_lambda*inv_P/2*(1 - inv_P) + inv_P*((1 - inv_P)*m_lambda - (m_neighbors-1)*m_lambda*inv_P) + (2-m_P)*(plMaxTemp- ( 1 - inv_P)*m_lambda) + 1/(2*m_lambda) * (plMaxTemp*plMaxTemp - (1 - inv_P)*(1 - inv_P)*m_lambda*m_lambda)*(m_P-1);
+			}
+
+
+			Float h = (plMax-plMin)/(n-1);
+			Float value = 0.5*( fabs(correlationFunction(plMax))+ fabs(correlationFunction(plMin)));
+			for(int i=2; i < n; i++){
+				value += fabs(correlationFunction( plMin + h*(i-1) ));
+			}
+			value *= h;
+
+			cout << "Error:" << AreaMax - AreaMin - value << "\n";
+
+			return (AreaMax - AreaMin);
+
 			break;
 		}
 		default:
