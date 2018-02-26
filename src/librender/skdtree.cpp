@@ -126,7 +126,8 @@ void ShapeKDTree::buildBBTree(const KDNode* node){
 						last = node->getPrimEnd(); entry != last; entry++) {
 			const IndexType primIdx = m_indices[entry];
 			const TriAccel &ta = m_triAccel[primIdx];
-
+			if(ta.k == KNoTriangleFlag)
+				continue;
 			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
 			const Triangle *triangles = mesh->getTriangles();
 			const Point *positions = mesh->getVertexPositions();
