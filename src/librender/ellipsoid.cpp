@@ -711,15 +711,19 @@ bool TEllipsoid<PointType, LengthType>::ellipsoidIntersectTriangle(const Point &
 		FLOAT cn2 = cn*cn;
 		FLOAT sn2 = sn*sn;
 
-		FLOAT Delta2 = Delta*Delta;
+		if(Delta < Eps){
+			value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2 + dot(m2*cn*NewX + m1*sn*NewY, dO))*thetaRange;
+		}else{
+			FLOAT Delta2 = Delta*Delta;
 
-		FLOAT msnthetadtheta 	  = (Delta*(UUE-TTE)-dDelta*(UUD-TTD))/Delta2;
-		FLOAT cnthetadtheta  	  = 2 * (Delta*TUE-dDelta*TUD)/Delta2;
-		TVector3<LengthType> dTN  = T*msnthetadtheta - U*cnthetadtheta;
-		TVector3<LengthType> dUN  = T*cnthetadtheta  + U*msnthetadtheta ;
-		FLOAT dAxis 		 	  = dot(O, dTN*m2*cn + dUN*m1*sn);
+			FLOAT msnthetadtheta 	  = (Delta*(UUE-TTE)-dDelta*(UUD-TTD))/Delta2;
+			FLOAT cnthetadtheta  	  = 2 * (Delta*TUE-dDelta*TUD)/Delta2;
+			TVector3<LengthType> dTN  = T*msnthetadtheta - U*cnthetadtheta;
+			TVector3<LengthType> dUN  = T*cnthetadtheta  + U*msnthetadtheta ;
+			FLOAT dAxis 		 	  = dot(O, dTN*m2*cn + dUN*m1*sn);
 
-		value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2 + dot(m2*cn*NewX + m1*sn*NewY, dO) + dAxis)*thetaRange;
+			value = ( (DR1*dNR-NR*dDR1)/(DR1*DR1)*m2/m1*cn2 + (DR2*dNR-NR*dDR2)/(DR2*DR2)*m1/m2*sn2 + dot(m2*cn*NewX + m1*sn*NewY, dO) + dAxis)*thetaRange;
+		}
 
 		//Compute the Barycentric co-ordinates. Return that and save it in the cache to be compatible with mitsuba
 		Barycentric(Original, triA, triB, triC, u, v);
