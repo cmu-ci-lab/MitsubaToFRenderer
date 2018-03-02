@@ -189,14 +189,17 @@ public:
 
 
 		Float *sampleDecompositionValue = NULL;
+		Float *l_sampleDecompositionValue = NULL;
 		Float *temp = NULL;
 
 		if (wr->m_decompositionType != Film::ESteadyState) {
-			sampleDecompositionValue = (Float *) alloca(sizeof(Float) * wr->getChannelCount());
+			sampleDecompositionValue   = (Float *) alloca(sizeof(Float) * wr->getChannelCount());
+			l_sampleDecompositionValue = (Float *) alloca(sizeof(Float) * wr->getChannelCount());
 			temp = (Float *) alloca(sizeof(Float) * SPECTRUM_SAMPLES); // Assuming that SPECTRUM_SAMPLES = 3;
 
 			for (int i=0; i<wr->getChannelCount(); ++i){
 				sampleDecompositionValue[i]=0.0f;
+				l_sampleDecompositionValue[i]=0.0f;
 			}
 		}
 
@@ -393,12 +396,24 @@ public:
 
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if ((wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
-					value.toSRGB(temp[0],temp[1],temp[2]);
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-				}
+				if (!value.isZero() && (wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
+                    if(t >= 2){
+					    value.toSRGB(temp[0],temp[1],temp[2]);
+					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+    				}else if(t == 1){
+    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+    					l_sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;
+    					l_sampleDecompositionValue[wr->getChannelCount()-1]=1.0f;
+    					wr->putLightSample(samplePos, l_sampleDecompositionValue);
+    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0; 
+    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+					    l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+				    }
+                }
 
 				if (t >= 2)
 					sampleValue += value * miWeight;
@@ -453,10 +468,9 @@ void BDPTProcess::develop() {
 	const ImageBlock *lightImage = m_result->getLightImage();
 	m_film->setBitmap(m_result->getImageBlock()->getBitmap());
 
-	if(m_config.m_decompositionType == Film::ESteadyState) {
-		m_film->addBitmap(lightImage->getBitmap(), 1.0f / m_config.sampleCount);
-	}
-	m_refreshTimer->reset();
+	m_film->addBitmap(lightImage->getBitmap(), 1.0f / m_config.sampleCount);
+
+    m_refreshTimer->reset();
 	m_queue->signalRefresh(m_parent);
 }
 

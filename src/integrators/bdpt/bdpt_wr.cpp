@@ -53,8 +53,14 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 		/* Stores the 'light image' -- every worker requires a
 		   full-resolution version, since contributions of s==0
 		   and s==1 paths can affect any pixel of this bitmap */
-		m_lightImage = new ImageBlock(Bitmap::ESpectrum,
-				conf.cropSize, rfilter);
+		if (conf.m_decompositionType == Film::ESteadyState) {
+    		m_lightImage = new ImageBlock(Bitmap::ESpectrum,
+	    			conf.cropSize, rfilter);
+        }else{
+			m_lightImage = new ImageBlock(Bitmap::EMultiSpectrumAlphaWeight,
+							conf.cropSize, rfilter, (int) (SPECTRUM_SAMPLES * m_frames + 2));
+        
+        }
 		m_lightImage->setSize(conf.cropSize);
 		m_lightImage->setOffset(Point2i(0, 0));
 	}

@@ -72,6 +72,10 @@ public:
 		m_block->put(sample, spec, 1.0f);
 	}
 
+	inline void putLightSample(const Point2 &sample, const Float *value) {
+		m_lightImage->put(sample, value);
+	}
+
 	inline void putLightSample(const Point2 &sample, const Spectrum &spec) {
 		m_lightImage->put(sample, spec, 1.0f);
 	}
