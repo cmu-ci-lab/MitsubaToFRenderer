@@ -1,0 +1,6 @@
+run compile.sh
+The code will add multiple exr files and create a mean and variance exr file. 
+The exr files must be name PrefixPattern_0, PrefixPattern_1, PrefixPattern_2,... and so on
+Run 
+./createMeanAndVarianceImages PrefixPattern TotalNumberOfFiles
+Two files, PrefixPattern_mean.exr and PrefixPattern_var.exr are created
