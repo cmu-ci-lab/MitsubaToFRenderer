@@ -46,7 +46,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_sBounces = conf.m_sBounces;
 	m_tBounces = conf.m_tBounces;
 
-	if (m_decompositionType == Film::ESteadyState || ( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)) {
+	if (m_frames == 1) {
 		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
 	} else {
 		m_block = new ImageBlock(Bitmap::EMultiSpectrumAlphaWeight, blockSize,
@@ -61,7 +61,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 		   full-resolution version, since contributions of s==0
 		   and s==1 paths can affect any pixel of this bitmap */
 
-		if (m_decompositionType == Film::ESteadyState || ((m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && getModulationType() != PathLengthSampler::ENone)) {
+		if (m_frames == 1) {
 			m_lightImage = new ImageBlock(Bitmap::ESpectrum,
 				conf.cropSize, rfilter);
 		} else {
