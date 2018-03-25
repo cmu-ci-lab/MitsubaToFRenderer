@@ -12825,6 +12825,19 @@ int SaveMultiEXR(const float *data, int width, int height, EXRHeader exr_header,
 	                                    // no precision reduction)
 	    }
 	}
+	if(exr_header.num_channels == 3){
+		//Hack for matlab exr reader to work
+		exr_header.channels[0].name[0] = 'B';
+		exr_header.channels[0].name[1] = '\0';
+		exr_header.channels[0].name[2] = '\0';
+		exr_header.channels[1].name[0] = 'G';
+		exr_header.channels[1].name[1] = '\0';
+		exr_header.channels[1].name[2] = '\0';
+		exr_header.channels[2].name[0] = 'R';
+		exr_header.channels[2].name[1] = '\0';
+		exr_header.channels[2].name[2] = '\0';
+	}
+
 
 	const char *err;
 	int ret = SaveEXRImageToFile(&image, &exr_header, outfilename, &err);

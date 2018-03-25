@@ -220,7 +220,8 @@ public:
 		std::string componentFormat = boost::to_lower_copy(
 			props.getString("componentFormat", "float16"));
 
-		if (m_decompositionType != Film::ESteadyState && !( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && m_pathLengthSampler->getModulationType() != PathLengthSampler::ENone)){
+		//		if (m_decompositionType != Film::ESteadyState && !( (m_decompositionType == Film::ETransient || m_decompositionType == Film::ETransientEllipse) && m_pathLengthSampler->getModulationType() != PathLengthSampler::ENone)){
+		if (m_frames != 1){
 			if(pixelFormats.size() > 1){
 				Log(EError, "Pixel format should not be specified! RGB format is auto-applied to all Frames");
 			}

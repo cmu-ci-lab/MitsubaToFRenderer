@@ -559,6 +559,7 @@ public:
 					if(currentDecompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)
 							miWeight *= wr->correlationFunction(pathLength);
 					else{
+						//VerifyME: (Adithya). Probably this and the next conditional might break for CWToF Codes
 						// Update sampleTransientValue
 						size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
 						if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
@@ -591,7 +592,6 @@ public:
 								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
 								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
 							}
-
 						}
 					}
 
