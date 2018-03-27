@@ -10853,6 +10853,8 @@ int MomentsEXR(float **out_rgba, float **out2_rgba, int width, int height, int n
       for (size_t i = 0; i < exr_image.width * exr_image.height; i++) {
         for (size_t j = 0; j < exr_image.num_channels; j++) {
             float temp = reinterpret_cast<float **>(exr_image.images)[j][i];
+            if(!std::isfinite(temp))
+              continue;
             (*out_rgba)[exr_image.num_channels * i + j] +=
                invNumberOfFiles * temp;
             (*out2_rgba)[exr_image.num_channels * i + j] +=
