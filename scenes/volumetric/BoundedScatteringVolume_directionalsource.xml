@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<scene version="0.5.0">
+	<integrator type="bdpt">
+		<integer name="maxDepth" value="8"/>
+		<boolean name="sampleDirect" value="false"/>
+	</integrator>
+
+	<medium type="homogeneous" id="ScatteringMedium">
+        <spectrum name="sigmaS" value="0.5, 0.5, 0.5"/>
+        <spectrum name="sigmaA" value="0.05, 0.05, 0.05"/>
+        <phase type="hg">
+            <float name="g" value="0.7"/>
+        </phase>
+    </medium>
+
+    <bsdf type="diffuse" id="white">
+        <spectrum name="reflectance" value = "0.8"/>
+    </bsdf>
+	<shape type="obj">
+        <string name="filename" value="bounds.obj"/>
+        <!---        		<ref id="white"/>
+        !-->
+        <ref name="interior" id="ScatteringMedium"/>
+	</shape>
+
+	<sensor type="perspective">
+		<float name="focusDistance" value="1.25668"/>
+		<float name="fov" value="95.8402"/>
+		<string name="fovAxis" value="x"/>
+		<transform name="toWorld">
+			<lookat target="-2, 0, 0" origin="-3, 0, 0" up="0, 1, 0"/>
+		</transform>
+
+		<sampler type="ldsampler">
+			<integer name="sampleCount" value="$samples"/>
+		</sampler>
+
+        <film type="hdrfilm">
+            <boolean name="banner" value="false"/>
+			<integer name="height" value="512"/>
+			<integer name="width" value="512"/>
+			<string name="decomposition" value="transient"/>
+			<float name="minBound" value="$tMin"/>
+			<float name="maxBound" value="$tMax"/>
+			<float name="binWidth" value="$tRes"/>
+
+			<rfilter type="gaussian"/>
+		</film>
+	</sensor>
+    <emitter type="collimated">
+        <spectrum name="intensity" value="1e5"/>
+		<transform name="toWorld">
+			<lookat target="-2, 0.5, 0" origin="-3, 0.5, 0" up="0, 1, 0"/>
+            <!---			<lookat target="0.5, -2, 0" origin="0.5, -3, 0" up="0, 1, 0"/>
+            !-->
+		</transform>
+    </emitter>
+
+</scene>
