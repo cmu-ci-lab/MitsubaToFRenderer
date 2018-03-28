@@ -159,9 +159,10 @@ main(int argc, char** argv)
     for (size_t j = 0; j < exr_header.num_channels; j++) {
         secondMoment[exr_header.num_channels * i + j] -= meanImage[exr_header.num_channels * i + j]*meanImage[exr_header.num_channels * i + j];
         totalVariance += secondMoment[exr_header.num_channels*i+j];
+        secondMoment[exr_header.num_channels * i + j] = sqrt(secondMoment[exr_header.num_channels * i + j]); 
     }
   }
-  ret = SaveMultiEXR(secondMoment, width, height, exr_header, 1, (fileprefix + "_var.exr").c_str());
+  ret = SaveMultiEXR(secondMoment, width, height, exr_header, 1, (fileprefix + "_sd.exr").c_str());
   if(ret != 0)
     std::cout << "Error saving the file:" << (fileprefix + "_var.exr").c_str() << std::endl;
   std::cout << "Total Variance:" << totalVariance << std::endl;

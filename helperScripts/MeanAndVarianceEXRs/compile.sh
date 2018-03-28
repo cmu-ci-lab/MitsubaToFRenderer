@@ -1,1 +1,1 @@
-g++ -std=c++11 -o createMeanAndVarianceImages createMeanAndVarianceImages.cc 
+g++ -std=c++11 -o createMeanAndSDImages createMeanAndSDImages.cc 
