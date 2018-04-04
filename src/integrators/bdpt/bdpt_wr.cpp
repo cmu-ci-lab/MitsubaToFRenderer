@@ -39,7 +39,8 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_decompositionType = conf.m_decompositionType;
 	m_frames = conf.m_frames;
 
-	if (conf.m_decompositionType == Film::ESteadyState) {
+//	if (conf.m_decompositionType == Film::ESteadyState) {
+	if (m_frames == 1) {
 		m_block = new ImageBlock(Bitmap::ESpectrumAlphaWeight, blockSize, rfilter);
 	} else {
 		m_block = new ImageBlock(Bitmap::EMultiSpectrumAlphaWeight, blockSize,
@@ -53,7 +54,8 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 		/* Stores the 'light image' -- every worker requires a
 		   full-resolution version, since contributions of s==0
 		   and s==1 paths can affect any pixel of this bitmap */
-		if (conf.m_decompositionType == Film::ESteadyState) {
+		//		if (conf.m_decompositionType == Film::ESteadyState) {
+		if (m_frames == 1) {
     		m_lightImage = new ImageBlock(Bitmap::ESpectrum,
 	    			conf.cropSize, rfilter);
         }else{
