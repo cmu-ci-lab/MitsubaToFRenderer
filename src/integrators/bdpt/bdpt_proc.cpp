@@ -201,6 +201,8 @@ public:
 				sampleDecompositionValue[i]=0.0f;
 				l_sampleDecompositionValue[i]=0.0f;
 			}
+            l_sampleDecompositionValue[wr->getChannelCount() - 1]=1.0f;
+            l_sampleDecompositionValue[wr->getChannelCount() - 2]=1.0f;
 		}
 
 		for (int s = (int) emitterSubpath.vertexCount()-1; s >= 0; --s) {
@@ -397,8 +399,12 @@ public:
 				// Update sampleTransientValue
 				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
 				if (!value.isZero() && (wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
+                    if(SPECTRUM_SAMPLES == 3)
+                        value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
+                    else
+                        SLog(EError, "cannot run transient renderer for spectrum values more than 3");
+
                     if(t >= 2){
-					    value.toSRGB(temp[0],temp[1],temp[2]);
 					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
 					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
 					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
@@ -406,8 +412,6 @@ public:
     					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
     					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
     					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-    					l_sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;
-    					l_sampleDecompositionValue[wr->getChannelCount()-1]=1.0f;
     					wr->putLightSample(samplePos, l_sampleDecompositionValue);
     					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0; 
     					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
@@ -415,10 +419,12 @@ public:
 				    }
                 }
 
-				if (t >= 2)
-					sampleValue += value * miWeight;
-				else
-					wr->putLightSample(samplePos, value * miWeight);
+				if(wr->m_decompositionType == Film::ESteadyState){
+					if (t >= 2)
+						sampleValue += value * miWeight;
+					else
+						wr->putLightSample(samplePos, value * miWeight);
+				}
 			}
 		}
 		if (wr->m_decompositionType == Film::ESteadyState) {
