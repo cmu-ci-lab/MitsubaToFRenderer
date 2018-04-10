@@ -10866,6 +10866,90 @@ int MomentsEXR(float **out_rgba, float **out2_rgba, int width, int height, int n
   return 0;
 }
 
+int VarEXR(float *out_rgba, float **out2_rgba, int width, int height, int numberOfFiles, const char *filename,
+            const char **err) {
+  if (out_rgba == NULL) {
+      (*err) = "Invalid averaging array.\n";
+    return TINYEXR_ERROR_INVALID_ARGUMENT;
+  }
+
+  EXRVersion exr_version;
+  EXRImage exr_image;
+  EXRHeader exr_header;
+  InitEXRHeader(&exr_header);
+  InitEXRImage(&exr_image);
+
+  {
+    int ret = ParseEXRVersionFromFile(&exr_version, filename);
+    if (ret != TINYEXR_SUCCESS) {
+      return ret;
+    }
+
+    if (exr_version.multipart || exr_version.non_image) {
+      if (err) {
+        (*err) = "Loading multipart or DeepImage is not supported yet.\n";
+      }
+      return TINYEXR_ERROR_INVALID_DATA;  // @fixme.
+    }
+  }
+  {
+    int ret = ParseEXRHeaderFromFile(&exr_header, &exr_version, filename, err);
+    if (ret != TINYEXR_SUCCESS) {
+      return ret;
+    }
+  }
+
+  // Read HALF channel as FLOAT.
+  for (int i = 0; i < exr_header.num_channels; i++) {
+    if (exr_header.pixel_types[i] == TINYEXR_PIXELTYPE_HALF) {
+      exr_header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT;
+    }
+  }
+
+  {
+    int ret = LoadEXRImageFromFile(&exr_image, &exr_header, filename, err);
+    if (ret != TINYEXR_SUCCESS) {
+      return ret;
+    }
+    if (width != exr_image.width || height != exr_image.height) {
+      (*err) = "Invalid averaging array.\n";
+      return TINYEXR_ERROR_INVALID_ARGUMENT;
+    }
+  }
+  {
+    if ((*out2_rgba) == NULL) {
+        (*out2_rgba) = reinterpret_cast<float *>(
+              malloc(exr_image.num_channels * sizeof(float) * static_cast<size_t>(exr_image.width) *
+                     static_cast<size_t>(exr_image.height)));
+    }
+  }
+
+  {
+    float invNumberOfFiles = 1.0/numberOfFiles;
+    if (exr_header.tiled) {
+      (*err) = "Multi channel tiled images are not coded";
+      return TINYEXR_ERROR_INVALID_DATA;  
+    }else{
+      for (size_t i = 0; i < exr_image.width * exr_image.height; i++) {
+        for (size_t j = 0; j < exr_image.num_channels; j++) {
+            float temp = reinterpret_cast<float **>(exr_image.images)[j][i];
+            if(temp > 200){
+                std::cout << "Greater than 200 \n";
+            }
+            if(!std::isfinite(temp))
+              continue;
+            float temp2 = (out_rgba)[exr_image.num_channels * i + j];
+            if(!std::isfinite(temp2))
+              continue;
+            (*out2_rgba)[exr_image.num_channels * i + j] += 
+               pow( (out_rgba)[exr_image.num_channels * i + j] - temp, 2) * invNumberOfFiles;   
+        }
+      }
+    }
+  }
+  return 0;
+}
+
 int LoadMultiEXR(float **out_rgba, float **out2_rgba, int *width, int *height, int numberOfFiles, const char *filename,
             const char **err) {
   if (out_rgba == NULL) {
@@ -10930,6 +11014,8 @@ int LoadMultiEXR(float **out_rgba, float **out2_rgba, int *width, int *height, i
     for (size_t i = 0; i < exr_image.width * exr_image.height; i++) {
       for (size_t j = 0; j < exr_image.num_channels; j++) {
           float temp = reinterpret_cast<float **>(exr_image.images)[j][i];
+          if(!std::isfinite(temp))
+            continue;
           (*out_rgba)[exr_image.num_channels * i + j] =
               invNumberOfFiles * temp;
           (*out2_rgba)[exr_image.num_channels * i + j] =
@@ -10946,6 +11032,83 @@ int LoadMultiEXR(float **out_rgba, float **out2_rgba, int *width, int *height, i
 
   return TINYEXR_SUCCESS;
 }
+
+int LoadMultiEXR(float **out_rgba, int *width, int *height, const char *filename,
+            const char **err) {
+  if (out_rgba == NULL) {
+    if (err) {
+      (*err) = "Invalid argument.\n";
+    }
+    return TINYEXR_ERROR_INVALID_ARGUMENT;
+  }
+
+  EXRVersion exr_version;
+  EXRImage exr_image;
+  EXRHeader exr_header;
+  InitEXRHeader(&exr_header);
+  InitEXRImage(&exr_image);
+
+  {
+    int ret = ParseEXRVersionFromFile(&exr_version, filename);
+    if (ret != TINYEXR_SUCCESS) {
+      return ret;
+    }
+
+    if (exr_version.multipart || exr_version.non_image) {
+      if (err) {
+        (*err) = "Loading multipart or DeepImage is not supported yet.\n";
+      }
+      return TINYEXR_ERROR_INVALID_DATA;  // @fixme.
+    }
+  }
+
+  {
+    int ret = ParseEXRHeaderFromFile(&exr_header, &exr_version, filename, err);
+    if (ret != TINYEXR_SUCCESS) {
+      return ret;
+    }
+  }
+
+  // Read HALF channel as FLOAT.
+  for (int i = 0; i < exr_header.num_channels; i++) {
+    if (exr_header.pixel_types[i] == TINYEXR_PIXELTYPE_HALF) {
+      exr_header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT;
+    }
+  }
+
+  {
+    int ret = LoadEXRImageFromFile(&exr_image, &exr_header, filename, err);
+    if (ret != TINYEXR_SUCCESS) {
+      return ret;
+    }
+  }
+
+  (*out_rgba) = reinterpret_cast<float *>(
+      malloc(exr_image.num_channels * sizeof(float) * static_cast<size_t>(exr_image.width) *
+             static_cast<size_t>(exr_image.height)));
+  if (exr_header.tiled) {
+    (*err) = "Multi channel tiled images are not coded";
+    return TINYEXR_ERROR_INVALID_DATA;  
+  }else{
+    for (size_t i = 0; i < exr_image.width * exr_image.height; i++) {
+      for (size_t j = 0; j < exr_image.num_channels; j++) {
+          float temp = reinterpret_cast<float **>(exr_image.images)[j][i];
+          if(!std::isfinite(temp))
+              continue;
+          (*out_rgba)[exr_image.num_channels * i + j] = temp;
+      }
+    }
+  }
+
+  (*width) = exr_image.width;
+  (*height) = exr_image.height;
+
+  FreeEXRHeader(&exr_header);
+  FreeEXRImage(&exr_image);
+
+  return TINYEXR_SUCCESS;
+}
+
 
 int LoadEXR(float **out_rgba, int *width, int *height, const char *filename,
             const char **err) {

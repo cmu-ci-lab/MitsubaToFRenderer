@@ -225,23 +225,28 @@ Float PathLengthSampler::areaUnderRestrictedCorrelationGraph(const Float& plMin,
 }
 
 Float PathLengthSampler::sampleRestrictedPathLengthTarget(const Float& plMin, const Float& plMax, ref<Sampler> sampler) const{
+
 	int rejects = 0;
-	if(m_modulationType == ENone){
-		return plMin+(plMax-plMin)*sampler->nextFloat();
-	}
-	else{
-		while(true){
-			Float t = plMin+(plMax-plMin)*sampler->nextFloat();
-			Float r = sampler->nextFloat();
-			if(r < fabs(correlationFunction(t))){
-				return t;
-			}
-			rejects++;
-			if(rejects > 1e6){
-				SLog(EError, "Rejects exceed 1e6.");
-			}
+
+	switch(m_modulationType){
+		case ENone:{
+			return plMin+(plMax-plMin)*sampler->nextFloat();
+			break;
 		}
+		default:
+			while(true){
+				Float t = plMin+(plMax-plMin)*sampler->nextFloat();
+				Float r = sampler->nextFloat();
+				if(r < fabs(correlationFunction(t))){
+					return t;
+				}
+				rejects++;
+				if(rejects > 1e6){
+					SLog(EError, "Rejects exceed 1e6.");
+				}
+			}
 	}
+	return 0;
 }
 
 MTS_IMPLEMENT_CLASS(PathLengthSampler, true, ConfigurableObject)
