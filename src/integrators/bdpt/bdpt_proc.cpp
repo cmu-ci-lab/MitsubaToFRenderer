@@ -140,6 +140,13 @@ public:
 	/// Evaluate the contributions of the given eye and light paths
 	void evaluate(BDPTWorkResult *wr,
 			Path &emitterSubpath, Path &sensorSubpath) {
+		/* Check if the emitter is laser?*/
+		bool isEmitterLaser = false;
+		const AbstractEmitter *AE = emitterSubpath.vertex(1)->getAbstractEmitter();
+		if (!AE->needsPositionSample() && !AE->needsDirectionSample() ){
+			isEmitterLaser = true;
+		}
+
 		Point2 initialSamplePos = sensorSubpath.vertex(1)->getSamplePosition();
 		const Scene *scene = m_scene;
 		PathVertex tempEndpoint, tempSample;
@@ -237,6 +244,9 @@ public:
 			for (int t = maxT; t >= minT; --t) {
 				if(s == 0 || t == 0 || (wr->m_decompositionType == Film::ETransient && s==1 && t==1)){
 					continue; // hack to remove paths that are not taken care in transientEllipse
+				}
+				if(isEmitterLaser && wr->m_decompositionType == Film::ETransient && s==2 && t==1){ //First bounce of transient is not rendered if we have laser emitter
+					continue;
 				}
 				if(wr->m_forceBounces && (s != wr->m_sBounces || t != wr->m_tBounces)){
 					continue;
@@ -455,7 +465,7 @@ public:
 
 								vs->measure = vt->measure = EArea;
 
-								Float miWeight = 1.0/(s+t-1);
+								Float miWeight = 1.0/(s+t-1-2*isEmitterLaser);
 //								Path::miWeight(scene, emitterSubpath, &connectionEdge,
 //									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 
@@ -524,7 +534,7 @@ public:
 					/* Compute the multiple importance sampling weight */
 //					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
 //						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
-					Float miWeight = 1.0/(s+t-1);
+					Float miWeight = 1.0/(s+t-1-2*isEmitterLaser);
 
 					if (sampleDirect) {
 						/* Now undo the previous change */
