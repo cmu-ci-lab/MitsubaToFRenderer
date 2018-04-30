@@ -76,7 +76,7 @@ Film::Film(const Properties &props)
 	m_subSamples = props.getSize("subSamples", 1);
 
 	m_pathLengthSampler = new PathLengthSampler(props);
-	if( (m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && m_pathLengthSampler->getModulationType()!= PathLengthSampler::ENone){
+	if( m_decompositionType == ESteadyState || ((m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && m_pathLengthSampler->getModulationType()!= PathLengthSampler::ENone)){
 		m_frames = 1;
 	}
 
