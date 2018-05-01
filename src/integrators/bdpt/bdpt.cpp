@@ -201,7 +201,7 @@ public:
 			int sceneResID, int sensorResID, int samplerResID) {
 		ref<Scheduler> scheduler = Scheduler::getInstance();
 		ref<Sensor> sensor = scene->getSensor();
-		const Film *film = sensor->getFilm();
+		Film *film = sensor->getFilm();
 		size_t sampleCount = scene->getSampler()->getSampleCount();
 		size_t nCores = scheduler->getCoreCount();
 
@@ -210,6 +210,13 @@ public:
 		m_config.m_decompositionMaxBound 	= film->getDecompositionMaxBound();
 		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();
 		m_config.m_frames = film->getFrames();
+
+		m_config.m_forceBounces = film->getForceBounces();
+		m_config.m_sBounces  	= film->getSBounces();
+		m_config.m_tBounces 	= film->getTBounces();
+
+		m_config.pathLengthSampler = film->getPathLengthSampler();
+
 
 		if (m_config.maxDepth!=-1 && m_config.m_decompositionType == Film::EBounce){
 			if (m_config.maxDepth > m_config.m_decompositionMaxBound)

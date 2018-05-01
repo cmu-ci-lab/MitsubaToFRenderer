@@ -22,6 +22,7 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/core/fresolver.h>
 #include "bdpt.h"
+#include <mitsuba/render/pathlengthsampler.h>
 
 MTS_NAMESPACE_BEGIN
 
@@ -80,6 +81,34 @@ public:
 		m_lightImage->put(sample, spec, 1.0f);
 	}
 
+	inline Float areaUnderCorrelationGraph(int n) const{
+		return pathLengthSampler->areaUnderCorrelationGraph(n);
+	}
+
+	inline Float samplePathLengthTarget(ref<Sampler> sampler) const{
+		return pathLengthSampler->samplePathLengthTarget(sampler);
+	}
+
+	inline Float sampleRestrictedPathLengthTarget(Float plMin, Float plMax, ref<Sampler> sampler){
+		return pathLengthSampler->sampleRestrictedPathLengthTarget(plMin, plMax, sampler);
+	}
+
+	inline Float mSeq(const Float& t, const Float& phase) const{
+		return pathLengthSampler->mSeq(t, phase);
+	}
+
+	inline Float correlationFunction(const Float& t) const {
+		return pathLengthSampler->correlationFunction(t);
+	}
+
+	inline Float getSamplingWeight(const Float& plMin, const Float& plMax, const Float& t) const{
+		return pathLengthSampler->getSamplingWeight(plMin, plMax, t);
+	}
+
+	inline PathLengthSampler::EModulationType getModulationType() const{
+		return pathLengthSampler->getModulationType();
+	}
+
 	inline const ImageBlock *getImageBlock() const {
 		return m_block.get();
 	}
@@ -123,6 +152,13 @@ public:
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
 	size_t m_frames;
+	size_t m_subSamples; // For elliptic sampling. Defaults to 1.
+
+	ref<PathLengthSampler> pathLengthSampler;
+
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
 };
 
 MTS_NAMESPACE_END

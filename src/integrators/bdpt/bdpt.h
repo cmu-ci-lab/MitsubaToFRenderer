@@ -21,7 +21,7 @@
 
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/render/film.h>
-
+#include <mitsuba/render/pathlengthsampler.h>
 /**
  * When the following is set to "1", the Bidirectional Path Tracer
  * will generate a series of debugging images that split up the final
@@ -54,6 +54,12 @@ struct BDPTConfiguration {
 	Float m_decompositionBinWidth;
 	size_t m_frames;
 
+	ref<PathLengthSampler> pathLengthSampler;
+
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
+
 	inline BDPTConfiguration() { }
 
 	inline BDPTConfiguration(Stream *stream) {
@@ -75,6 +81,11 @@ struct BDPTConfiguration {
 			if (maxDepth < m_decompositionMinBound)
 				SLog(EError, "maxDepth of BDPT is less than the minimum bound; Rendering is futile");
 		}
+		m_frames = stream->readSize();
+
+		m_forceBounces = stream->readBool();
+		m_sBounces = stream->readUInt();
+		m_tBounces = stream->readUInt();
 	}
 
 	inline void serialize(Stream *stream) const {
@@ -90,6 +101,11 @@ struct BDPTConfiguration {
 		stream->writeFloat(m_decompositionMinBound);
 		stream->writeFloat(m_decompositionMaxBound);
 		stream->writeFloat(m_decompositionBinWidth);
+		stream->writeSize(m_frames);
+
+		stream->writeBool(m_forceBounces);
+		stream->writeUInt(m_sBounces);
+		stream->writeUInt(m_tBounces);
 	}
 
 	void dump() const {
@@ -114,10 +130,15 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   Russian roulette depth      : %i", rrDepth);
 		SLog(EDebug, "   Block size                  : %i", blockSize);
 		SLog(EDebug, "   Number of samples           : " SIZE_T_FMT, sampleCount);
-		SLog(EDebug, "   decomposition type 		 : %s", decompositionType);
+		SLog(EDebug, "   decomposition type 		 : %s", decompositionType.c_str());
 		SLog(EDebug, "   decomposition min bound	 : %f", m_decompositionMinBound);
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
+		SLog(EDebug, "   number of frames	   	     : %i", m_frames);
+		SLog(EDebug, "   Force Bounces		 	 : %i", m_forceBounces);
+		SLog(EDebug, "   S Bounce number		 : %i", m_sBounces);
+		SLog(EDebug, "   T Bounce number		 : %i", m_tBounces);
+
 		#if BDPT_DEBUG == 1
 			SLog(EDebug, "   Show weighted contributions : %s", showWeighted ? "yes" : "no");
 		#endif

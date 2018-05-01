@@ -110,6 +110,16 @@ public:
 	/// Manually set the current sample index
 	virtual void setSampleIndex(size_t sampleIndex);
 
+	/* Return the next random Float value */
+	virtual Float nextFloat();
+
+	/* */
+	virtual size_t nextSize(size_t n);
+
+	/* FixMe: Definition so that we can call the shuffle function of the Random.cpp in ldsampler.cpp */
+	template <typename Iterator> void shuffle(Iterator it1, Iterator it2);
+
+
 	/// Retrieve the next component value from the current sample
 	virtual Float next1D() = 0;
 

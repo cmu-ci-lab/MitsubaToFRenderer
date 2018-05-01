@@ -396,30 +396,34 @@ public:
 				#endif
 
 
-				// Update sampleTransientValue
-				size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-				if (!value.isZero() && (wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
-                    if(SPECTRUM_SAMPLES == 3)
-                        value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
-                    else
-                        SLog(EError, "cannot run transient renderer for spectrum values more than 3");
+	            if(wr->m_decompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)
+	                miWeight *= wr->correlationFunction(pathLength);
+	            else{
+					// Update sampleTransientValue
+					size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+					if (!value.isZero() && (wr->m_decompositionType != Film::ESteadyState) && binIndex >= 0 && binIndex < wr->m_frames){
+	                    if(SPECTRUM_SAMPLES == 3)
+	                        value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
+	                    else
+	                        SLog(EError, "cannot run transient renderer for spectrum values more than 3");
+	
+	                    if(t >= 2){
+						    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+						    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+						    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+	    				}else if(t == 1){
+	    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+	    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+	    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+	    					wr->putLightSample(samplePos, l_sampleDecompositionValue);
+	    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0; 
+	    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+						    l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+					    }
+	                }
+	            }
 
-                    if(t >= 2){
-					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-					    sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-    				}else if(t == 1){
-    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-    					wr->putLightSample(samplePos, l_sampleDecompositionValue);
-    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0; 
-    					l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
-					    l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
-				    }
-                }
-
-				if(wr->m_decompositionType == Film::ESteadyState){
+				if(wr->m_decompositionType == Film::ESteadyState || (wr->m_decompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)){
 					if (t >= 2)
 						sampleValue += value * miWeight;
 					else
@@ -427,7 +431,7 @@ public:
 				}
 			}
 		}
-		if (wr->m_decompositionType == Film::ESteadyState) {
+		if (wr->m_decompositionType == Film::ESteadyState ||  (wr->m_decompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)) {
 			wr->putSample(initialSamplePos, sampleValue);
 		} else {
 			sampleDecompositionValue[wr->getChannelCount()-2]=1.0f;

@@ -22,6 +22,7 @@
 
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/pathlengthsampler.h>
 
 MTS_NAMESPACE_BEGIN
 
@@ -85,6 +86,13 @@ public:
 	inline Float getDecompositionMaxBound() const {return m_decompositionMaxBound; }
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
 	inline size_t getFrames() const {return m_frames; }
+	inline size_t getSubSamples() const {return m_subSamples; }
+
+	ref<PathLengthSampler> getPathLengthSampler() {return m_pathLengthSampler;}
+
+	inline size_t getForceBounces() const {return m_forceBounces; }
+	inline size_t getSBounces() const {return m_sBounces; }
+	inline size_t getTBounces() const {return m_tBounces; }
 
 	/**
 	 * \brief Develop the contents of a subregion of the film and store
@@ -162,6 +170,14 @@ protected:
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
 	size_t m_frames;
+	size_t m_subSamples;
+
+	// For special case of ToF Renderer
+	ref<PathLengthSampler> m_pathLengthSampler;
+
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
 };
 
 MTS_NAMESPACE_END
