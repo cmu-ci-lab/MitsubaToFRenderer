@@ -49,12 +49,14 @@ struct BBTree{
 	size_t m_maxNodes;
 
 	size_t *m_triangleRepetition;
+	AABB *m_aabbTriangle;
 
 	BBTree(const size_t& max_depth, const size_t& primCount){
 		m_currentNode = 0;
 		m_maxNodes = pow(2, max_depth) + 1;
 		m_aabb = new AABB[m_maxNodes];
 		m_triangleRepetition = new size_t[primCount];
+		m_aabbTriangle		 = new AABB[primCount];
 		memset(m_triangleRepetition, 0, primCount*sizeof(size_t));
 	}
 
@@ -104,6 +106,11 @@ struct BBTree{
 	/// Expand the bounding box of the m_currentNode to contain another point
 	inline void expandBy(const Point &p) {
 		m_aabb[m_currentNode].expandBy(p);
+	}
+
+	/// Expand the bounding box by another Boundingbox
+	inline void expandBy(const AABB &aabb) {
+		m_aabb[m_currentNode].expandBy(aabb);
 	}
 
 	/// Expand the bounding box to contain bounding boxes of the childen
@@ -182,7 +189,9 @@ public:
 
 	bool ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
 
-	bool ellipsoidParseKDTreeTillLevelL(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
+	bool ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
+
+	bool ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
 
 	void fillInlinePositionsAndLocations(Float P[][3], const Float &splitValue, const int &axis, const bool &direction) const;
 	//! @}
@@ -510,6 +519,8 @@ protected:
 	}
 
 	void printBBTree(const KDNode* node, const size_t& index) const;
+
+	void printAllTriangles() const;
 
 	void buildBBTree(const KDNode* node);
 

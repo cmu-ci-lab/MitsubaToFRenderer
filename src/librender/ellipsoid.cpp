@@ -537,7 +537,7 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 }
 
 template <typename PointType, typename LengthType>
-bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N) const{
+bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const AABB &triangleAABB) const{
 
 	Point f1_Float(m_f1.x, m_f1.y, m_f1.z);
 	Point f2_Float(m_f2.x, m_f2.y, m_f2.z);
@@ -573,6 +573,10 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	if(d > 1){ // ellipsoid does not intersect the plane
 		return true;
 	}
+
+	// If the BBox of the triangle is outside the ellipsoid BBox, reject the triangle
+	if(!isBoxCuttingEllipsoid(triangleAABB))
+		return true;
 
 	return false;
 }
@@ -764,7 +768,7 @@ template bool TEllipsoid<Point3d, double>::isBoxOnNegativeHalfSpace(const PointT
 
 template bool TEllipsoid<Point3d, double>::isBoxCuttingEllipsoid(const AABB& aabb) const;
 
-template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N) const;
+template bool TEllipsoid<Point3d, double>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const AABB& triangleAABB) const;
 
 template void TEllipsoid<Point3d, double>::Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
 

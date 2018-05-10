@@ -872,7 +872,7 @@ public:
 	}
 
 	/* Early rejection of the triangle if the triangle is not in the positive hyperspace of either of the focal points or if the focal points are not in the positive hyperspace of the triangle*/
-	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N) const;
+	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const AABB &triangleAABB) const;
 
 	/*Convert intersections found by ellipsoid intersection algorithm into barycentric co-ordinates for the rest of mitsuba code to work*/
 	void Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
@@ -897,11 +897,11 @@ public:
 
 	bool isBoxOnNegativeHalfSpace(const PointType &PT, const Normal &N, const AABB& aabb) const;
 
-	inline Cache::STATE cacheCheck(const size_t &index){
+	inline Cache::STATE cacheGetNodeState(const size_t &index){
 		return m_ellipsoidCache.getState(index);
 	}
 
-	inline void updateCache(const size_t &index, const Cache::STATE &state){
+	inline void cacheSetNodeState(const size_t &index, const Cache::STATE &state){
 		m_ellipsoidCache.setState(index, state);
 	}
 
