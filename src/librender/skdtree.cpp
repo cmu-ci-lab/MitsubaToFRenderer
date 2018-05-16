@@ -262,21 +262,9 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 	int currentIndex = index;
 	/* In-order traversal to find all valid triangles */
 	while (!done){
-		/* check if current is leaf, or BBTest Fails for the current node*/
 		bool nodeState = true;
-		Cache::STATE state = e->cacheGetNodeState(currentIndex);
-
-		if(state == Cache::STATE::EFails)
+		if(!e->isBoxValid(m_BBTree->getAABB(currentIndex)))
 			nodeState = false;
-
-		if(state == Cache::STATE::ETBD){
-			if(!e->isBoxValid(m_BBTree->getAABB(currentIndex))){
-				e->cacheSetNodeState(index, Cache::STATE::EFails);
-				nodeState = false;
-			}else{
-				e->cacheSetNodeState(index, Cache::STATE::EIntersects);
-			}
-		}
 
 		if(current->isLeaf()){
 			//leaf code: Add all the triangles of the leaf to the triangle hash.
@@ -289,15 +277,14 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 					triangleSet.insert(primIdx);
 				}
 			}
-
 			nodeState = false;
 		}
-		// Check if the current intersects BBox
+
 	    if(nodeState){
 			KDNodeStack.push(current);
 			indices.push(currentIndex);
 			current = current->getLeft();
-			currentIndex = currentIndex*2 + 1;// verify
+			currentIndex = currentIndex*2 + 1;
 	    }
 	    else{
 			if (!KDNodeStack.empty()){
@@ -306,7 +293,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 				currentIndex = indices.top();
 				indices.pop();
 				current = current->getRight();
-				currentIndex = currentIndex*2 + 2; // verify
+				currentIndex = currentIndex*2 + 2;
 			}else{
 				done = true;
 			}
@@ -318,38 +305,27 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 
 	for (std::set<unsigned int>::iterator it=triangleSet.begin(); it!=triangleSet.end(); ++it){
 		unsigned int x = *it;
-		const Cache::STATE state = e->cacheGetTriState(x);
+
 		const TriAccel &ta = m_triAccel[x];
 
-		if(state == Cache::EFails || ta.k == KNoTriangleFlag){
-			//continue
-		}else if(state == Cache::EIntersects){
-			intersectingTriangles[countIntersectingTriangles] = x;
-			countIntersectingTriangles ++;
-		}else{
-			//gather the required data structures
-			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
-			const Triangle *triangles = mesh->getTriangles();
-			const Point *positions = mesh->getVertexPositions();
-			const Normal *normals = mesh->getVertexNormals();
+		//gather the required data structures
+		const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+		const Triangle *triangles = mesh->getTriangles();
+		const Point *positions = mesh->getVertexPositions();
+		const Normal *normals = mesh->getVertexNormals();
 
-			const Triangle &tri = triangles[ta.primIndex];
-			const Point &A = positions[tri.idx[0]];
-			const Point &B = positions[tri.idx[1]];
-			const Point &C = positions[tri.idx[2]];
-			Normal N = cross(B-A, C-A);
-			if(normals != NULL){
-				if(dot(normals[tri.idx[0]], N) < 0)
-					N = -N;
-			}
-			if(e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[x])){
-				e->cacheSetTriState(x,Cache::EFails);
-			}else{
-				// The statement below in not exactly correct, but then even if we sample this triangle in the future, the full-ellipsoid intersection will change this state to false. Till then, we can sample this triangle and additionally, we don't have to unnecessarily do the early test for this triangle again and again.
-				e->cacheSetTriState(x,Cache::EIntersects);
-				intersectingTriangles[countIntersectingTriangles] = x;
-				countIntersectingTriangles++;
-			}
+		const Triangle &tri = triangles[ta.primIndex];
+		const Point &A = positions[tri.idx[0]];
+		const Point &B = positions[tri.idx[1]];
+		const Point &C = positions[tri.idx[2]];
+		Normal N = cross(B-A, C-A);
+		if(normals != NULL){
+			if(dot(normals[tri.idx[0]], N) < 0)
+				N = -N;
+		}
+		if(!e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[x])){
+			intersectingTriangles[countIntersectingTriangles] = x;
+			countIntersectingTriangles++;
 		}
 	}
 	if(countIntersectingTriangles == 0)
@@ -372,7 +348,6 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 	Float tempV;
 
 	if(e->ellipsoidIntersectTriangle(A, B, C, value, tempU, tempV, sampler)){
-		e->cacheSetTriState(x,Cache::EIntersects);
 		cache->shapeIndex = ta.shapeIndex;
 		cache->primIndex = ta.primIndex;
 		cache->u = tempU;
@@ -380,7 +355,9 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 		value = value*countIntersectingTriangles;
 		return true;
 	}
-	e->cacheSetTriState(x,Cache::EFails);
+	e->cacheSetTriState(x,Cache::EFails); // TODO: (i)  After intersectingTriangles is made as a cache, remove the failed triangles from intersectingTriangles.
+										  // 	   (ii) Update the probabilities of the intersecting triangles if importance sampling is enabled.
+										  // 	   (iii)Check how what parameters and how easy it is, to store the intersecting triangles' parameters so that intersection is not required to be calculated again.
 	return false;
 }
 
