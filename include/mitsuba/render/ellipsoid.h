@@ -536,13 +536,25 @@ private:
 	boost::dynamic_bitset<> m_isNodeStateValid;
 	boost::dynamic_bitset<> m_nodeState;
 
+	size_t m_primCount;
 public:
+	bool m_firstSample;
+	size_t *m_intersectingTriangleSet;
+	size_t m_countIntersectionTriangles;
+	Float *m_probabilities;
+	Float *m_cumProbabilities;
 
 	inline Cache(const size_t& maxDepth, const size_t& primCount):
 		m_isTriangleStateValid(primCount),
 		m_triangleState(primCount),
 		m_isNodeStateValid(pow(2, maxDepth) - 1),
-		m_nodeState(pow(2, maxDepth) - 1){
+		m_nodeState(pow(2, maxDepth) - 1),
+		m_primCount(primCount),
+		m_firstSample(true),
+		m_intersectingTriangleSet(new size_t[primCount]),
+		m_countIntersectionTriangles(0),
+		m_probabilities(new Float[primCount]),
+		m_cumProbabilities(new Float [primCount]){
 	}
 
 	inline void reset(){
@@ -550,6 +562,12 @@ public:
 		m_triangleState.reset();
 		m_isNodeStateValid.reset();
 		m_nodeState.reset();
+
+		std::fill( m_intersectingTriangleSet, m_intersectingTriangleSet + m_primCount, 0 );
+		m_firstSample = true;
+		m_countIntersectionTriangles = 0;
+		std::fill( m_probabilities, m_probabilities + m_primCount, 0 );
+		std::fill( m_cumProbabilities, m_cumProbabilities + m_primCount, 0 );
 	}
 
 	inline STATE getState(const size_t &index) const{
@@ -911,6 +929,34 @@ public:
 
 	inline void cacheSetTriState(const size_t &index, const Cache::STATE &state){
 		m_ellipsoidCache.setTriState(index, state);
+	}
+
+	inline size_t* getintersectingTriangleSet(){
+		return m_ellipsoidCache.m_intersectingTriangleSet;
+	}
+
+	inline Float* getTrianglePDF(){
+		return m_ellipsoidCache.m_probabilities;
+	}
+
+	inline Float* getTriangleCDF(){
+		return m_ellipsoidCache.m_cumProbabilities;
+	}
+
+	inline bool isSubSample(){
+		return m_ellipsoidCache.m_firstSample;
+	}
+
+	inline void setAsSubSample(){
+		m_ellipsoidCache.m_firstSample = false;
+	}
+
+	inline size_t getIntersectionTrianglesCount(){
+		return m_ellipsoidCache.m_countIntersectionTriangles;
+	}
+
+	inline void setIntersectionTrianglesCount(size_t count){
+		m_ellipsoidCache.m_countIntersectionTriangles = count;
 	}
 
 private:
