@@ -426,7 +426,14 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 				V2 = normalize(V2);
 				N  = normalize(N);
 
+//				Float pdf1 = dot(e->getFocalNormal1(), V1);
+//				Float pdf2 = dot(V1, N);
+//				Float pdf3 = dot(N, V2);
+//				Float pdf4 = dot(V2, e->getFocalNormal2());
+
 				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+				if(pdf < 1e-12) // Need to confirm this with Yannis. Can result in bias in the final results
+					continue;
 				e->appendPrimPDF(pdf); //normalized later
 				countIntersectingTriangles++;
 			}
