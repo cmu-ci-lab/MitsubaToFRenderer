@@ -18,6 +18,7 @@
 #include <boost/math/special_functions/ellint_2.hpp>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/core/matrix.h>
+#include <mitsuba/core/pmf.h>
 
 #include <boost/dynamic_bitset.hpp>
 MTS_NAMESPACE_BEGIN
@@ -538,11 +539,10 @@ private:
 
 	size_t m_primCount;
 public:
-	bool m_firstSample;
+	bool m_isSubSample;
 	size_t *m_intersectingTriangleSet;
 	size_t m_countIntersectionTriangles;
-	Float *m_probabilities;
-	Float *m_cumProbabilities;
+	DiscreteDistribution m_primProbabilities;
 
 	inline Cache(const size_t& maxDepth, const size_t& primCount):
 		m_isTriangleStateValid(primCount),
@@ -550,11 +550,10 @@ public:
 		m_isNodeStateValid(pow(2, maxDepth) - 1),
 		m_nodeState(pow(2, maxDepth) - 1),
 		m_primCount(primCount),
-		m_firstSample(true),
+		m_isSubSample(false),
 		m_intersectingTriangleSet(new size_t[primCount]),
 		m_countIntersectionTriangles(0),
-		m_probabilities(new Float[primCount]),
-		m_cumProbabilities(new Float [primCount]){
+		m_primProbabilities(primCount){
 	}
 
 	inline void reset(){
@@ -564,10 +563,13 @@ public:
 		m_nodeState.reset();
 
 		std::fill( m_intersectingTriangleSet, m_intersectingTriangleSet + m_primCount, 0 );
-		m_firstSample = true;
+		m_isSubSample = false;
 		m_countIntersectionTriangles = 0;
-		std::fill( m_probabilities, m_probabilities + m_primCount, 0 );
-		std::fill( m_cumProbabilities, m_cumProbabilities + m_primCount, 0 );
+		m_primProbabilities.clear();
+	}
+
+	inline void normalizeProbabilities(){
+		m_primProbabilities.normalize();
 	}
 
 	inline STATE getState(const size_t &index) const{
@@ -935,20 +937,24 @@ public:
 		return m_ellipsoidCache.m_intersectingTriangleSet;
 	}
 
-	inline Float* getTrianglePDF(){
-		return m_ellipsoidCache.m_probabilities;
+	inline void normalizeProbabilities(){
+		m_ellipsoidCache.normalizeProbabilities();
 	}
 
-	inline Float* getTriangleCDF(){
-		return m_ellipsoidCache.m_cumProbabilities;
+	inline void appendPrimPDF(const Float& value){
+		m_ellipsoidCache.m_primProbabilities.append(value);
+	}
+
+	inline size_t samplePrimPDF(const Float sample, Float &pdf){
+		return m_ellipsoidCache.m_primProbabilities.sample(sample, pdf);
 	}
 
 	inline bool isSubSample(){
-		return m_ellipsoidCache.m_firstSample;
+		return m_ellipsoidCache.m_isSubSample;
 	}
 
 	inline void setAsSubSample(){
-		m_ellipsoidCache.m_firstSample = false;
+		m_ellipsoidCache.m_isSubSample = true;
 	}
 
 	inline size_t getIntersectionTrianglesCount(){
@@ -957,6 +963,22 @@ public:
 
 	inline void setIntersectionTrianglesCount(size_t count){
 		m_ellipsoidCache.m_countIntersectionTriangles = count;
+	}
+
+	inline Point getFocalPoint1(){
+		return Point((Float)m_f1.x, (Float)m_f1.y, (Float)m_f1.z);
+	}
+
+	inline Point getFocalPoint2(){
+		return Point((Float)m_f2.x, (Float)m_f2.y, (Float)m_f2.z);
+	}
+
+	inline Normal getFocalNormal1(){
+		return m_f1Normal;
+	}
+
+	inline Normal getFocalNormal2(){
+		return m_f2Normal;
 	}
 
 private:

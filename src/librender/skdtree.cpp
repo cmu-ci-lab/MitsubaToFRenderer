@@ -250,10 +250,8 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid* e, Float &value, Ray &ray, Inter
 
 // Visit all the leaf nodes and grab all the possible triangle and sample one or more of them.
 bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
-	IntersectionCache *cache =
-				static_cast<IntersectionCache *>(temp);
 
-	if(e->isSubSample()){
+	if(!e->isSubSample()){
 		std::stack<const KDNode*> KDNodeStack;
 		std::stack<int> indices;
 		std::set<unsigned int> triangleSet;
@@ -303,6 +301,10 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 
 		size_t *intersectingTriangles = e->getintersectingTriangleSet();
 		size_t countIntersectingTriangles = 0;
+		Point Centroid;
+		Vector V1;
+		Vector V2;
+		Float pdf;
 
 		for (std::set<unsigned int>::iterator it=triangleSet.begin(); it!=triangleSet.end(); ++it){
 			unsigned int x = *it;
@@ -326,18 +328,38 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 			}
 			if(!e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
+				Centroid = (A + B + C)/3;
+				V1 = Centroid - e->getFocalPoint1();
+				V2 = Centroid - e->getFocalPoint2();
+
+				pdf = (1e3/(V1.lengthSquared()))*(1e3/(V2.lengthSquared()));
+				V1 = normalize(V1);
+				V2 = normalize(V2);
+				N  = normalize(N);
+
+				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+				e->appendPrimPDF(pdf); //normalized later
 				countIntersectingTriangles++;
 			}
 		}
 		e->setAsSubSample();
 		e->setIntersectionTrianglesCount(countIntersectingTriangles);
 	}
+	return ellipsoidParseIntersectingTriangles(e, value, sampler, temp);
+}
+
+bool ShapeKDTree::ellipsoidParseIntersectingTriangles(Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
+	IntersectionCache *cache = static_cast<IntersectionCache *>(temp);
+
 	if(e->getIntersectionTrianglesCount() == 0)
 		return false;
 
 	size_t *intersectingTriangles = e->getintersectingTriangleSet();
-	//sample a triangle from the intersecting triangles
-	SizeType x = intersectingTriangles[sampler->nextSize(e->getIntersectionTrianglesCount())];
+	//sample a triangle from the intersecting triangles and get the corresponding probability
+
+	Float pdf;
+	SizeType x = intersectingTriangles[e->samplePrimPDF(sampler->nextFloat(), pdf)];
+
 	const TriAccel &ta = m_triAccel[x];
 
 	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
@@ -357,7 +379,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 		cache->primIndex = ta.primIndex;
 		cache->u = tempU;
 		cache->v = tempV;
-		value = value*e->getIntersectionTrianglesCount();
+		value = value/pdf;
 		return true;
 	}
 	e->cacheSetTriState(x,Cache::EFails); // TODO: (i)  After intersectingTriangles is made as a cache, remove the failed triangles from intersectingTriangles.
@@ -367,12 +389,14 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 }
 
 bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
-	IntersectionCache *cache =
-				static_cast<IntersectionCache *>(temp);
-	if(e->isSubSample()){
+	if(!e->isSubSample()){
 		SizeType primCount = getPrimitiveCount();
 		size_t *intersectingTriangles = e->getintersectingTriangleSet();
 		int countIntersectingTriangles = 0;
+		Point Centroid;
+		Vector V1;
+		Vector V2;
+		Float pdf;
 		for(unsigned int x = 0; x < primCount; x++){
 			const TriAccel &ta = m_triAccel[x];
 
@@ -393,47 +417,26 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 			}
 			if(!e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
+				Centroid = (A + B + C)/3;
+				V1 = Centroid - e->getFocalPoint1();
+				V2 = Centroid - e->getFocalPoint2();
+
+				pdf = (1e3/(V1.lengthSquared()))*(1e3/(V2.lengthSquared()));
+				V1 = normalize(V1);
+				V2 = normalize(V2);
+				N  = normalize(N);
+
+				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+				e->appendPrimPDF(pdf); //normalized later
 				countIntersectingTriangles++;
 			}
 		}
 		e->setAsSubSample();
 		e->setIntersectionTrianglesCount(countIntersectingTriangles);
+		if(countIntersectingTriangles != 0)
+			e->normalizeProbabilities();
 	}
-
-	if(e->getIntersectionTrianglesCount() == 0)
-		return false;
-
-	size_t *intersectingTriangles = e->getintersectingTriangleSet();
-	//sample a triangle from the intersecting triangles
-	int x = intersectingTriangles[sampler->nextSize(e->getIntersectionTrianglesCount())];
-	const TriAccel &ta = m_triAccel[x];
-
-	const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
-	const Triangle *triangles = mesh->getTriangles();
-	const Point *positions = mesh->getVertexPositions();
-
-	const Triangle &tri = triangles[ta.primIndex];
-	const Point &A = positions[tri.idx[0]];
-	const Point &B = positions[tri.idx[1]];
-	const Point &C = positions[tri.idx[2]];
-
-	Float tempU;
-	Float tempV;
-
-	if(e->ellipsoidIntersectTriangle(A, B, C, value, tempU, tempV, sampler)){
-		e->cacheSetTriState(x,Cache::EIntersects);
-		cache->shapeIndex = ta.shapeIndex;
-		cache->primIndex = ta.primIndex;
-		cache->u = tempU;
-		cache->v = tempV;
-		if(m_BBTree->m_triangleRepetition[x] <= 0){
-			SLog(EError, "Triangle repetition of %i th triangle is not properly measured", x);
-		}
-		value = value*e->getIntersectionTrianglesCount();
-		return true;
-	}
-	e->cacheSetTriState(x,Cache::EFails);
-	return false;
+	return ellipsoidParseIntersectingTriangles(e, value, sampler, temp);
 }
 
 bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
