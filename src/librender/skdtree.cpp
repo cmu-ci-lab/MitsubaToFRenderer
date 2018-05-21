@@ -326,18 +326,25 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(!e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[x])){
+			if(!e->earlyTriangleReject(A, B, C, N, ta.primIndex, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
 				Centroid = (A + B + C)/3;
 				V1 = Centroid - e->getFocalPoint1();
 				V2 = Centroid - e->getFocalPoint2();
 
 				pdf = (1e3/(V1.lengthSquared()))*(1e3/(V2.lengthSquared()));
-				V1 = normalize(V1);
-				V2 = normalize(V2);
-				N  = normalize(N);
+//				V1 = normalize(V1);
+//				V2 = normalize(V2);
+//				N  = normalize(N);
 
-				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+//				Float pdf1 = dot(e->getFocalNormal1(), V1);
+//				Float pdf2 = dot(V1, N);
+//				Float pdf3 = dot(N, V2);
+//				Float pdf4 = dot(V2, e->getFocalNormal2());
+
+//				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+				if(pdf < 1e-12) // Need to confirm this with Yannis. Can result in bias in the final results
+					continue;
 				e->appendPrimPDF(pdf); //normalized later
 				countIntersectingTriangles++;
 			}
@@ -415,23 +422,24 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(!e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[x])){
+			if(!e->earlyTriangleReject(A, B, C, N, x, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
 				Centroid = (A + B + C)/3;
 				V1 = Centroid - e->getFocalPoint1();
 				V2 = Centroid - e->getFocalPoint2();
 
 				pdf = (1e3/(V1.lengthSquared()))*(1e3/(V2.lengthSquared()));
-				V1 = normalize(V1);
-				V2 = normalize(V2);
-				N  = normalize(N);
+//				V1 = normalize(V1);
+//				V2 = normalize(V2);
+//				N  = normalize(N);
 
 //				Float pdf1 = dot(e->getFocalNormal1(), V1);
 //				Float pdf2 = dot(V1, N);
 //				Float pdf3 = dot(N, V2);
 //				Float pdf4 = dot(V2, e->getFocalNormal2());
 
-				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+//				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+//				pdf = 1;
 				if(pdf < 1e-12) // Need to confirm this with Yannis. Can result in bias in the final results
 					continue;
 				e->appendPrimPDF(pdf); //normalized later
@@ -564,7 +572,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(e->earlyTriangleReject(A, B, C, N, m_BBTree->m_aabbTriangle[primIdx])){
+			if(e->earlyTriangleReject(A, B, C, N, ta.primIndex, m_BBTree->m_aabbTriangle[primIdx])){
 				e->cacheSetTriState(primIdx,Cache::EFails);
 			}else{
 				// The statement below in not exactly correct, but then even if we sample this triangle in the future, the full-ellipsoid intersection will change this state to false. Till then, we can sample this triangle and additionally, we don't have to unnecessarily do the early test for this triangle again and again.

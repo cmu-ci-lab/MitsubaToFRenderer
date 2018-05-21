@@ -592,6 +592,8 @@ struct MTS_EXPORT_BIDIR PathVertex {
 	/// Return the type associated with this vertex
 	inline EVertexType getType() const { return (EVertexType) type; }
 
+	size_t getPrimIndex() const;
+
 	/**
 	 * \brief Return the position associated with this vertex
 	 *

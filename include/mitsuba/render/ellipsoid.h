@@ -624,6 +624,9 @@ public:
 		m_f1Normal = Normal(0.0f);
 		m_f2Normal = Normal(0.0f);
 
+		m_primIndex1 = LONG_MAX;
+		m_primIndex2 = LONG_MAX;
+
 		/* center of the ellipse */
 		m_centre = PointType(0, 0, 0);
 
@@ -727,6 +730,9 @@ public:
 		m_f1Normal = Normal(0.0f);
 		m_f2Normal = Normal(0.0f);
 
+		m_primIndex1 = LONG_MAX;
+		m_primIndex2 = LONG_MAX;
+
 		/* center of the ellipse */
 		m_centre = PointType(0, 0, 0);
 
@@ -747,13 +753,16 @@ public:
 		m_degenerateEllipsoid = true;
 	}
 
-	inline void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const Float tau){
+	inline void initialize(const Point p1, const Point p2, const Normal p1_normal, const Normal p2_normal, const size_t p1_primIdx, const size_t p2_primIdx, const Float tau){
 		m_f1 = PointType(0, 0, 0);
 		m_f2 = PointType(0, 0, 0);
 
 		/* Normals of the triangle containing f1 and f2 */
 		m_f1Normal = Normal(0.0f);
 		m_f2Normal = Normal(0.0f);
+
+		m_primIndex1 = p1_primIdx;
+		m_primIndex2 = p2_primIdx;
 
 		/* center of the ellipse */
 		m_centre = PointType(0, 0, 0);
@@ -892,7 +901,7 @@ public:
 	}
 
 	/* Early rejection of the triangle if the triangle is not in the positive hyperspace of either of the focal points or if the focal points are not in the positive hyperspace of the triangle*/
-	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const AABB &triangleAABB) const;
+	bool earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const size_t &primIdx, const AABB &triangleAABB) const;
 
 	/*Convert intersections found by ellipsoid intersection algorithm into barycentric co-ordinates for the rest of mitsuba code to work*/
 	void Barycentric(const PointType &p, const PointType &a, const PointType &b, const PointType &c, Float &u, Float &v) const;
@@ -989,6 +998,10 @@ private:
 	/* Normals of the triangle containing f1 and f2 */
 	Normal m_f1Normal;
 	Normal m_f2Normal;
+
+	/* PrimIndex of the triangles */
+	size_t m_primIndex1;
+	size_t m_primIndex2;
 
 	/* center of the ellipsoid */
 	PointType  m_centre;
