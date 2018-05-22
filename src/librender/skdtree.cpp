@@ -343,6 +343,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 //				Float pdf4 = dot(V2, e->getFocalNormal2());
 
 //				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+				pdf = 1;
 				if(pdf < 1e-12) // Need to confirm this with Yannis. Can result in bias in the final results
 					continue;
 				e->appendPrimPDF(pdf); //normalized later
@@ -439,7 +440,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 //				Float pdf4 = dot(V2, e->getFocalNormal2());
 
 //				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
-//				pdf = 1;
+				pdf = 1;
 				if(pdf < 1e-12) // Need to confirm this with Yannis. Can result in bias in the final results
 					continue;
 				e->appendPrimPDF(pdf); //normalized later

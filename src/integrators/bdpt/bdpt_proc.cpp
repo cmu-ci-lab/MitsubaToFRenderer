@@ -165,7 +165,6 @@ public:
 		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths */
 
 		Float pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
-//		Float pathLengthTarget = wr->m_decompositionMinBound+(wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*m_sampler->nextFloat();
 
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;
@@ -545,14 +544,8 @@ public:
 					}
 
 					/* Determine the pixel sample position when necessary */
-					if(currentDecompositionType != Film::ETransientEllipse)
-					{
-						if (vt->isSensorSample() && !vt->getSamplePosition(vs, samplePos))
-							continue;
-					}else{
-						if (vt->isSensorSample() && !vt->getSamplePosition(connectionVertex, samplePos))
-							continue;
-					}
+					if (vt->isSensorSample() && !vt->getSamplePosition(vs, samplePos))
+						continue;
 
 					#if BDPT_DEBUG == 1
 						/* When the debug mode is on, collect samples
@@ -565,42 +558,32 @@ public:
 					#endif
 
 
+					if(currentDecompositionType != Film::ESteadyState){
+						if(currentDecompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)
+								miWeight *= wr->correlationFunction(pathLength);
+						else{
+							size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
+							if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
+								if(SPECTRUM_SAMPLES == 3)
+									value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
+								else
+									SLog(EError, "cannot run transient renderer for spectrum values more than 3");
 
-					if(currentDecompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)
-							miWeight *= wr->correlationFunction(pathLength);
-					else{
-						//VerifyME: (Adithya). Probably this and the next conditional might break for CWToF Codes
-						// Update sampleTransientValue
-						size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-						if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
-
-							if(SPECTRUM_SAMPLES == 3)
-								value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
-							else
-								SLog(EError, "cannot run transient renderer for spectrum values more than 3");
-
-
-							if(currentDecompositionType == Film::ETransientEllipse)
-								miWeight *= ((wr->m_decompositionMaxBound-wr->m_decompositionMinBound)*EllipticPathWeight);
-							if(std::isinf(miWeight))
-								SLog(EError, "miWeight became infinite; EllipticPathWeight: %f", EllipticPathWeight);
-							if(std::isinf(temp[0]))
-								SLog(EError, "Sample became inf", EllipticPathWeight);
-
-							if (t>=2){
-								sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-								sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-								sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-							}else if(t==1){
-								// FIXME: This is very inefficient. l_sampleDecompositionValue is very sparse. In fact, we only write to bin with binIndex
-								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
-								wr->putLightSample(samplePos, l_sampleDecompositionValue);
-								//reset the l_sampleDecompositionValue
-								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
-								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
-								l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+								if (t>=2){
+									sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+									sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+									sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+								}else if(t==1){
+									// FIXME: This is very inefficient. l_sampleDecompositionValue is very sparse. In fact, we only write to bin with binIndex
+									l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+									l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+									l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+									wr->putLightSample(samplePos, l_sampleDecompositionValue);
+									//reset the l_sampleDecompositionValue
+									l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
+									l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
+									l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] = 0;
+								}
 							}
 						}
 					}
