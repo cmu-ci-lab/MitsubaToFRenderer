@@ -161,14 +161,18 @@ public:
 		PathVertex *connectionVertex = m_pool.allocVertex();
 		Float EllipticPathWeight; // only for the transientEllipse case
 
-		bool combine = false; // combine Ellipsoidal and BDPT?
-		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths */
+		// To combine BDPT and elliptic BDPT
+		bool combine = false;
+		Float corrWeight = 1.0f; // will hold the f(\|x\|) for the BDPT length also will be equal to BDPT_pdf if BDPT is selected and Elliptic_pdf if Elliptic-BDPT is selected
 
+		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */
 		Float pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
 
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;
 		Float *sensorPathlength = NULL;
+
+
 
 		if (wr->m_decompositionType != Film::ESteadyState) {
 			emitterPathlength = (Float *) alloca(emitterSubpath.vertexCount() * sizeof(Float));
@@ -397,7 +401,17 @@ public:
 						}
 
 						if( combine && (currentDecompositionType == Film::ETransientEllipse) && (tempPathLength >= wr->m_decompositionMinBound) && (tempPathLength <= wr->m_decompositionMaxBound)){
-							currentDecompositionType = Film::ETransient;
+							// Decide whether to do BDPT or elliptic.
+							if(wr->getModulationType() != PathLengthSampler::ENone){
+								corrWeight = wr->correlationFunction(tempPathLength);
+								if(m_sampler->nextFloat() < corrWeight)
+									currentDecompositionType = Film::ETransient;
+								else
+									corrWeight = 1 - corrWeight;
+								corrWeight = 1/corrWeight; // To increase speed.
+					 		}else{
+								currentDecompositionType = Film::ETransient;
+					 		}
 						}
 
 						if(currentDecompositionType == Film::ETransientEllipse){
@@ -440,7 +454,17 @@ public:
 					}
 
 					if( combine && (currentDecompositionType == Film::ETransientEllipse) && (tempPathLength >= wr->m_decompositionMinBound) && (tempPathLength <= wr->m_decompositionMaxBound)){
-						currentDecompositionType = Film::ETransient;
+						// Decide whether to do BDPT or elliptic.
+						if(wr->getModulationType() != PathLengthSampler::ENone){
+							corrWeight = wr->correlationFunction(tempPathLength);
+							if(m_sampler->nextFloat() < corrWeight)
+								currentDecompositionType = Film::ETransient;
+							else
+								corrWeight = 1 - corrWeight;
+							corrWeight = 1/corrWeight; // To increase speed.
+				 		}else{
+							currentDecompositionType = Film::ETransient;
+				 		}
 					}
 
 					if(currentDecompositionType != Film::ETransientEllipse)
@@ -475,7 +499,7 @@ public:
 								 vs->EllipsoidalSampleBetween(scene, m_sampler, vsPred, vs, vsEdge,
 																			   vtPred, vt, vtEdge,
 																			   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining, tempPathLength,
-																			   EllipticPathWeight, miWeight, value, sampleValue,
+																			   EllipticPathWeight, miWeight, corrWeight, value, sampleValue,
 																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos, m_ellipsoid,
 																			   EImportance, wr);
 							}
@@ -560,7 +584,7 @@ public:
 
 					if(currentDecompositionType != Film::ESteadyState){
 						if(currentDecompositionType == Film::ETransient && wr->getModulationType() != PathLengthSampler::ENone)
-								miWeight *= wr->correlationFunction(pathLength);
+								miWeight *= wr->correlationFunction(pathLength)*corrWeight;
 						else{
 							size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
 							if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
