@@ -162,7 +162,7 @@ public:
 		Float EllipticPathWeight; // only for the transientEllipse case
 
 		// To combine BDPT and elliptic BDPT
-		bool combine = false;
+		bool combine = wr->m_combineBDPTAndElliptic;
 		Float corrWeight = 1.0f; // will hold the f(\|x\|) for the BDPT length also will be equal to BDPT_pdf if BDPT is selected and Elliptic_pdf if Elliptic-BDPT is selected
 
 		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */

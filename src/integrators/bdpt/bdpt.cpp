@@ -206,6 +206,7 @@ public:
 		size_t nCores = scheduler->getCoreCount();
 
 		m_config.m_decompositionType 	    = film->getDecompositionType();
+		m_config.m_combineBDPTAndElliptic   = film->combineBDPTAndElliptic();
 		m_config.m_decompositionMinBound 	= film->getDecompositionMinBound();
 		m_config.m_decompositionMaxBound 	= film->getDecompositionMaxBound();
 		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();

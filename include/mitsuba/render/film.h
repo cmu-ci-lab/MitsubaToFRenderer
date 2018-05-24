@@ -86,6 +86,7 @@ public:
 	virtual void develop(const Scene *scene, Float renderTime) = 0;
 
 	inline EDecompositionType getDecompositionType() const {return m_decompositionType; }
+	inline bool combineBDPTAndElliptic() const {return m_combineBDPTAndElliptic; }
 	inline Float getDecompositionMinBound() const {return m_decompositionMinBound; }
 	inline Float getDecompositionMaxBound() const {return m_decompositionMaxBound; }
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
@@ -170,6 +171,7 @@ protected:
 protected:
 // For BDPT decomposition renderer:
 	EDecompositionType m_decompositionType;
+	bool m_combineBDPTAndElliptic;
 	Float m_decompositionMinBound;
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;

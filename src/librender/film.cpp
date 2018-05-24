@@ -68,7 +68,10 @@ Film::Film(const Properties &props)
 		Log(EError, "The \"decomposition\" parameter must be equal to"
 			"either \"none\", \"transient\", or \"bounce\", or \"transientEllipse\"!");
 	}
-
+	m_combineBDPTAndElliptic= props.getBoolean("combinesamplings", false);
+	if(m_combineBDPTAndElliptic && m_decompositionType != ETransientEllipse){
+		SLog(EError, "Combining samplings (BDPT and Elliptic) is supported only if decomposition in TransientEllipse");
+	}
 	m_decompositionMinBound = props.getFloat("minBound", 0.0f);
 	m_decompositionMaxBound = props.getFloat("maxBound", 0.0f);
 	m_decompositionBinWidth = props.getFloat("binWidth", 1.0f);
@@ -93,6 +96,7 @@ Film::Film(Stream *stream, InstanceManager *manager)
 	m_cropSize = Vector2i(stream);
 	m_highQualityEdges = stream->readBool();
 	m_decompositionType = (EDecompositionType) stream->readUInt();
+	m_combineBDPTAndElliptic= stream->readBool();
 	m_decompositionMinBound = stream->readFloat();
 	m_decompositionMaxBound = stream->readFloat();
 	m_decompositionBinWidth = stream->readFloat();
@@ -114,6 +118,7 @@ void Film::serialize(Stream *stream, InstanceManager *manager) const {
 	m_cropSize.serialize(stream);
 	stream->writeBool(m_highQualityEdges);
 	stream->writeUInt(m_decompositionType);
+	stream->writeBool(m_combineBDPTAndElliptic);
 	stream->writeFloat(m_decompositionMinBound);
 	stream->writeFloat(m_decompositionMaxBound);
 	stream->writeFloat(m_decompositionBinWidth);

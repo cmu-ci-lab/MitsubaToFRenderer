@@ -148,6 +148,7 @@ protected:
 	ref<ImageBlock> m_block, m_lightImage;
 public:
 	Film::EDecompositionType m_decompositionType;
+	bool m_combineBDPTAndElliptic;
 	Float m_decompositionMinBound;
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;

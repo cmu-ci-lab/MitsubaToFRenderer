@@ -37,6 +37,7 @@ BDPTWorkResult::BDPTWorkResult(const BDPTConfiguration &conf,
 	m_decompositionMinBound = conf.m_decompositionMinBound;
 	m_decompositionBinWidth = conf.m_decompositionBinWidth;
 	m_decompositionType = conf.m_decompositionType;
+	m_combineBDPTAndElliptic = conf.m_combineBDPTAndElliptic;
 	m_frames = conf.m_frames;
 	m_subSamples = conf.m_subSamples;
 

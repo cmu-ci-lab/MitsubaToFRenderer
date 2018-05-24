@@ -49,6 +49,7 @@ struct BDPTConfiguration {
 	Vector2i cropSize;
 	int rrDepth;
 	Film::EDecompositionType m_decompositionType;
+	bool m_combineBDPTAndElliptic;
 	Float m_decompositionMinBound;
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
@@ -73,6 +74,7 @@ struct BDPTConfiguration {
 		cropSize = Vector2i(stream);
 		rrDepth = stream->readInt();
 		m_decompositionType = (Film::EDecompositionType) stream->readUInt();
+		m_combineBDPTAndElliptic  = stream->readBool();
 		m_decompositionMinBound   = stream->readFloat();
 		m_decompositionMaxBound   = stream->readFloat();
 		m_decompositionBinWidth   = stream->readFloat();
@@ -84,7 +86,6 @@ struct BDPTConfiguration {
 		}
 		m_frames = stream->readSize();
 		m_subSamples = stream->readSize();
-
 		m_forceBounces = stream->readBool();
 		m_sBounces = stream->readUInt();
 		m_tBounces = stream->readUInt();
@@ -100,6 +101,7 @@ struct BDPTConfiguration {
 		cropSize.serialize(stream);
 		stream->writeInt(rrDepth);
 		stream->writeUInt(m_decompositionType);
+		stream->writeBool(m_combineBDPTAndElliptic);
 		stream->writeFloat(m_decompositionMinBound);
 		stream->writeFloat(m_decompositionMaxBound);
 		stream->writeFloat(m_decompositionBinWidth);
@@ -136,6 +138,8 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   Block size                  : %i", blockSize);
 		SLog(EDebug, "   Number of samples           : " SIZE_T_FMT, sampleCount);
 		SLog(EDebug, "   decomposition type 		 : %s", decompositionType.c_str());
+		SLog(EDebug, "   Combine BDPT and Elliptic?  : %s",
+				m_combineBDPTAndElliptic ? "yes" : "no");
 		SLog(EDebug, "   decomposition min bound	 : %f", m_decompositionMinBound);
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
