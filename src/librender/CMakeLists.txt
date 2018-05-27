@@ -6,6 +6,7 @@ endif()
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/mitsuba/render)
 set(HDRS
   ${INCLUDE_DIR}/bsdf.h
+  ${INCLUDE_DIR}/bvh.h
   ${INCLUDE_DIR}/common.h
   ${INCLUDE_DIR}/ellipsoid.h
   ${INCLUDE_DIR}/emitter.h

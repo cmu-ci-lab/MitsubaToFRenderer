@@ -114,6 +114,21 @@ void ShapeKDTree::build() {
 	m_BBTree = new BBTree(maxDepth, primCount);
 	buildBBTree(m_nodes);
 	cout << "Finished -- took " << timerBB->getMilliseconds() << " ms.\n";
+
+	/*
+	 * Create a new BVH tree by first create a vector of triangles
+	 *
+	 * */
+	ref<Timer> timerBVH = new Timer();
+	cout << "Constructing a BVH Tree\n";
+
+	std::vector<TriAccel> triaccels;
+	for(size_t i = 0;i < primCount;i++){
+		triaccels.push_back(m_triAccel[i]);
+	}
+	m_bvh = new BVH<TriAccel>(m_shapes, triaccels);
+	cout << "Finished -- took " << timerBVH->getMilliseconds() << " ms.\n";
+
 //	printBBTree(m_nodes, 0);
 //	printAllTriangles();
 }
@@ -240,12 +255,109 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid* e, Float &value, Ray &ray, Inter
 
 	size_t rootIndex = 0;
 //	if (ellipsoidParseKDTree(m_nodes, rootIndex, e, value, sampler, temp)) {
-	if (ellipsoidParseKDTreeFlattened(m_nodes, rootIndex, e, value, sampler, temp)) {
-//	if (ellipsoidParseKDTreeDFS(m_nodes, rootIndex, e, value, sampler, temp)) {
+//	if (ellipsoidParseKDTreeFlattened(m_nodes, rootIndex, e, value, sampler, temp)) {
+	if (ellipsoidParseBVH_DFS(e, value, sampler, temp)) {
 		fillEllipticIntersectionRecord<true>(ray, temp, its);
 		return true;
 	}
 	return false;
+}
+
+// Visit all the leaf nodes and grab all the possible triangle and sample one or more of them.
+bool ShapeKDTree::ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
+
+	if(!e->isSubSample()){
+		std::stack<const Node*> nodeStack;
+		std::set<unsigned int> triangleSet;
+
+		bool done = false;
+		const Node* current = &m_bvh->nodes[0];
+//		/* In-order traversal to find all valid triangles */
+		while (!done){
+			bool nodeState = true;
+			if(!e->isBoxValid(current->bb))
+				nodeState = false;
+
+			if(nodeState && current->child1 == 0 && current->child2 == 0){ // leaf case
+				//leaf code: Add all the triangles of the leaf to the triangle hash.
+				for(std::vector<int>::iterator it = current->begin; it != current->end; it++){
+					triangleSet.insert(*it);
+				}
+				nodeState = false;
+			}
+
+			if(nodeState){
+				nodeStack.push(current);
+				current = current->child1;
+			}
+			else{
+				if (!nodeStack.empty()){
+					current = nodeStack.top();
+					nodeStack.pop();
+					current = current->child2;
+				}else{
+					done = true;
+				}
+			}
+		}
+
+		size_t *intersectingTriangles = e->getintersectingTriangleSet();
+		size_t countIntersectingTriangles = 0;
+		Point Centroid;
+		Vector V1;
+		Vector V2;
+		Float pdf;
+
+		for (std::set<unsigned int>::iterator it=triangleSet.begin(); it!=triangleSet.end(); ++it){
+			unsigned int x = *it;
+
+			const TriAccel &ta = m_triAccel[x];
+
+			//gather the required data structures
+			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+			const Triangle *triangles = mesh->getTriangles();
+			const Point *positions = mesh->getVertexPositions();
+			const Normal *normals = mesh->getVertexNormals();
+
+			const Triangle &tri = triangles[ta.primIndex];
+			const Point &A = positions[tri.idx[0]];
+			const Point &B = positions[tri.idx[1]];
+			const Point &C = positions[tri.idx[2]];
+			Normal N = cross(B-A, C-A);
+			if(normals != NULL){
+				if(dot(normals[tri.idx[0]], N) < 0)
+					N = -N;
+			}
+			if(!e->earlyTriangleReject(A, B, C, N, x, m_BBTree->m_aabbTriangle[x])){
+				intersectingTriangles[countIntersectingTriangles] = x;
+				Centroid = (A + B + C)/3;
+				V1 = Centroid - e->getFocalPoint1();
+				V2 = Centroid - e->getFocalPoint2();
+
+				pdf = (1e3/(V1.lengthSquared()))*(1e3/(V2.lengthSquared()));
+//				V1 = normalize(V1);
+//				V2 = normalize(V2);
+//				N  = normalize(N);
+
+//				Float pdf1 = dot(e->getFocalNormal1(), V1);
+//				Float pdf2 = dot(V1, N);
+//				Float pdf3 = dot(N, V2);
+//				Float pdf4 = dot(V2, e->getFocalNormal2());
+
+//				pdf *= fabs( dot(e->getFocalNormal1(), V1) * dot(V1, N) * dot(N, V2) * dot(V2, e->getFocalNormal2()));
+				pdf = 1;
+				if(pdf < 1e-12) // Need to confirm this with Yannis. Can result in bias in the final results
+					continue;
+				e->appendPrimPDF(pdf); //normalized later
+				countIntersectingTriangles++;
+			}
+		}
+		e->setAsSubSample();
+		e->setIntersectionTrianglesCount(countIntersectingTriangles);
+		if(countIntersectingTriangles != 0)
+			e->normalizeProbabilities();
+	}
+	return ellipsoidParseIntersectingTriangles(e, value, sampler, temp);
 }
 
 // Visit all the leaf nodes and grab all the possible triangle and sample one or more of them.
@@ -265,7 +377,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 			if(!e->isBoxValid(m_BBTree->getAABB(currentIndex)))
 				nodeState = false;
 
-			if(current->isLeaf()){
+			if(nodeState && current->isLeaf()){
 				//leaf code: Add all the triangles of the leaf to the triangle hash.
 				int l = (int)(current->getPrimStart());
 				int u = (int)(current->getPrimEnd());
@@ -326,7 +438,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(!e->earlyTriangleReject(A, B, C, N, ta.primIndex, m_BBTree->m_aabbTriangle[x])){
+			if(!e->earlyTriangleReject(A, B, C, N, x, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
 				Centroid = (A + B + C)/3;
 				V1 = Centroid - e->getFocalPoint1();
@@ -350,6 +462,8 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 				countIntersectingTriangles++;
 			}
 		}
+		if(countIntersectingTriangles != 0)
+			e->normalizeProbabilities();
 		e->setAsSubSample();
 		e->setIntersectionTrianglesCount(countIntersectingTriangles);
 	}
@@ -452,6 +566,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 		if(countIntersectingTriangles != 0)
 			e->normalizeProbabilities();
 	}
+
 	return ellipsoidParseIntersectingTriangles(e, value, sampler, temp);
 }
 

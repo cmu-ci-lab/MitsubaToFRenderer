@@ -539,8 +539,9 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 template <typename PointType, typename LengthType>
 bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const size_t &primIdx, const AABB &triangleAABB) const{
 
-	if(primIdx == m_primIndex1 || primIdx == m_primIndex2)
-		return true;
+	// This check is not working good. Verify me.
+//	if(primIdx == m_primIndex1 || primIdx == m_primIndex2)
+//		return true;
 
 	Point f1_Float(m_f1.x, m_f1.y, m_f1.z);
 	Point f2_Float(m_f2.x, m_f2.y, m_f2.z);

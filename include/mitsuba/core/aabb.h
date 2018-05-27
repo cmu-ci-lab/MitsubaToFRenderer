@@ -275,6 +275,35 @@ template <typename T> struct TAABB {
 		return largest;
 	}
 
+	/// Return the axis index which is second largest axis
+	inline int getSecondLargestAxis() const {
+		VectorType d = max - min;
+
+		//Adithya: Highly inefficient. FIXME
+		if(PointType::dim != 3)
+			SLog(EError, "secondLargest code works only for 3D");
+
+		if((d[0] < std::max(d[1], d[2])) && (d[0] > std::min(d[1], d[2]))) return 0;
+		if((d[1] < std::max(d[2], d[0])) && (d[1] > std::min(d[2], d[0]))) return 1;
+		if((d[2] < std::max(d[0], d[1])) && (d[2] > std::min(d[0], d[1]))) return 2;
+
+		return 1;
+	}
+
+	/// written so that BVH gets a different axis always
+	inline int getThirdLargestAxis() const {
+		VectorType d = max - min;
+		int shortest = 2;
+
+		if(PointType::dim != 3)
+			SLog(EError, "secondLargest code works only for 3D");
+
+		for (int i=1; i > -1; --i)
+			if (d[i] < d[shortest])
+				shortest = i;
+		return shortest;
+	}
+
 	/// Return the axis index with the shortest associated side length
 	inline int getShortestAxis() const {
 		VectorType d = max - min;

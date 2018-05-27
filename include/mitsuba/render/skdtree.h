@@ -20,6 +20,7 @@
 #if !defined(__MITSUBA_RENDER_SKDTREE_H_)
 #define __MITSUBA_RENDER_SKDTREE_H_
 
+#include <mitsuba/render/bvh.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/sahkdtree3.h>
 #include <mitsuba/render/triaccel.h>
@@ -190,6 +191,8 @@ public:
 	bool ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
 
 	bool ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
+
+	bool ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
 
 	bool ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& index, Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const;
 
@@ -654,6 +657,7 @@ private:
 	std::vector<bool> m_triangleFlag;
 	std::vector<IndexType> m_shapeMap;
 	BBTree *m_BBTree;
+	BVH<TriAccel> *m_bvh;
 
 #if !defined(MTS_KD_CONSERVE_MEMORY)
 	TriAccel *m_triAccel;

@@ -990,6 +990,10 @@ public:
 		return m_f2Normal;
 	}
 
+	inline LengthType getTau(){
+		return m_tau;
+	}
+
 private:
 	/* Focal points */
 	PointType m_f1;
