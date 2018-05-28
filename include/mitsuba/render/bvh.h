@@ -98,9 +98,10 @@ struct Node
 {
 	std::vector<int>::iterator begin, end;
 	AABB bb;
+	bool AABBsameAsParent; // mark if the  parent has same AABB as the child, so that the BBox test can be avoided.
 	Node *child1, *child2;
 
-	Node(): child1(0), child2(0){}
+	Node(): AABBsameAsParent(false), child1(0), child2(0){}
 };
 
 template<class T>
@@ -151,8 +152,26 @@ private:
 	void split_objects(const Node &node, Node **node1, Node **node2);
 	void build_tree(Node &node);
 
+	void build_BBoxRelationShip(const Node* node) const{
+		if(node->child1 != 0){
+			if(node->bb == node->child1->bb)
+				node->child1->AABBsameAsParent = true;
+			build_BBoxRelationShip(node->child1);
+		}
+		if(node->child2 != 0){
+			if(node->bb == node->child2->bb)
+				node->child2->AABBsameAsParent = true;
+			build_BBoxRelationShip(node->child2);
+		}
+	}
+
 	void print_tree(const Node* node) const{
 		std::cout << "BBox:" << node->bb.toString() << std::endl;
+		if(node->AABBsameAsParent)
+			std::cout << "BBoxRelationShip: same as parent" << std::endl;
+		else
+			std::cout << "BBoxRelationShip: different" << std::endl;
+
 		if(node->child1 == 0 && node->child2 == 0){ //leaf node
 			for(std::vector<int>::iterator it = node->begin; it != node->end; it++){
 				std::cout << *it << " ";
@@ -190,7 +209,8 @@ template<class T>
 BVH<T>::BVH(std::vector<const Shape *> shapes, std::vector<T> &triaccels):Aggregate<T>(shapes, triaccels),comp0(this),comp1(this),comp2(this)
 {
 	freeze();
-//	print_tree(&this->nodes[0]);
+	build_BBoxRelationShip(&this->nodes[0]);
+	print_tree(&this->nodes[0]);
 }
 
 template<class T>
