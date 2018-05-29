@@ -46,10 +46,13 @@ bool PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampler,
 		const PathVertex *vsPred, PathVertex *vs, const PathEdge *vsEdge,
 		const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
+		const Path &emitterSubpath, const Path &sensorSubpath, const size_t &s, const size_t &t, bool &isEmitterLaser,
 		PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
-		Float &EllipticPathWeight, Float &miWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value,
+		Float &EllipticPathWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value,
 		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 		ETransportMode mode, BDPTWorkResult *wr){
+	Float miWeight;
+//	Float miWeight = 1.0/(s+t-1-isEmitterLaser);
 
 	int subSamples = wr->m_subSamples; //Need to read this part from hdrfilm, just like samples. It can be adaptive in the future based on miWeight
 	Spectrum cumulativeValue(0.0f);
@@ -141,6 +144,8 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				}else{
 					continue;
 				}
+				miWeight = Path::miWeightElliptic(scene, emitterSubpath, connectionEdge1, connectionVertex, connectionEdge2,
+					sensorSubpath, s, t, false, true);
 				Spectrum currentValue(value);
 				currentValue *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
 						connectionVertex->eval(scene, vs, vt, ERadiance) *

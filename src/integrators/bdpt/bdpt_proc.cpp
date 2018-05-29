@@ -488,7 +488,7 @@ public:
 
 								vs->measure = vt->measure = EArea;
 
-								Float miWeight = 1.0/(s+t-1-isEmitterLaser);
+//								Float miWeight = 1.0/(s+t-1-isEmitterLaser);
 //								Path::miWeight(scene, emitterSubpath, &connectionEdge,
 //									sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
 
@@ -498,8 +498,9 @@ public:
 								 tempPathLength = emitterPathlength[s] + sensorPathlength[t];
 								 vs->EllipsoidalSampleBetween(scene, m_sampler, vsPred, vs, vsEdge,
 																			   vtPred, vt, vtEdge,
+																			   emitterSubpath, sensorSubpath, s, t, isEmitterLaser,
 																			   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining, tempPathLength,
-																			   EllipticPathWeight, miWeight, corrWeight, value, sampleValue,
+																			   EllipticPathWeight, corrWeight, value, sampleValue,
 																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos, m_ellipsoid,
 																			   EImportance, wr);
 							}
@@ -555,9 +556,9 @@ public:
 					}
 
 					/* Compute the multiple importance sampling weight */
-//					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
-//						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
-					Float miWeight = 1.0/(s+t-1-isEmitterLaser);
+					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
+						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+//					Float miWeight = 1.0/(s+t-1-isEmitterLaser);
 
 					if (sampleDirect) {
 						/* Now undo the previous change */

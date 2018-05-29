@@ -210,7 +210,7 @@ BVH<T>::BVH(std::vector<const Shape *> shapes, std::vector<T> &triaccels):Aggreg
 {
 	freeze();
 	build_BBoxRelationShip(&this->nodes[0]);
-	print_tree(&this->nodes[0]);
+//	print_tree(&this->nodes[0]);
 }
 
 template<class T>
