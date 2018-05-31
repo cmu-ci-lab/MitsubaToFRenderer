@@ -170,7 +170,7 @@ public:
 
 		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */
 		Float pathLengthTarget;
-		if(m_config.m_isldSampling)
+		if(!m_config.m_isldSampling)
 			pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
 		else
 			pathLengthTarget = m_config.m_decompositionMinBound + m_config.m_decompositionBinWidth*(sampleIndex%m_config.m_frames) + m_config.m_decompositionBinWidth*m_sampler->nextFloat();

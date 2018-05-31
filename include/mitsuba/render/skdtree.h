@@ -608,6 +608,7 @@ protected:
 
 			its.shape = trimesh;
 			its.hasUVPartials = false;
+			its.shapeIndex = cache->shapeIndex;
 			its.primIndex = cache->primIndex;
 			its.instance = NULL;
 			its.time = ray.time;

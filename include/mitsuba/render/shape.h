@@ -164,6 +164,9 @@ public:
 	/// Have texture coordinate partials been computed
 	bool hasUVPartials : 1;
 
+	/// Shape index, e.g. store shape index along along with shape pointer for elliptic rendering
+	uint32_t shapeIndex : 31;
+
 	/// Primitive index, e.g. the triangle ID (if applicable)
 	uint32_t primIndex : 31;
 

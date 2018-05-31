@@ -119,7 +119,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 			pathLengthTarget = totalPathLength-currentPathLength;
 
-			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getGeometricNormal(), vt->getGeometricNormal(), vs->getPrimIndex(), vt->getPrimIndex(), pathLengthTarget);
+			m_ellipsoid->initialize(vs->getPosition(), vt->getPosition(), vs->getGeometricNormal(), vt->getGeometricNormal(), vs->getShapeIndex(), vt->getShapeIndex(), vs->getPrimIndex(), vt->getPrimIndex(), pathLengthTarget);
 			if(m_ellipsoid->isDegenerate()){
 				return;
 			}
@@ -1381,6 +1381,21 @@ bool PathVertex::update(const Scene *scene, const PathVertex *pred,
 	weight[1-mode] *= weightBkw;
 
 	return true;
+}
+
+size_t PathVertex::getShapeIndex() const {
+	switch (type) {
+		case ESurfaceInteraction:
+			return getIntersection().shapeIndex;
+		case EMediumInteraction:
+			SLog(EError, "Cannot request prim index for volumetric case"); return -1;
+		case EEmitterSample:
+			return -1;
+		case ESensorSample:
+			return -1;
+		default:
+			return -1;
+	}
 }
 
 size_t PathVertex::getPrimIndex() const {

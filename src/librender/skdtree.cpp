@@ -301,7 +301,7 @@ bool ShapeKDTree::ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler>
 						if(dot(normals[tri.idx[0]], N) < 0)
 							N = -N;
 					}
-					if(!e->earlyTriangleReject(A, B, C, N, *it, m_BBTree->m_aabbTriangle[*it])){
+					if(!e->earlyTriangleReject(A, B, C, N, ta.shapeIndex, ta.primIndex, m_BBTree->m_aabbTriangle[*it])){
 						intersectingTriangles[countIntersectingTriangles++] = *it;
 						e->appendPrimPDF(1.0f);
 					}
@@ -410,7 +410,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeDFS(const KDNode* node, size_t& index, Ell
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(!e->earlyTriangleReject(A, B, C, N, x, m_BBTree->m_aabbTriangle[x])){
+			if(!e->earlyTriangleReject(A, B, C, N, ta.shapeIndex, ta.primIndex, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
 				Centroid = (A + B + C)/3;
 				V1 = Centroid - e->getFocalPoint1();
@@ -509,7 +509,7 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(!e->earlyTriangleReject(A, B, C, N, x, m_BBTree->m_aabbTriangle[x])){
+			if(!e->earlyTriangleReject(A, B, C, N, ta.shapeIndex, ta.primIndex, m_BBTree->m_aabbTriangle[x])){
 				intersectingTriangles[countIntersectingTriangles] = x;
 				Centroid = (A + B + C)/3;
 				V1 = Centroid - e->getFocalPoint1();
@@ -660,7 +660,7 @@ bool ShapeKDTree::ellipsoidParseKDTree(const KDNode* node, size_t& index, Ellips
 				if(dot(normals[tri.idx[0]], N) < 0)
 					N = -N;
 			}
-			if(e->earlyTriangleReject(A, B, C, N, ta.primIndex, m_BBTree->m_aabbTriangle[primIdx])){
+			if(e->earlyTriangleReject(A, B, C, N, ta.shapeIndex, ta.primIndex, m_BBTree->m_aabbTriangle[primIdx])){
 				e->cacheSetTriState(primIdx,Cache::EFails);
 			}else{
 				// The statement below in not exactly correct, but then even if we sample this triangle in the future, the full-ellipsoid intersection will change this state to false. Till then, we can sample this triangle and additionally, we don't have to unnecessarily do the early test for this triangle again and again.
