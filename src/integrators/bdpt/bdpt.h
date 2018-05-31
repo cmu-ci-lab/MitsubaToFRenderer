@@ -53,6 +53,7 @@ struct BDPTConfiguration {
 	Float m_decompositionMinBound;
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
+	bool m_isldSampling;
 	size_t m_frames;
 	size_t m_subSamples;
 
@@ -84,6 +85,7 @@ struct BDPTConfiguration {
 			if (maxDepth < m_decompositionMinBound)
 				SLog(EError, "maxDepth of BDPT is less than the minimum bound; Rendering is futile");
 		}
+		m_isldSampling = stream->readBool();
 		m_frames = stream->readSize();
 		m_subSamples = stream->readSize();
 		m_forceBounces = stream->readBool();
@@ -105,6 +107,7 @@ struct BDPTConfiguration {
 		stream->writeFloat(m_decompositionMinBound);
 		stream->writeFloat(m_decompositionMaxBound);
 		stream->writeFloat(m_decompositionBinWidth);
+		stream->writeBool(m_isldSampling);
 		stream->writeSize(m_frames);
 		stream->writeSize(m_subSamples);
 
@@ -143,6 +146,8 @@ struct BDPTConfiguration {
 		SLog(EDebug, "   decomposition min bound	 : %f", m_decompositionMinBound);
 		SLog(EDebug, "   decomposition max bound	 : %f", m_decompositionMaxBound);
 		SLog(EDebug, "   decomposition bin width 	 : %f", m_decompositionBinWidth);
+		SLog(EDebug, "   is ldSampling Enabled	   	 : %s",
+				m_isldSampling ? "yes" : "no");
 		SLog(EDebug, "   number of frames	   	     : %i", m_frames);
 		SLog(EDebug, "   number of subsamples		 : %i", m_subSamples);
 		SLog(EDebug, "   Force Bounces		 	 : %i", m_forceBounces);

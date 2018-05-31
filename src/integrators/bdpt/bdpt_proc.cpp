@@ -62,6 +62,9 @@ public:
 		m_scene->wakeup(NULL, m_resources);
 		m_scene->initializeBidirectional();
 
+		if(m_config.m_isldSampling && m_sampler->getSampleCount()%m_config.m_frames != 0)
+			SLog(EError, "Number of samples (%i) must be integral multiple of number of frames (%i) if ldsampling is enabled", m_sampler->getSampleCount(), m_config.m_frames);
+
 		m_ellipsoid = new Ellipsoid(scene->getMaxDepth(), scene->getPrimitiveCount());
 	}
 
@@ -120,7 +123,7 @@ public:
 					emitterSubpath, emitterDepth, sensorSubpath,
 					sensorDepth, offset, m_config.rrDepth, m_pool);
 
-				evaluate(result, emitterSubpath, sensorSubpath);
+				evaluate(result, emitterSubpath, sensorSubpath, j);
 
 				emitterSubpath.release(m_pool);
 				sensorSubpath.release(m_pool);
@@ -139,7 +142,7 @@ public:
 
 	/// Evaluate the contributions of the given eye and light paths
 	void evaluate(BDPTWorkResult *wr,
-			Path &emitterSubpath, Path &sensorSubpath) {
+			Path &emitterSubpath, Path &sensorSubpath, size_t &sampleIndex) {
 		/* Check if the emitter is laser?*/
 		bool isEmitterLaser = false;
 		const AbstractEmitter *AE = emitterSubpath.vertex(1)->getAbstractEmitter();
@@ -166,7 +169,11 @@ public:
 		Float corrWeight = 1.0f; // will hold the f(\|x\|) for the BDPT length also will be equal to BDPT_pdf if BDPT is selected and Elliptic_pdf if Elliptic-BDPT is selected
 
 		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */
-		Float pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
+		Float pathLengthTarget;
+		if(m_config.m_isldSampling)
+			pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
+		else
+			pathLengthTarget = m_config.m_decompositionMinBound + m_config.m_decompositionBinWidth*(sampleIndex%m_config.m_frames) + m_config.m_decompositionBinWidth*m_sampler->nextFloat();
 
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;

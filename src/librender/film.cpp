@@ -75,6 +75,11 @@ Film::Film(const Properties &props)
 	m_decompositionMinBound = props.getFloat("minBound", 0.0f);
 	m_decompositionMaxBound = props.getFloat("maxBound", 0.0f);
 	m_decompositionBinWidth = props.getFloat("binWidth", 1.0f);
+	m_isldSampling = props.getBoolean("ldSampling", "false");
+	if(m_isldSampling &&
+	  (m_decompositionType != ETransientEllipse || m_pathLengthSampler->getModulationType() != PathLengthSampler::ENone))
+		SLog(EError, "ld sampling for transient can only be enabled for Transient Ellipse and only when there is no modulation type");
+
 	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
 	m_subSamples = props.getSize("subSamples", 1);
 

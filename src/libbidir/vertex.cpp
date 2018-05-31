@@ -155,7 +155,10 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				currentValue *= connectionEdge1->evalCached(vs, connectionVertex, PathEdge::EGeneralizedGeometricTerm)*
 								connectionEdge2->evalCached(connectionVertex, vt, PathEdge::EGeneralizedGeometricTerm);
 
-				currentValue *= EllipticPathWeight * wr->getSamplingWeight(proposedDecompositionMinBound, proposedDecompositionMaxBound, totalPathLength);
+				if(wr->m_isldSampling)
+					currentValue *= EllipticPathWeight * wr->m_decompositionBinWidth;
+				else
+					currentValue *= EllipticPathWeight * wr->getSamplingWeight(proposedDecompositionMinBound, proposedDecompositionMaxBound, totalPathLength);
 				if(currentValue.isZero())
 					continue;
 				if(islightSamplePath){

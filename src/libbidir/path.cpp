@@ -785,7 +785,7 @@ Float Path::miWeightElliptic(const Scene *scene, const Path &emitterSubpath,
 	   an incremental scheme can be used that only finds the densities relative
 	   to the (s,t) strategy, which can be done using a linear sweep. For
 	   details, refer to the Veach thesis, p.306. */
-	for (int i=s+1; i<k-1; ++i) {
+	for (int i=s+1; i<k; ++i) {
 		double next = pdf * (double) pdfImp[i] / (double) pdfRad[i] * (double) pdfImp[i+1] / (double) pdfRad[i+1],
 		       value = next;
 
@@ -797,8 +797,8 @@ Float Path::miWeightElliptic(const Scene *scene, const Path &emitterSubpath,
 		}
 
 
-		int tPrime = k-i-1-1;
-		if (connectable[i] && (connectable[i+1] || isNull[i+1]) && (connectable[i+2] || isNull[i+2]) && (lightImage || tPrime > 1))
+		int tPrime = k-i-1;
+		if (connectable[i] && (connectable[i+1] || isNull[i+1]) && (lightImage || tPrime > 1))
 			weight += value*value;
 
 		pdf = next;
@@ -807,7 +807,7 @@ Float Path::miWeightElliptic(const Scene *scene, const Path &emitterSubpath,
 	/* As above, but now compute pdf[i] with i<s (this is done by
 	   evaluating the inverse of the previous expressions). */
 	pdf = initial;
-	for (int i=s-1; i>=1; --i) {
+	for (int i=s-1; i>=0; --i) {
 		double next = pdf * (double) pdfRad[i+1] / (double) pdfImp[i+1] * (double) pdfRad[i] / (double) pdfImp[i],
 		       value = next;
 
@@ -819,7 +819,7 @@ Float Path::miWeightElliptic(const Scene *scene, const Path &emitterSubpath,
 //		}
 
 		int tPrime = k-i-1-1;
-		if (connectable[i] && (connectable[i+1] || isNull[i+1]) && (connectable[i+2] || isNull[i+2]) && (lightImage || tPrime > 1))
+		if (connectable[i] && (connectable[i+1] || isNull[i+1]) && (lightImage || tPrime > 1))
 			weight += value*value;
 
 		pdf = next;

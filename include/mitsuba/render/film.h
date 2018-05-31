@@ -90,6 +90,7 @@ public:
 	inline Float getDecompositionMinBound() const {return m_decompositionMinBound; }
 	inline Float getDecompositionMaxBound() const {return m_decompositionMaxBound; }
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
+	inline bool isldSampling() const {return m_isldSampling; }
 	inline size_t getFrames() const {return m_frames; }
 	inline size_t getSubSamples() const {return m_subSamples; }
 
@@ -175,6 +176,7 @@ protected:
 	Float m_decompositionMinBound;
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
+	bool m_isldSampling;
 	size_t m_frames;
 	size_t m_subSamples;
 

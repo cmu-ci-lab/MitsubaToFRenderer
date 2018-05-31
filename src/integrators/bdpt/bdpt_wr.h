@@ -152,6 +152,7 @@ public:
 	Float m_decompositionMinBound;
 	Float m_decompositionMaxBound;
 	Float m_decompositionBinWidth;
+	bool m_isldSampling;
 	size_t m_frames;
 	size_t m_subSamples; // For elliptic sampling. Defaults to 1.
 
