@@ -210,7 +210,7 @@ public:
 		m_config.m_decompositionMinBound 	= film->getDecompositionMinBound();
 		m_config.m_decompositionMaxBound 	= film->getDecompositionMaxBound();
 		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();
-		m_config.m_frames = film->isldSampling();
+		m_config.m_isldSampling = film->isldSampling();
 		m_config.m_frames = film->getFrames();
 		m_config.m_subSamples = film->getSubSamples();
 
