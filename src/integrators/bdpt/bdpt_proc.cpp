@@ -484,12 +484,12 @@ public:
 					/* FIXME */
 					Spectrum throughputS(1.0f); // Understand the functioning of throughputS. May be it is not needed in this case, and also the rrDepth may not be needed in this case
 
-					if(currentDecompositionType == Film::ETransientEllipse){ // Adding additional vertex can only increase path length
-						if(!combine || tempPathLength <= wr->m_decompositionMinBound){
+					if(currentDecompositionType == Film::ETransientEllipse){
+						if(!combine || tempPathLength <= wr->m_decompositionMinBound){ // Adding additional vertex can only increase path length
 							Float PathLengthRemaining = pathLengthTarget - emitterPathlength[s] - sensorPathlength[t];
 
-	//							if(!value.isZero() && PathLengthRemaining > 0){
-							if(!value.isZero()){
+							if(!value.isZero() && PathLengthRemaining > 0){
+//							if(!value.isZero()){
 								EMeasure vsMeasure = vs->measure;
 								EMeasure vtMeasure = vt->measure;
 

@@ -124,7 +124,8 @@ void ShapeKDTree::build() {
 
 	std::vector<TriAccel> triaccels;
 	for(size_t i = 0;i < primCount;i++){
-		triaccels.push_back(m_triAccel[i]);
+		if(m_triAccel[i].k != KNoTriangleFlag)
+			triaccels.push_back(m_triAccel[i]);
 	}
 	m_bvh = new BVH<TriAccel>(m_shapes, triaccels);
 	cout << "Finished -- took " << timerBVH->getMilliseconds() << " ms.\n";
