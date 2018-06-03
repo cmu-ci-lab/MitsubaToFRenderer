@@ -75,7 +75,7 @@ Film::Film(const Properties &props)
 	m_decompositionMinBound = props.getFloat("minBound", 0.0f);
 	m_decompositionMaxBound = props.getFloat("maxBound", 0.0f);
 	m_decompositionBinWidth = props.getFloat("binWidth", 1.0f);
-	m_isldSampling = props.getBoolean("ldSampling", "false");
+	m_isldSampling = props.getBoolean("ldSampling", false);
 
 	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
 	m_subSamples = props.getSize("subSamples", 1);

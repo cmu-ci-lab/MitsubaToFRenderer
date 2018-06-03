@@ -174,7 +174,6 @@ public:
 			pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
 		else
 			pathLengthTarget = m_config.m_decompositionMinBound + m_config.m_decompositionBinWidth*(sampleIndex%m_config.m_frames) + m_config.m_decompositionBinWidth*m_sampler->nextFloat();
-
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;
 		Float *sensorPathlength = NULL;
@@ -563,9 +562,9 @@ public:
 					}
 
 					/* Compute the multiple importance sampling weight */
-					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
-						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
-//					Float miWeight = 1.0/(s+t-1-isEmitterLaser);
+//					Float miWeight = Path::miWeight(scene, emitterSubpath, &connectionEdge,
+//						sensorSubpath, s, t, m_config.sampleDirect, m_config.lightImage);
+					Float miWeight = 1.0/(s+t-1-isEmitterLaser);
 
 					if (sampleDirect) {
 						/* Now undo the previous change */
