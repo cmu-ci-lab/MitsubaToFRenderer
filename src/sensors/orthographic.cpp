@@ -125,6 +125,10 @@ public:
 			      -(1-2*relOffset.y)/relSize.y + 1, 0.0f)) *
 			Transform::scale(Vector(1.0f / relSize.x, 1.0f / relSize.y, 1.0f));
 
+        std::cout<<m_nearClip<<" "<<m_farClip<<"\n";
+        std::cout<<m_cameraToSample.toString()<<"\n";
+        std::cout<<m_aspect<<" "<<m_resolution.x<<" "<<m_invResolution.x<<"\n";
+
 		const Transform &trafo = m_worldTransform->eval(0.0f);
 
 		m_invSurfaceArea = 1.0f / (

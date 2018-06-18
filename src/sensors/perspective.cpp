@@ -147,12 +147,17 @@ public:
 		 * 4+5. Translate and scale the coordinates once more to account
 		 *     for a cropping window (if there is any)
 		 */
+
+		std::cout<<"camera";
 		m_cameraToSample =
 			  Transform::scale(Vector(1.0f / relSize.x, 1.0f / relSize.y, 1.0f))
 			* Transform::translate(Vector(-relOffset.x, -relOffset.y, 0.0f))
 			* Transform::scale(Vector(-0.5f, -0.5f*m_aspect, 1.0f))
 			* Transform::translate(Vector(-1.0f, -1.0f/m_aspect, 0.0f))
 			* Transform::perspective(m_xfov, m_nearClip, m_farClip);
+		std::cout<<m_xfov<<" "<<m_nearClip<<" "<<m_farClip<<"\n";
+		std::cout<<m_cameraToSample.toString()<<"\n";
+		std::cout<<m_aspect<<" "<<m_resolution.x<<" "<<m_invResolution.x<<"\n";
 
 		m_sampleToCamera = m_cameraToSample.inverse();
 

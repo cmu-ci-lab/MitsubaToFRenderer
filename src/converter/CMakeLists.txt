@@ -11,7 +11,7 @@ set(SRCS
   converter.h
   converter.cpp
   obj.cpp
-)
+        ../emitters/perspectiveEmitterImpl.cpp ../emitters/orthographicEmitterImpl.cpp ../emitters/orthographicEmitterImpl.cpp)
 
 # COLLADA-DOM 2.4 introduces namespaces, which are not source-compatible
 if (COLLADA_NAMESPACE)
@@ -20,7 +20,7 @@ endif()
 
 # Create a static library which is also used by mtsgui. Adding the dependent
 # libraries will allow transitive linking.
-add_library(mtsconverter_lib STATIC ${SRCS})
+add_library(mtsconverter_lib STATIC ${SRCS} ../emitters/perspectiveEmitterImpl.cpp)
 target_link_libraries(mtsconverter_lib
 	${COLLADA_LIBRARIES} ${XERCES_LIBRARIES} ${OPENGL_glu_LIBRARY})
 
