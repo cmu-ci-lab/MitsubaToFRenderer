@@ -78,7 +78,9 @@ MTS_NAMESPACE_BEGIN
             Point2 relOffset(0.0,0.0);
 
             const MIPMap::Array2DType &array = m_mipmap->getArray();
-            m_size = array.getSize();
+//            m_size = array.getSize();
+            m_size.x = 100000;
+            m_size.y = 100000;
             m_aspect = (Float)m_size.x / (Float) m_size.y;
 
             m_resolution = Vector2(m_size.x,m_size.y);
@@ -144,8 +146,10 @@ MTS_NAMESPACE_BEGIN
             ray.mint = m_nearClip;
             ray.maxt = m_farClip;
 
-            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+//            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+            return Spectrum(m_intensity);
         }
+
 
         Spectrum samplePosition(PositionSamplingRecord &pRec,
                                 const Point2 &sample, const Point2 *extra) const {
@@ -170,11 +174,16 @@ MTS_NAMESPACE_BEGIN
             pRec.n = trafo(Vector(0.0f, 0.0f, 1.0f));
             pRec.pdf = m_invSurfaceArea;
             pRec.measure = EArea;
-            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+//            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+            return Spectrum(m_intensity);
         }
 
         Spectrum evalPosition(const PositionSamplingRecord &pRec) const {
-            return  (pRec.measure == EArea) ? Spectrum(m_invSurfaceArea * m_intensity): Spectrum(0.0f);
+            const Transform &trafo = m_worldTransform->eval(pRec.time);
+            Point2 uv(pRec.uv.x * m_invResolution.x, pRec.uv.y * m_invResolution.y);
+            return  (pRec.measure == EArea) ?
+                      Spectrum(m_invSurfaceArea * m_intensity):Spectrum(0.0f);
+//                    Spectrum(m_invSurfaceArea * m_intensity * m_mipmap->evalBilinear(0,uv)):Spectrum(0.0f);
         }
 
         Float pdfPosition(const PositionSamplingRecord &pRec) const {
@@ -230,39 +239,12 @@ MTS_NAMESPACE_BEGIN
             dRec.pdf = 1.0f;
             dRec.measure = EDiscrete;
 
-            return Spectrum(m_invSurfaceArea * m_intensity * m_mipmap->evalBilinear(0,uv));
+//            return Spectrum(m_invSurfaceArea * m_intensity * m_mipmap->evalBilinear(0,uv));
+            return Spectrum(m_invSurfaceArea * m_intensity);
         }
 
         Float pdfDirect(const DirectSamplingRecord &dRec) const {
             return (dRec.measure == EDiscrete) ? 1.0f : 0.0f;
-        }
-
-        bool getSamplePosition(const PositionSamplingRecord &pRec,
-                               const DirectionSamplingRecord &dRec, Point2 &samplePosition) const {
-            const Transform &trafo = m_worldTransform->eval(pRec.time);
-
-            Point localP = trafo.inverse()(pRec.p);
-            Point sample = m_cameraToSample.transformAffine(localP);
-
-            if (sample.x < 0 || sample.x > 1 || sample.y < 0 || sample.y > 1)
-                return false;
-
-            samplePosition = Point2(sample.x * m_resolution.x,
-                                    sample.y * m_resolution.y);
-            return true;
-        }
-
-        Transform getProjectionTransform(const Point2 &apertureSample,
-                                         const Point2 &aaSample) const {
-            Point2 offset(
-                    2.0f * m_invResolution.x * (aaSample.x-0.5f),
-                    2.0f * m_invResolution.y * (aaSample.y-0.5f));
-
-            return m_clipTransform *
-                   Transform::translate(Vector(offset.x, offset.y, 0.0f)) *
-                   Transform::scale(Vector(1.0f, m_aspect, 1.0f)) *
-                   Transform::glOrthographic(m_nearClip, m_farClip)*
-                   Transform::scale(Vector(1.0f, 1.0f, m_scale));
         }
 
         AABB getAABB() const {
