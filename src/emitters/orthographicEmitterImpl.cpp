@@ -116,13 +116,70 @@ MTS_NAMESPACE_BEGIN
             std::cout<<m_nearClip<<" "<<m_farClip<<"\n";
             std::cout<<m_cameraToSample.toString()<<"\n";
             std::cout<<m_aspect<<" "<<m_resolution.x<<" "<<m_invResolution.x<<"\n";
+
             const Transform &trafo = m_worldTransform->eval(0.0f);
+
 
             m_invSurfaceArea = 1.0f / (
                     trafo(m_sampleToCamera(Vector(1, 0, 0))).length() *
                     trafo(m_sampleToCamera(Vector(0, 1, 0))).length());
+            std::cout<<m_normalSpectrum<<" "<<m_invSurfaceArea<<endl;
 
             m_scale = trafo(Vector(0, 0, 1)).length();
+        }
+
+        /// Helper function that samples a direction from the environment map
+        Point2 internalSamplePosition(Point2 sample, Spectrum &value, Float &pdf) const {
+            /* Sample a discrete pixel position */
+            uint32_t row = sampleReuse(m_cdfRows, m_size.y, sample.y),
+                    col = sampleReuse(m_cdfCols + row * (m_size.x+1), m_size.x, sample.x);
+
+
+            /* Using the remaining bits of precision to shift the sample by an offset
+               drawn from a tent function. This effectively creates a sampling strategy
+               for a linearly interpolated environment map */
+            Point2 pos = Point2((Float) col, (Float) row) + sample;
+
+            /* Bilinearly interpolate colors from the adjacent four neighbors */
+            int xPos = math::floorToInt(pos.x), yPos = math::floorToInt(pos.y);
+
+            value = m_mipmap->evalTexel(0, xPos, yPos);
+            pdf = value.getLuminance() * m_rowWeights[math::clamp(yPos,   0, m_size.y-1)]  * m_normalSpectrum
+                    ;
+
+            pos.x = pos.x/m_size.x; pos.y = pos.y/m_size.y;
+            return pos;
+        }
+
+        Spectrum internalEvalPosition(const Point2 &uv) const{
+
+            /* Bilinearly interpolate colors from the adjacent four neighbors */
+            int xPos = math::floorToInt(uv.x), yPos = math::floorToInt(uv.y);
+
+            Spectrum value = m_mipmap->evalTexel(0, xPos, yPos);
+//            std::cout<<m_normalSpectrum<<endl;
+            return  Spectrum(value.getLuminance() * m_rowWeights[math::clamp(yPos,   0, m_size.y-1)] * m_normalSpectrum
+                    * m_intensity /(m_normalSpectrum * m_resolution.x * m_resolution.y));
+
+        }
+
+        /// Helper function that computes the
+        Float internalPdfPosition(const Point2 &uv) const {
+
+            Point samplePoint(uv.x,uv.y,1.0f);
+            Point sample = m_cameraToSample(samplePoint * m_nearClip);
+            Float u = sample.x * m_size.x, v = sample.y * m_size.y;
+
+            /* Bilinearly interpolate colors from the adjacent four neighbors */
+            int xPos = math::floorToInt(u), yPos = math::floorToInt(v);
+
+            Spectrum value = m_mipmap->evalTexel(0,xPos,yPos);
+
+            if(value.isZero())
+                return Epsilon;
+            else
+                return value.getLuminance() * m_rowWeights[math::clamp(yPos,   0, m_size.y-1)]
+                   *  m_normalSpectrum;
         }
 
         Spectrum sampleRay(Ray &ray, const Point2 &pixelSample,
@@ -136,7 +193,7 @@ MTS_NAMESPACE_BEGIN
                     pixelSample.x * m_invResolution.x,
                     pixelSample.y * m_invResolution.y, 0.0f));
 
-            Point2 uv(nearP.x,nearP.y);
+//            Point2 uv(nearP.x,nearP.y);
 
             ray.setOrigin(trafo.transformAffine(
                     Point(nearP.x, nearP.y, 0.0f)));
@@ -144,7 +201,8 @@ MTS_NAMESPACE_BEGIN
             ray.mint = m_nearClip;
             ray.maxt = m_farClip;
 
-            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+//            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+            return Spectrum(m_intensity * m_mipmap->evalTexel(0,math::floorToInt(pixelSample.x),math::floorToInt(pixelSample.y)));
         }
 
         Spectrum samplePosition(PositionSamplingRecord &pRec,
@@ -158,7 +216,12 @@ MTS_NAMESPACE_BEGIN
                 samplePos.x = (extra->x + sample.x) * m_invResolution.x;
                 samplePos.y = (extra->y + sample.y) * m_invResolution.y;
             }
-            Point2 uv(samplePos.x,samplePos.y);
+//            Point2 uv(samplePos.x,samplePos.y);
+            /* Sample a direction from the texture map */
+            Spectrum value; Float pdf;
+            Point2 pos = internalSamplePosition(Point2(samplePos.x,samplePos.y), value, pdf);
+            samplePos.x = pos.x;
+            samplePos.y = pos.y;
 
             pRec.uv = Point2(samplePos.x * m_resolution.x,
                              samplePos.y * m_resolution.y);
@@ -168,17 +231,20 @@ MTS_NAMESPACE_BEGIN
             nearP.z = 0.0f;
             pRec.p = trafo.transformAffine(nearP);
             pRec.n = trafo(Vector(0.0f, 0.0f, 1.0f));
-            pRec.pdf = m_invSurfaceArea;
+            pRec.pdf = pdf;
             pRec.measure = EArea;
-            return Spectrum(m_intensity * m_mipmap->evalBilinear(0,uv));
+
+            return Spectrum(m_intensity/ (m_normalSpectrum * m_resolution.x * m_resolution.y));
         }
 
         Spectrum evalPosition(const PositionSamplingRecord &pRec) const {
-            return  (pRec.measure == EArea) ? Spectrum(m_invSurfaceArea * m_intensity): Spectrum(0.0f);
+//            Point2 uv(pRec.uv.x/m_resolution.x,pRec.uv.y/m_resolution.y);
+            return  (pRec.measure == EArea) ? internalEvalPosition(pRec.uv):
+                    Spectrum(0.0f);
         }
 
         Float pdfPosition(const PositionSamplingRecord &pRec) const {
-            return (pRec.measure == EArea) ? m_invSurfaceArea : 0.0f;
+            return (pRec.measure == EArea) ? internalPdfPosition(pRec.uv) : 0.0f;
         }
 
         Spectrum sampleDirection(DirectionSamplingRecord &dRec,
@@ -230,7 +296,7 @@ MTS_NAMESPACE_BEGIN
             dRec.pdf = 1.0f;
             dRec.measure = EDiscrete;
 
-            return Spectrum(m_invSurfaceArea * m_intensity * m_mipmap->evalBilinear(0,uv));
+            return Spectrum(m_intensity * m_invSurfaceArea * m_mipmap->evalTexel(0,math::floorToInt(dRec.uv.x),math::floorToInt(dRec.uv.y)));
         }
 
         Float pdfDirect(const DirectSamplingRecord &dRec) const {
@@ -286,6 +352,14 @@ MTS_NAMESPACE_BEGIN
 
         MTS_DECLARE_CLASS()
     private:
+        /// Sample from an array using the inversion method
+        inline uint32_t sampleReuse(float *cdf, uint32_t size, Float &sample) const {
+            float *entry = std::lower_bound(cdf, cdf+size+1, (float) sample);
+            uint32_t index = std::min((uint32_t) std::max((ptrdiff_t) 0, entry - cdf - 1), size-1);
+            sample = (sample - (Float) cdf[index]) / (Float) (cdf[index+1] - cdf[index]);
+            return index;
+        }
+
         Float m_intensity;
         Transform m_cameraToSample;
         Transform m_sampleToCamera;

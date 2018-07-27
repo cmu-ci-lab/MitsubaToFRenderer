@@ -17,3 +17,5 @@ add_emitter(sky         sky.cpp sunsky/skymodel.cpp sunsky/skymodel.h sunsky/sky
 add_emitter(sun         sun.cpp sunsky/sunmodel.h)
 add_emitter(sunsky      sunsky.cpp sunsky/sunmodel.h)
 add_emitter(spot        spot.cpp   MTS_HW)
+add_emitter(perspectiveEmitter     perspectiveEmitterImpl.cpp)
+add_emitter(orthographicEmitter    orthographicEmitterImpl.cpp)

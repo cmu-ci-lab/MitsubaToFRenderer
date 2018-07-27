@@ -244,6 +244,69 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 								  filterType, maxAnisotropy, createCache ? cacheFile : fs::path(), timestamp,
 								  std::numeric_limits<Float>::infinity(), Spectrum::EIlluminant);
 		}
+		/// Build CDF tables to sample the environment map
+		const MIPMap::Array2DType &array = m_mipmap->getArray();
+		m_size = array.getSize();
+
+
+		size_t nEntries = (size_t) (m_size.x + 1) * (size_t) m_size.y,
+				totalStorage = sizeof(float) * (m_size.x + 1 + nEntries);
+
+		Log(EInfo, "Precomputing data structures for environment map sampling (%s)",
+			memString(totalStorage).c_str());
+
+		ref<Timer> timer = new Timer();
+		m_cdfCols = new float[nEntries];
+		m_cdfRows = new float[m_size.y + 1];
+		m_rowWeights = new Float[m_size.y];
+
+		size_t colPos = 0, rowPos = 0;
+		Float rowSum = 0.0f;
+
+		/* Build a marginal & conditional cumulative distribution
+           function over luminances weighted by sin(theta) */
+		m_cdfRows[rowPos++] = 0;
+		for (int y=0; y<m_size.y; ++y) {
+			Float colSum = 0;
+
+			m_cdfCols[colPos++] = 0;
+			for (int x = 0; x < m_size.x; ++x) {
+				Spectrum value(array(x, y));
+
+				colSum += value.getLuminance();
+				m_cdfCols[colPos++] = (float) colSum;
+			}
+
+			float normalization = 1.0f / std::max(1e-7f,(float) colSum);
+			for (int x = 1; x < m_size.x; ++x)
+				m_cdfCols[colPos - x - 1] *= normalization;
+			m_cdfCols[colPos - 1] = 1.0f;
+
+//			Float weight = (0.5f + y)  / (float)m_size.y;
+            Float weight = 1.0f;
+			m_rowWeights[y] = weight;
+			rowSum += colSum * weight;
+//            std::cout<<"rowsum "<<y<<" "<<rowSum<<endl;
+			m_cdfRows[rowPos++] = (float) rowSum;
+		}
+
+		float normalization = 1.0f / std::max(1e-7f,(Float) rowSum);
+//        std::cout<<"normal"<<normalization<<endl;
+		for (int y=1; y<m_size.y; ++y){
+			m_cdfRows[rowPos-y-1] *= normalization;
+        }
+		m_cdfRows[rowPos-1] = 1.0f;
+
+		if (rowSum == 0)
+			Log(EError, "The environment map is completely black -- this is not allowed.");
+		else if (!std::isfinite(rowSum))
+			Log(EError, "The environment map contains an invalid floating"
+					" point value (nan/inf) -- giving up.");
+
+		m_normalSpectrum = normalization;
+
+		Log(EInfo, "Done (took %i ms)", timer->getMilliseconds());
+
 
 
 	}
@@ -253,6 +316,7 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 		m_nearClip = stream->readFloat();
 		m_farClip = stream->readFloat();
 		m_focusDistance = stream->readFloat();
+
 		size_t size = stream->readSize();
 		ref<MemoryStream> mStream = new MemoryStream(size);
 		stream->copyTo(mStream, size);
@@ -277,6 +341,23 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 		stream->writeFloat(m_nearClip);
 		stream->writeFloat(m_farClip);
 		stream->writeFloat(m_focusDistance);
+
+        if (!m_filename.empty() && fs::exists(m_filename)) {
+            /* We still have access to the original image -- use that, since
+               it is probably much smaller than the in-memory representation */
+            ref<Stream> is = new FileStream(m_filename, FileStream::EReadOnly);
+            stream->writeSize(is->getSize());
+            is->copyTo(stream);
+        } else {
+            /* No access to the original image anymore. Create an EXR image
+               from the top MIP map level and serialize that */
+            ref<MemoryStream> mStream = new MemoryStream();
+            ref<Bitmap> bitmap = m_mipmap->toBitmap();
+            bitmap->write(Bitmap::EOpenEXR, mStream);
+
+            stream->writeSize(mStream->getSize());
+            stream->write(mStream->getData(), mStream->getSize());
+        }
 	}
 
 	void ProjectiveEmitter::setFocusDistance(Float focusDistance) {
