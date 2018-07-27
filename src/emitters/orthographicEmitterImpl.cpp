@@ -205,6 +205,7 @@ MTS_NAMESPACE_BEGIN
             return Spectrum(m_intensity * m_mipmap->evalTexel(0,math::floorToInt(pixelSample.x),math::floorToInt(pixelSample.y)));
         }
 
+
         Spectrum samplePosition(PositionSamplingRecord &pRec,
                                 const Point2 &sample, const Point2 *extra) const {
             const Transform &trafo = m_worldTransform->eval(pRec.time);
@@ -301,34 +302,6 @@ MTS_NAMESPACE_BEGIN
 
         Float pdfDirect(const DirectSamplingRecord &dRec) const {
             return (dRec.measure == EDiscrete) ? 1.0f : 0.0f;
-        }
-
-        bool getSamplePosition(const PositionSamplingRecord &pRec,
-                               const DirectionSamplingRecord &dRec, Point2 &samplePosition) const {
-            const Transform &trafo = m_worldTransform->eval(pRec.time);
-
-            Point localP = trafo.inverse()(pRec.p);
-            Point sample = m_cameraToSample.transformAffine(localP);
-
-            if (sample.x < 0 || sample.x > 1 || sample.y < 0 || sample.y > 1)
-                return false;
-
-            samplePosition = Point2(sample.x * m_resolution.x,
-                                    sample.y * m_resolution.y);
-            return true;
-        }
-
-        Transform getProjectionTransform(const Point2 &apertureSample,
-                                         const Point2 &aaSample) const {
-            Point2 offset(
-                    2.0f * m_invResolution.x * (aaSample.x-0.5f),
-                    2.0f * m_invResolution.y * (aaSample.y-0.5f));
-
-            return m_clipTransform *
-                   Transform::translate(Vector(offset.x, offset.y, 0.0f)) *
-                   Transform::scale(Vector(1.0f, m_aspect, 1.0f)) *
-                   Transform::glOrthographic(m_nearClip, m_farClip)*
-                   Transform::scale(Vector(1.0f, 1.0f, m_scale));
         }
 
         AABB getAABB() const {
