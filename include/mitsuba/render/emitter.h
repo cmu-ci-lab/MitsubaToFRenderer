@@ -690,11 +690,6 @@ protected:
 		using Emitter::getWorldTransform;
 
 
-        void configure(){
-
-        }
-
-
 		/// Return the world-to-view (aka "view") transformation at time \c t
 		inline const Transform getViewTransform(Float t) const {
 			return getWorldTransform()->eval(t).inverse();
@@ -769,8 +764,6 @@ protected:
 		/// Virtual destructor
 		virtual ~ProjectiveEmitter();
 	protected:
-//		ref<Film> m_film;
-//		ref<Sampler> m_sampler;
 		Float m_aspect;
 		Vector2 m_resolution;
 		Vector2 m_invResolution;
@@ -780,6 +773,9 @@ protected:
         fs::path m_filename;
         MIPMap *m_mipmap;
         Vector2i m_size;
+		float m_normalSpectrum;
+		float *m_cdfRows, *m_cdfCols;
+		Float *m_rowWeights;
 	};
 
 /**

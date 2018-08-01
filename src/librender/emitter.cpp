@@ -222,10 +222,6 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 					timer->getMilliseconds());
 			}
 
-//                if (std::max(bitmap->getWidth(), bitmap->getHeight()) > 0xFFFF)
-//                    Log(EError, "Environment maps images must be smaller than 65536 "
-//                            " pixels in width and height");
-
 			/* (Re)generate the MIP map hierarchy; downsample using a
                 2-lobed Lanczos reconstruction filter */
 			Properties rfilterProps("lanczos");
@@ -244,9 +240,15 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 								  filterType, maxAnisotropy, createCache ? cacheFile : fs::path(), timestamp,
 								  std::numeric_limits<Float>::infinity(), Spectrum::EIlluminant);
 		}
-		/// Build CDF tables to sample the environment map
+		/// Build CDF tables to sample the emitter map
 		const MIPMap::Array2DType &array = m_mipmap->getArray();
 		m_size = array.getSize();
+        m_aspect = (Float)m_size.x / (Float) m_size.y;
+
+        m_resolution = Vector2(m_size.x,m_size.y);
+        m_invResolution = Vector2(
+                (Float) 1 / m_resolution.x,
+                (Float) 1 / m_resolution.y);
 
 
 		size_t nEntries = (size_t) (m_size.x + 1) * (size_t) m_size.y,
@@ -264,7 +266,7 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 		Float rowSum = 0.0f;
 
 		/* Build a marginal & conditional cumulative distribution
-           function over luminances weighted by sin(theta) */
+           function over luminances weighted uniformly */
 		m_cdfRows[rowPos++] = 0;
 		for (int y=0; y<m_size.y; ++y) {
 			Float colSum = 0;
@@ -277,33 +279,37 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 				m_cdfCols[colPos++] = (float) colSum;
 			}
 
-			float normalization = 1.0f / std::max(1e-7f,(float) colSum);
+			float normalization = 1.0f / std::max(Epsilon,(float) colSum);
 			for (int x = 1; x < m_size.x; ++x)
 				m_cdfCols[colPos - x - 1] *= normalization;
-			m_cdfCols[colPos - 1] = 1.0f;
 
-//			Float weight = (0.5f + y)  / (float)m_size.y;
+            if (colSum == 0){
+                m_cdfCols[colPos - 1] = 0.0f;
+            }
+            else {
+                m_cdfCols[colPos - 1] = 1.0f;
+            }
+
             Float weight = 1.0f;
 			m_rowWeights[y] = weight;
 			rowSum += colSum * weight;
-//            std::cout<<"rowsum "<<y<<" "<<rowSum<<endl;
 			m_cdfRows[rowPos++] = (float) rowSum;
 		}
 
-		float normalization = 1.0f / std::max(1e-7f,(Float) rowSum);
-//        std::cout<<"normal"<<normalization<<endl;
+		float normalization = 1.0f / std::max(Epsilon,(Float) rowSum);
+
 		for (int y=1; y<m_size.y; ++y){
 			m_cdfRows[rowPos-y-1] *= normalization;
         }
 		m_cdfRows[rowPos-1] = 1.0f;
 
 		if (rowSum == 0)
-			Log(EError, "The environment map is completely black -- this is not allowed.");
+			Log(EError, "The projective emitter map is completely black -- this is not allowed.");
 		else if (!std::isfinite(rowSum))
-			Log(EError, "The environment map contains an invalid floating"
+			Log(EError, "The projective emitter contains an invalid floating"
 					" point value (nan/inf) -- giving up.");
 
-		m_normalSpectrum = normalization;
+		m_normalSpectrum = 1.0f / (Float) rowSum ;
 
 		Log(EInfo, "Done (took %i ms)", timer->getMilliseconds());
 
@@ -382,6 +388,14 @@ ref<Bitmap> Emitter::getBitmap(const Vector2i &sizeHint) const {
 	}
 
 	ProjectiveEmitter::~ProjectiveEmitter() {
+        if (m_mipmap)
+            delete m_mipmap;
+        if (m_cdfRows)
+            delete[] m_cdfRows;
+        if (m_cdfCols)
+            delete[] m_cdfCols;
+        if (m_rowWeights)
+            delete[] m_rowWeights;
 	}
 
 	void ProjectiveEmitter::setWorldTransform(const Transform &trafo) {
