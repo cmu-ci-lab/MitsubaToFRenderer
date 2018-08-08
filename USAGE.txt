@@ -1,0 +1,27 @@
+#!bin/bash
+
+# ToFRenderer can render both direct and CW ToF cameras
+# The rendering is in pathlength units. Hence if the scene is in meters, the time information is also in meters. One can convert the pathlength units to timelength units by dividing time with speed of light (in pathlengthunits/second)
+
+# Below are some example usages of the ToFRenderer for the <MitsubaTOFRenderer>/scenes/cbox/cbox_unified_all.xml scene. 
+# Note that some of the parameters in cbox_unified_all.xml scene have $ sign infront of them. These parameters should be initialized while running the renderer even though these parameters might not have any role in a particular ToFRendering. Consider deleting these parameters in the xml file if you are not going to use them. 
+
+## EXAMPLE USES
+# Running a steadystate renderer (Here minBound, maxBound, tRes, modulation, lambda, phase have no significance but should be initialized or these parameters should be deleted in the scene xml file)
+mitsuba cbox_unified_all.xml -D samples=16 -D decomposition=none -D tMin=0 -D tMax=20000 -D tRes=20000 -D modulation=none -D lambda=200 -D phase=0
+
+# Running a direct renderer (Laser is modelled as impulse) (Here modulation, lambda, phase have no significance but should be initialized or these parameters should be deleted in the scene xml file)
+mitsuba cbox_unified_all.xml -D samples=16 -D decomposition=transient -D tMin=1100 -D tMax=3600 -D tRes=50 -D modulation=none -D lambda=200 -D phase=0
+
+# Running a direct gated camera (Just a slice of the transient --Make sure tRes is slightly greater than tMax-tMin) (Here modulation, lambda, phase have no significance)
+mitsuba cbox_unified_all.xml -D samples=16 -D decomposition=transient -D tMin=1500 -D tMax=1600 -D tRes=100.01 -D modulation=none -D lambda=200 -D phase=0
+
+# Running a CW ToF camera with sine modulation codes and a phase shift of 90 degrees between the codes (Here tRes has no significance, lambda is the wavelength of illumination in path length units and phase is in degrees)
+mitsuba cbox_unified_all.xml -D samples=16 -D decomposition=transient -D tMin=0 -D tMax=3600 -D tRes=50 -D modulation=sine -D lambda=200 -D phase=90
+
+# Running a CW ToF camera with square modulation codes and a phase shift of 445.54 degrees (same as 85.54 degrees) between the codes and wavelength of 102.20 pathlength units
+mitsuba cbox_unified_all.xml -D samples=16 -D decomposition=transient -D tMin=0 -D tMax=3600 -D tRes=50 -D modulation=square -D lambda=102.20 -D phase=445.52
+
+# Note that the renderer can in principle handle arbitrary illumination and sensor codes of the CW camera. However, these codes cannot be supplied from xml file and needs some fideling with src/librender/pathlengthsampler.cpp. Currently, 3-measurement Hamiltonian, mseq, depthselective codes (Tadano, Ryuichi, Adithya Kumar Pediredla, and Ashok Veeraraghavan. "Depth selective camera: A direct, on-chip, programmable technique for depth selectivity in photography." Proceedings of the IEEE International Conference on Computer Vision. 2015) can be handled by the renderer along with the standard sine and square codes. 
+
+# Please contact Adithya Pediredla (aditya.eee.nitw@gmail.com) to report bugs or make requests to add new functionality including but not limited to new CW modulation codes.

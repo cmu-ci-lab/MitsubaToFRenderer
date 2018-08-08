@@ -44,3 +44,6 @@ sudo ldconfig
  
 # Reboot for changes to take effect
 sudo reboot
+
+# Follow USAGE.txt to render scenes with various settings. The output of mitsuba will be an exr file
+# Follow INSTALLEXR2avi.txt to view the exr file in MATLAB and/or save them as avi/png (You can also use any freely available exr readers)
