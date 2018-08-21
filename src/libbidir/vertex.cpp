@@ -328,8 +328,9 @@ int PathVertex::sampleSensor(const Scene *scene, Sampler *sampler,
 		(sensor->getType() & Sensor::EPositionSampleMapsToPixels) ? pixelSample
 		: apertureSample, &pixelPosition);
 
-	if (result.isZero())
+	if (result.isZero() && !(sensor->getType() & Sensor::ECodedOrtho)){
 		return 0;
+	}
 
 	weight[ERadiance] = result;
 	pdf[ERadiance] = pRec.pdf;
