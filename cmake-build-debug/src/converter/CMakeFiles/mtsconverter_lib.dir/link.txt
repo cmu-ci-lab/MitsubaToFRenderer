@@ -1,2 +1,0 @@
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar qc libmtsconverter_lib.a  CMakeFiles/mtsconverter_lib.dir/collada.cpp.o CMakeFiles/mtsconverter_lib.dir/converter.cpp.o CMakeFiles/mtsconverter_lib.dir/obj.cpp.o CMakeFiles/mtsconverter_lib.dir/__/emitters/perspectiveEmitterImpl.cpp.o CMakeFiles/mtsconverter_lib.dir/__/emitters/orthographicEmitterImpl.cpp.o
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib libmtsconverter_lib.a

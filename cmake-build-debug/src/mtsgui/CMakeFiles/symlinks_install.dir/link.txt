@@ -1,1 +1,0 @@
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/cc -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/symlinks_install.dir/symlinks_install.c.o  -o ../../binaries/Mitsuba.app/Contents/MacOS/symlinks_install 
