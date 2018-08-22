@@ -7,7 +7,7 @@ To compile Mitsuba_clt, you need to follow build instructions inside [Mitusba do
 ```
 hg clone https://www.mitsuba-renderer.org/hg/mitsuba
 ```
-you should clone this repository with following command:
+you should instead clone this repository with following command:
 ```
 git clone https://github.com/cmu-ci-lab/mitsuba_clt.git
 ```
@@ -26,7 +26,7 @@ Similar to perspective projector, orthographic projector retains parameters of o
 
 ### Coded Perspective Camera and Coded Orthographic Camera
 
-An additional parameter "filename(string)" is added to both coded cameras compared to their versions without masks. The filename is used as a path to the image file that contains the mask that encodes the camera. If the image has resolution inconsistent with the camera film, the mask will be scaled to fit the size of the film. There is no default value for filename, so this is a required parameter for coded cameras. You can view more detailed documentations of constructing coded cameras in src/sensors/codedOrthographic.cpp and src/sensors/codedPerspective.cpp
+An additional parameter "filename(string)" is added to both coded cameras compared to their versions without masks. The filename is used as a path to the image file that contains the mask encoding the camera. If the image has resolution inconsistent with the camera film, the mask will be scaled to fit the size of the film. There is no default value for filename, so this is a required parameter for coded cameras. You can view more detailed documentations of constructing coded cameras in src/sensors/codedOrthographic.cpp and src/sensors/codedPerspective.cpp
 
-### "filename" parameter is required for all extensional features and please make sure having them in your scene file for these projectors or cameras. 
+### "filename" parameter is required for all extensional features so please make sure having it in your scene file for these projectors or cameras. 
 
