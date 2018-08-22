@@ -1,5 +1,7 @@
 # Mitsuba CLT
-mitsuba_clt extends the functionality of mitsuba renderer 0.5.0 by adding perspective projector, orthographic projector, coded perspective camera and coded orthographic camera to it. 
+Mitsuba CLT extends the functionality of the [Mitsuba renderer](https://www.mitsuba-renderer.org/) (v0.5.0) by adding extensions for easier simulation of computational light transport imaging systems.
+
+Currently implemented extensions include: perspective projector, orthographic projector, coded perspective camera and coded orthographic camera. 
 
 ## Gompiling the extended renderer
 
