@@ -1,4 +1,4 @@
-# Mitsuba_clt
+# Mitsuba CLT
 mitsuba_clt extends the functionality of mitsuba renderer 0.5.0 by adding perspective projector, orthographic projector, coded perspective camera and coded orthographic camera to it. 
 
 ## Gompiling the extended renderer
@@ -14,7 +14,7 @@ git clone https://github.com/cmu-ci-lab/mitsuba_clt.git
 
 ## Basic usage
 
-To use basic rendering functionality of Mitsuba, you can also look into [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). As for extended functionalities, you can look into following instructions to put projectors and coded cameras into the scene file. If you look for example scene files, there are those modified from Mitsuba scene files with projectors or coded cameras in examples/ directory.  
+To use basic rendering functionality of Mitsuba, you can also look into [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). For the extended functionalities, you can find below instructions on how to use projectors and coded cameras into the scene file. You can also find some example scene files (modified from original Mitsuba scene files to use projectors or coded cameras) in the examples/ directory.  
 
 ### Perspective Projector
 
@@ -28,5 +28,5 @@ Similar to a perspective projector, a orthographic projector retains parameters 
 
 An additional parameter "filename(string)" is added to both coded cameras compared to their versions without masks. The filename is used as a path to the image file that contains the mask encoding the camera. If the image has resolution inconsistent with the camera film, the mask will be scaled to fit the size of the film. There is no default value for filename, so this is a required parameter for coded cameras. You can view more detailed documentations of constructing coded cameras in src/sensors/codedOrthographic.cpp and src/sensors/codedPerspective.cpp
 
-### "filename" parameter is required for all extensional features so please make sure having it in your scene file for these projectors or cameras. 
+### "filename" parameter is required for all extended features, so please make sure to always include it scene files for using projectors or coded cameras. 
 
