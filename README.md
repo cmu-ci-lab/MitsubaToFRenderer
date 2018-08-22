@@ -18,11 +18,11 @@ To use basic rendering functionality of Mitsuba, you can also look into [Mitusba
 
 ### Perspective Projector
 
-Perspective projector constructor uses parameters similar to that of perspectivecamera. Specifically, it includes all parameters of perspective camera except for the film. Also, it has extra parameters "filename"(string) and "scale"(float) to specify the image to be projected into the scene and the amount of scale the brightness of the projected image. For details pertaining to scene file creation of perspectiveprojector, please look into the documentation code at the very first few lines of the src/emitters/perspetctiveEmitterImpl.cpp file. 
+A perspective projector constructor uses parameters similar to that of a perspectivecamera. Specifically, it includes all parameters of perspective camera except for the film. Also, it has extra parameters "filename"(string) and "scale"(float) to specify the image to be projected into the scene and the amount of scale the brightness of the projected image. For details pertaining to scene file creation of perspectiveprojector, please look into the documentation code at the very first few lines of the src/emitters/perspetctiveEmitterImpl.cpp file. 
 
 ### Orthographic Projector 
 
-Similar to perspective projector, orthographic projector retains parameters of orthographic camera except for film. Increased parameters are "filename"(string) and "irradiance"(float) which are used to specify projection image and a scale to amount of power per unit area received by a hypothetical surface normal to the specified direction. Further information of orthographic projector scene file creation can be found in src/emitters/orthographicEmitterImpl.cpp
+Similar to a perspective projector, a orthographic projector retains parameters of a orthographic camera except for film. Increased parameters are "filename"(string) and "irradiance"(float) which are used to specify projection image and a scale to amount of power per unit area received by a hypothetical surface normal to the specified direction. Further information of orthographic projector scene file creation can be found in src/emitters/orthographicEmitterImpl.cpp
 
 ### Coded Perspective Camera and Coded Orthographic Camera
 
