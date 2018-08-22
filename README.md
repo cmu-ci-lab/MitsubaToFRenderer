@@ -32,3 +32,10 @@ An additional parameter "filename(string)" is added to both coded cameras compar
 
 ### "filename" parameter is required for all extended features, so please make sure to always include it scene files for using projectors or coded cameras. 
 
+## Authors
+
+The project is derived from the [Mitsuba renderer](https://www.mitsuba-renderer.org/), written by Wenzel Jakob et al. See the Mitsuba website for a full list of contributors.
+
+The authors of the Mitsuba CLT extensions are:
+- **Jiatian (Caroline) Sun** (primary author)
+- [Ioannis Gkioulekas](http://www.cs.cmu.edu/~igkioule/)
