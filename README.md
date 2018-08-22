@@ -18,7 +18,7 @@ To use basic rendering functionality of Mitsuba, you can also look into [Mitusba
 
 ### Perspective Projector
 
-A perspective projector constructor uses parameters similar to that of a perspectivecamera. Specifically, it includes all parameters of perspective camera except for the film. Also, it has extra parameters "filename"(string) and "scale"(float) to specify the image to be projected into the scene and the amount of scale the brightness of the projected image. For details pertaining to scene file creation of perspectiveprojector, please look into the documentation code at the very first few lines of the src/emitters/perspetctiveEmitterImpl.cpp file. 
+A perspective projector constructor uses parameters similar to that of a perspective camera. Specifically, it includes all parameters of perspective camera except for the film. Also, it has extra parameters "filename"(string) and "scale"(float) to specify the image to be projected into the scene and the amount of scale the brightness of the projected image. For details pertaining to scene file creation of perspectiveprojector, please look into the documentation code at the very first few lines of the src/emitters/perspetctiveEmitterImpl.cpp file. 
 
 ### Orthographic Projector 
 
