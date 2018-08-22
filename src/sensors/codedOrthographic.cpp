@@ -28,11 +28,6 @@ MTS_NAMESPACE_BEGIN
  *       must be in latitude-longitude format.
  *     }
  * }
- * \renderings{
- * \rendering{The material test ball viewed through an orthographic camera.
- * Note the complete lack of perspective.}{sensor_orthographic}
- * \medrendering{A rendering of the Cornell box}{sensor_orthographic_2}
- * }
  *
  * This plugin implements a simple orthographic camera, i.e. a sensor
  * based on an orthographic projection without any form of perspective.

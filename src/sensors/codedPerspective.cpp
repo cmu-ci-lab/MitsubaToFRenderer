@@ -58,11 +58,6 @@ MTS_NAMESPACE_BEGIN
  *       must be in latitude-longitude format.
  *     }
  * }
- * \renderings{
- * \rendering{The material test ball viewed through a perspective pinhole
- * camera. Everything is in sharp focus.}{sensor_perspective}
- * \medrendering{A rendering of the Cornell box}{sensor_perspective_2}
- * }
  *
  * This plugin implements a simple idealizied coded perspective camera model, which
  * has an infinitely small aperture. This creates an infinite depth of field,

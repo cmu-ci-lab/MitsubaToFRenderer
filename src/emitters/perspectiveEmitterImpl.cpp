@@ -21,6 +21,90 @@
 
 MTS_NAMESPACE_BEGIN
 
+/*!\plugin{perspectiveprojector}{Perspective Projector}
+ * \order{1}
+ * \parameters{
+ *     \parameter{toWorld}{\Transform\Or\Animation}{
+ *	      Specifies an optional camera-to-world transformation.
+ *        \default{none (i.e. camera space $=$ world space)}
+ *     }
+ *     \parameter{focalLength}{\String}{
+ *         Denotes the camera's focal length specified using
+ *         \code{35mm} film equivalent units. See the main
+ *         description for further details.
+ *         \default{\code{50mm}}
+ *     }
+ *     \parameter{fov}{\Float}{
+ *         An alternative to \code{focalLength}:
+ *         denotes the camera's field of view in degrees---must be
+ *         between 0 and 180, excluding the extremes.
+ *     }
+ *     \parameter{fovAxis}{\String}{
+ *         When the parameter \code{fov} is given (and only then),
+ *         this parameter further specifies the image axis, to
+ *         which it applies.
+ *         \begin{enumerate}[(i)]
+ *             \item \code{\textbf{x}}: \code{fov} maps to the
+ *                 \code{x}-axis in screen space.
+ *             \item \code{\textbf{y}}: \code{fov} maps to the
+ *                 \code{y}-axis in screen space.
+ *             \item \code{\textbf{diagonal}}: \code{fov}
+ *                maps to the screen diagonal.
+ *             \item \code{\textbf{smaller}}: \code{fov}
+ *                maps to the smaller dimension
+ *                (e.g. \code{x} when \code{width}<\code{height})
+ *             \item \code{\textbf{larger}}: \code{fov}
+ *                maps to the larger dimension
+ *                (e.g. \code{y} when \code{width}<\code{height})
+ *         \end{enumerate}
+ *         The default is \code{\textbf{x}}.
+ *     }
+ *     \parameter{shutterOpen, shutterClose}{\Float}{
+ *         Specifies the time interval of the measurement---this
+ *         is only relevant when the scene is in motion.
+ *         \default{0}
+ *     }
+ *     \parameter{nearClip, farClip}{\Float}{
+ *         Distance to the near/far clip
+ *         planes.\default{\code{near\code}-\code{Clip=1e-2} (i.e.
+ *         \code{0.01}) and {\code{farClip=1e4} (i.e. \code{10000})}}
+ *     }
+ *     \parameter{filename}{\String}{
+ *       Filename of the radiance-valued input image to be loaded;
+ *       must be in latitude-longitude format(the image to be
+ *       projected into the scene).
+ *     }
+ *     \parameter{scale}{\Float}{
+ *      Specifies the amount of scaling to the emitter's brightness
+ *     }
+ * }
+ *
+ * This plugin implements a simple idealizied coded perspective emitter model, which
+ * has an infinitely small aperture. This creates an infinite depth of field,
+ * i.e. no optical blurring occurs.
+ *
+ * So far, the emitter requires an input image whose resolution and color specifies
+ * radiance value of aperture and by default, the emitter has a focal length of 35mm.
+ * Alternatively, it is also possible to specify a field of projection in degrees
+ * along a given axis (see the \code{fov} and \code{fovAxis} parameters). To scale
+ * the brightness of the source conveniently, you can specify the parameter \code{scale},
+ * which is by default 1.
+ *
+ * The exact camera position and orientation is most easily expressed using the
+ * \code{lookat} tag, i.e.:
+ * \begin{xml}
+ * <sensor type="codedPerspective">
+ *     <transform name="toWorld">
+ *         <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
+ *              and the direction (0, 0, 1) points "up" in the output image -->
+ *         <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+ *     </transform>
+ *     </string name="filename" value="image.png" />
+ *     <float name="scale" value="10"/>
+ * </sensor>
+ * \end{xml}
+ */
+
     class PerspectiveEmitterImpl : public PerspectiveEmitter{
     public:
         typedef TSpectrum<half, SPECTRUM_SAMPLES> SpectrumHalf;

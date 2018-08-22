@@ -11,7 +11,7 @@
 
 MTS_NAMESPACE_BEGIN
 
-/*!\plugin{orthographic}{Orthographic Emitter}
+/*!\plugin{orthographicProjector}{Orthographic Projector}
  * \order{3}
  * \parameters{
  *     \parameter{toWorld}{\Transform\Or\Animation}{
@@ -23,13 +23,15 @@ MTS_NAMESPACE_BEGIN
  *         planes.\default{\code{near\code}-\code{Clip=1e-2} (i.e.
  *         \code{0.01}) and {\code{farClip=1e4} (i.e. \code{10000})}}
  *     }
- *     \parameter{intensity}{\Float}{
- *         Specifies the total amount of power received
+ *     \parameter{irradiance}{\Float}{
+ *         Specifies a scale to amount of power per unit area received
  *         by a hypothetical surface normal to the specified direction
  *         \default{1}
  *     }
  *     \parameter{filename}{\String}{
- *          Specifies the image to be projected onto the scene
+ *         Filename of the irradiance-valued input image to be loaded;
+ *         must be in latitude-longitude format(the image to be
+ *         projected into the scene).
  *     }
  * }
  *
@@ -37,8 +39,13 @@ MTS_NAMESPACE_BEGIN
  * based on an orthographic projection without any form of perspective.
  * It can be thought of as a planar emitter that projects light
  * along its normal direction. By default, this is the region $[-1, 1]^2$ inside
- * the XY-plane facing along the positive Z direction. Transformed versions
- * can be instantiated e.g. as follows:
+ * the XY-plane facing along the positive Z direction. The emitter requires an
+ * input image whose resolution and color specifies irradiance value of the plane
+ * and currently there is no default value for the projection image so please
+ * create a white image for default usage. If you need to adjust the threshold of
+ * irrdiance of the plane, you can specify it by \code{irradiance}, which is by
+ * default 1. Transformed versions can be instantiated.
+ * e.g. as follows:
  *
  * \begin{xml}
  * <sensor type="orthographicProjector">
@@ -50,6 +57,8 @@ MTS_NAMESPACE_BEGIN
  *              (1, 1, 1) and faces direction (0, 1, 0) -->
  *         <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
  *     </transform>
+ *     </string name="filename" value="image.png" />
+ *     <float name="irradiance" value="10"/>
  * </sensor>
  * \end{xml}
  */
