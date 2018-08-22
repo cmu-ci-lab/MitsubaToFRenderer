@@ -1,9 +1,9 @@
 # Mitsuba_clt
-mitsuba_clt extends the functionality of mitsuba renderer 0.5.0 by adding perspective projector, orthographic projector, coded perspective camera and coded orthogrpahic camera to it. 
+mitsuba_clt extends the functionality of mitsuba renderer 0.5.0 by adding perspective projector, orthographic projector, coded perspective camera and coded orthographic camera to it. 
 
 ## Gompiling the extended renderer
 
-To compile Mitsuba_clt, you need to follow build instructions inside [Mitusba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf), yet at the step of 
+To compile Mitsuba_clt, you need to follow build instructions inside [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf), yet at the step of 
 ```
 hg clone https://www.mitsuba-renderer.org/hg/mitsuba
 ```
@@ -14,7 +14,7 @@ git clone https://github.com/cmu-ci-lab/mitsuba_clt.git
 
 ## Basic usage
 
-To use basic rendering functionality of Mitsuba, you can also look into [Mitusba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). As for extended functionalities, you can look into following instructions to put projectors and coded cameras into the scene file. If you look for example scene files, there are those modified from Mitsuba scene files with projectors or coded cameras in examples/ directory.  
+To use basic rendering functionality of Mitsuba, you can also look into [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). As for extended functionalities, you can look into following instructions to put projectors and coded cameras into the scene file. If you look for example scene files, there are those modified from Mitsuba scene files with projectors or coded cameras in examples/ directory.  
 
 ### Perspective Projector
 
