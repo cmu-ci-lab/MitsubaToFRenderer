@@ -5,7 +5,7 @@ Currently implemented extensions include: perspective projector, orthographic pr
 
 ## Gompiling the extended renderer
 
-To compile Mitsuba_clt, you need to follow build instructions inside [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf), yet at the step of 
+To compile Mitsuba CLT, you need to follow build instructions inside [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf), yet at the step of 
 ```
 hg clone https://www.mitsuba-renderer.org/hg/mitsuba
 ```
