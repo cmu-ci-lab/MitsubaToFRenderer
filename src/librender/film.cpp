@@ -19,6 +19,7 @@
 #include <mitsuba/render/film.h>
 #include <mitsuba/core/plugin.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/math/distributions/normal.hpp>
 
 MTS_NAMESPACE_BEGIN
 
@@ -75,7 +76,19 @@ Film::Film(const Properties &props)
 	m_decompositionMinBound = props.getFloat("minBound", 0.0f);
 	m_decompositionMaxBound = props.getFloat("maxBound", 0.0f);
 	m_decompositionBinWidth = props.getFloat("binWidth", 1.0f);
-	m_isldSampling = props.getBoolean("ldSampling", false);
+	m_isldSampling 			= props.getBoolean("ldSampling", false);
+
+
+	//Adaptive sampling
+	m_isAdaptive 			= props.getBoolean("adapSampling", false);
+	if(m_isAdaptive && m_isldSampling)
+		Log(EError, "Both ldSampling and Adaptive sampling cannot be enabled simultaneously");
+
+	m_adapMaxError 			= props.getFloat("adapMaxError", 0.05f);
+	m_adapPValue 			= props.getFloat("adapPValue", 0.05f);
+	boost::math::normal dist(0, 1);
+	m_adapQuantile = (Float) boost::math::quantile(dist, 1-m_adapPValue/2);
+	m_adapMaxSampleFactor 	= props.getInteger("adapMaxSampleFactor", 8);
 
 	m_frames = ceil((m_decompositionMaxBound-m_decompositionMinBound)/m_decompositionBinWidth);
 	m_subSamples = props.getSize("subSamples", 1);
@@ -84,9 +97,9 @@ Film::Film(const Properties &props)
 	if( m_decompositionType == ESteadyState || ((m_decompositionType == ETransient || m_decompositionType == ETransientEllipse) && m_pathLengthSampler->getModulationType()!= PathLengthSampler::ENone)){
 		m_frames = 1;
 	}
-	if(m_isldSampling &&
+	if((m_isldSampling || m_isAdaptive) &&
 	  (m_decompositionType != ETransientEllipse || m_pathLengthSampler->getModulationType() != PathLengthSampler::ENone))
-		SLog(EError, "ld sampling for transient can only be enabled for Transient Ellipse and only when there is no modulation type");
+		SLog(EError, "ld sampling and adaptive sampling for transient can only be enabled for Transient Ellipse and only when there is no modulation type");
 
 
 	m_forceBounces 	= props.getBoolean("forceBounce", false);

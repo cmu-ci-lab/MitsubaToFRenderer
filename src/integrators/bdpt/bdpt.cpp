@@ -210,7 +210,16 @@ public:
 		m_config.m_decompositionMinBound 	= film->getDecompositionMinBound();
 		m_config.m_decompositionMaxBound 	= film->getDecompositionMaxBound();
 		m_config.m_decompositionBinWidth    = film->getDecompositionBinWidth();
-		m_config.m_isldSampling = film->isldSampling();
+		m_config.m_isldSampling 			= film->isldSampling();
+
+		m_config.m_isAdaptive   			= film->isAdaptive();
+		m_config.m_adapMaxError 			= film->getAdapMaxError();
+		m_config.m_adapQuantile 			= film->getAdapQuantile();
+		m_config.m_adapPValue 				= film->getAdapPValue();
+		m_config.m_adapAverageLuminance 	= film->getAdapAverageLuminance();
+		m_config.m_adapMaxSampleFactor 		= film->getAdapMaxSampleFactor();
+
+
 		m_config.m_frames = film->getFrames();
 		m_config.m_subSamples = film->getSubSamples();
 

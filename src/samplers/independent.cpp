@@ -102,6 +102,21 @@ public:
 		return Point2(value1, value2);
 	}
 
+
+	/* Just return the next random Float value */
+	Float nextFloat() {
+		return m_random->nextFloat();
+	}
+
+	/* Just return the next random size_t value */
+	size_t nextSize(size_t n) {
+		return m_random->nextSize(n);
+	}
+
+	template <typename Iterator> void shuffle(Iterator it1, Iterator it2){
+		m_random->shuffle(it1, it2);
+	}
+
 	std::string toString() const {
 		std::ostringstream oss;
 		oss << "IndependentSampler[" << endl

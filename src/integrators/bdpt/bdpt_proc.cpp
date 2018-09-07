@@ -62,8 +62,9 @@ public:
 		m_scene->wakeup(NULL, m_resources);
 		m_scene->initializeBidirectional();
 
-		if(m_config.m_isldSampling && m_sampler->getSampleCount()%m_config.m_frames != 0)
-			SLog(EError, "Number of samples (%i) must be integral multiple of number of frames (%i) if ldsampling is enabled", m_sampler->getSampleCount(), m_config.m_frames);
+		if((m_config.m_isldSampling || m_config.m_isAdaptive) && m_sampler->getSampleCount()%m_config.m_frames != 0)
+			SLog(EError, "Number of samples (%i) must be integral multiple of number of frames (%i) "
+					"if ldsampling or adaptive sampling is enabled", m_sampler->getSampleCount(), m_config.m_frames);
 
 		m_ellipsoid = new Ellipsoid(scene->getMaxDepth(), scene->getPrimitiveCount());
 	}
@@ -103,32 +104,211 @@ public:
 		if (!m_scene->hasDegenerateEmitters() && sensorDepth != -1)
 			++sensorDepth;
 
-		for (size_t i=0; i<m_hilbertCurve.getPointCount(); ++i) {
-			Point2i offset = Point2i(m_hilbertCurve[i]) + Vector2i(rect->getOffset());
-			m_sampler->generate(offset);
+		if(!m_config.m_isAdaptive){ //Not adaptive, so perform the regular technique
+			for (size_t i=0; i<m_hilbertCurve.getPointCount(); ++i) {
+				Point2i offset = Point2i(m_hilbertCurve[i]) + Vector2i(rect->getOffset());
+				m_sampler->generate(offset);
 
-			for (size_t j = 0; j<m_sampler->getSampleCount(); j++) {
-				if (stop)
-					break;
+				for (size_t j = 0; j<m_sampler->getSampleCount(); j++) {
+					if (stop)
+						break;
 
+					if (needsTimeSample)
+						time = m_sensor->sampleTime(m_sampler->next1D());
+
+					/* Start new emitter and sensor subpaths */
+					emitterSubpath.initialize(m_scene, time, EImportance, m_pool);
+					sensorSubpath.initialize(m_scene, time, ERadiance, m_pool);
+
+					/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */
+					Float pathLengthTarget;
+					if(!m_config.m_isldSampling)
+						pathLengthTarget = result->samplePathLengthTarget(m_sampler);
+					else
+						pathLengthTarget = m_config.m_decompositionMinBound + m_config.m_decompositionBinWidth*(j%m_config.m_frames) + m_config.m_decompositionBinWidth*m_sampler->nextFloat();
+
+					// TODO: For transientEllipse, stop generating random paths after pathLength target
+					/* Perform a random walk using alternating steps on each path */
+					Path::alternatingRandomWalkFromPixel(m_scene, m_sampler,result,
+						emitterSubpath, emitterDepth, sensorSubpath,
+						sensorDepth, offset, m_config.rrDepth, m_pool);
+
+					evaluate(result, emitterSubpath, sensorSubpath, pathLengthTarget);
+
+					emitterSubpath.release(m_pool);
+					sensorSubpath.release(m_pool);
+
+					m_sampler->advance();
+				}
+			}
+		}else {
+			//Pre-process: mean of all the paths and all time bins
+			const int nSamples = 1000;
+			size_t totalPoints = m_hilbertCurve.getPointCount();
+
+			BDPTConfiguration fakeConfig = m_config;
+			fakeConfig.m_decompositionBinWidth = fakeConfig.m_decompositionMaxBound-fakeConfig.m_decompositionMinBound;
+			fakeConfig.m_frames = 1; // mean value can be computed with average only
+
+			// Create a fake work result to use the evaluate function and put either transient/transientEllipse case there
+			BDPTWorkResult *fakeResult = new BDPTWorkResult(fakeConfig, m_rfilter.get(),
+											Vector2i(m_config.blockSize));
+			fakeResult->setOffset(rect->getOffset());
+			fakeResult->setSize(rect->getSize());
+			fakeResult->clear();
+
+			Spectrum meanValue(0.0);
+
+			/* Estimate the overall luminance on the image plane */
+			for (int i=0; i<nSamples; ++i) {
+				int index = floor(m_sampler->nextFloat()*totalPoints) ; // instead of m_sampler->nextSize(totalPoints) which seems slow
+				Point2i offset = Point2i(m_hilbertCurve[index]) + Vector2i(rect->getOffset());
+				m_sampler->generate(offset);
+				Float pathLengthTarget = fakeResult->samplePathLengthTarget(m_sampler);
+
+
+				// TODO: For transientEllipse, stop generating random paths after pathLength target
+				/* Perform a random walk using alternating steps on each path */
 				if (needsTimeSample)
 					time = m_sensor->sampleTime(m_sampler->next1D());
 
 				/* Start new emitter and sensor subpaths */
 				emitterSubpath.initialize(m_scene, time, EImportance, m_pool);
-				sensorSubpath.initialize(m_scene, time, ERadiance, m_pool);
-
-				/* Perform a random walk using alternating steps on each path */
+								sensorSubpath.initialize(m_scene, time, ERadiance, m_pool);
 				Path::alternatingRandomWalkFromPixel(m_scene, m_sampler,result,
 					emitterSubpath, emitterDepth, sensorSubpath,
 					sensorDepth, offset, m_config.rrDepth, m_pool);
-
-				evaluate(result, emitterSubpath, sensorSubpath, j);
+				meanValue += evaluate(fakeResult, emitterSubpath, sensorSubpath, pathLengthTarget);
 
 				emitterSubpath.release(m_pool);
 				sensorSubpath.release(m_pool);
 
-				m_sampler->advance();
+			}
+
+			// Find average of fakeResult. Note: This is highly inefficient in rendering speed and needs a better way, probably by hacking evaluate to return the spectrum value?
+			Spectrum averegeBitmap = fakeResult->average()/m_config.m_frames;
+			meanValue = meanValue/nSamples;
+
+			Float averageLuminance = averegeBitmap.getLuminance();
+
+			Float sampleLuminance;
+
+			// Adaptive rendering
+			size_t samplesPerBin = m_sampler->getSampleCount()/m_config.m_frames;
+
+			//
+			int borderSize = result->getImageBlock()->getBorderSize();
+			Float *target = (Float *) result->getImageBlock()->getBitmap()->getFloatData();
+			Float *snapshot = (Float *) alloca(sizeof(Float)*
+					3 * (2*borderSize+1)*(2*borderSize+1));
+
+
+			for (size_t i=0; i<m_hilbertCurve.getPointCount(); ++i) {
+				Point2i offset = Point2i(m_hilbertCurve[i]) + Vector2i(rect->getOffset());
+				m_sampler->generate(offset);
+
+				for (size_t j=0; j < m_config.m_frames; j++){
+
+
+					/* Before starting to place samples within the area of a single pixel, the
+					   following takes a snapshot of all surrounding channels+weight+alpha
+					   values. Those are then used later to ensure that adjacent pixels will
+					   not be disproportionately biased by this pixel's contributions. */
+//					for (int y=0; y<2*borderSize+1; ++y) {
+//						Float *src = target + (m_hilbertCurve[i].y * (size_t) size.x + min.x) * channels;
+//
+//
+//						Float *src = target + ((y+points[i].y)
+//							* block->getBitmap()->getWidth() + points[i].x);
+//						SpectrumAlphaWeight *dst = snapshot + y*(2*borderSize+1);
+//						memcpy(dst, src, sizeof(SpectrumAlphaWeight) * (2*borderSize+1));
+//					}
+//
+//					/* Rasterize the filtered sample into the framebuffer */
+//					for (int y=min.y, yr=0; y<=max.y; ++y, ++yr) {
+//						const Float weightY = m_weightsY[yr];
+//						Float *dest = m_bitmap->getFloatData()
+//							+ (y * (size_t) size.x + min.x) * channels;
+//
+//						for (int x=min.x, xr=0; x<=max.x; ++x, ++xr) {
+//							const Float weight = m_weightsX[xr] * weightY;
+//
+//							for (int k=0; k<channels; ++k)
+//								*dest++ += weight * value[k];
+//						}
+//					}
+
+
+
+					Float mean = 0, meanSqr = 0.0f;
+					size_t sampleCount = 0;
+					while (true) {
+						if (stop)
+							break;
+
+						if (needsTimeSample)
+							time = m_sensor->sampleTime(m_sampler->next1D());
+
+						/* Start new emitter and sensor subpaths */
+						emitterSubpath.initialize(m_scene, time, EImportance, m_pool);
+						sensorSubpath.initialize(m_scene, time, ERadiance, m_pool);
+
+						/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */
+						Float pathLengthTarget;
+						if(!m_config.m_isldSampling)
+							pathLengthTarget = result->samplePathLengthTarget(m_sampler);
+						else
+							pathLengthTarget = m_config.m_decompositionMinBound + m_config.m_decompositionBinWidth*j + m_config.m_decompositionBinWidth*m_sampler->nextFloat();
+
+						// TODO: For transientEllipse, stop generating random paths after pathLength target
+						/* Perform a random walk using alternating steps on each path */
+						Path::alternatingRandomWalkFromPixel(m_scene, m_sampler,result,
+							emitterSubpath, emitterDepth, sensorSubpath,
+							sensorDepth, offset, m_config.rrDepth, m_pool);
+
+						Spectrum sampleValue = evaluate(result, emitterSubpath, sensorSubpath, pathLengthTarget);
+
+						emitterSubpath.release(m_pool);
+						sensorSubpath.release(m_pool);
+
+						m_sampler->advance();
+
+						sampleLuminance = sampleValue.getLuminance();
+						sampleCount++ ;
+						const Float delta = sampleLuminance - mean;
+						mean += delta / sampleCount;
+						meanSqr += delta * (sampleLuminance - mean);
+
+						if (m_config.m_adapMaxSampleFactor >= 0 && sampleCount >= m_config.m_adapMaxSampleFactor * samplesPerBin) {
+							break;
+						} else if (sampleCount >= samplesPerBin) {
+							/* Variance of the primary estimator */
+							const Float variance = meanSqr / (sampleCount-1);
+
+							Float stdError = std::sqrt(variance/sampleCount);
+
+							/* Half width of the confidence interval */
+							Float ciWidth = stdError * m_config.m_adapQuantile;
+
+							/* Relative error heuristic */
+							Float base = std::max(mean, averageLuminance * 0.01f);
+
+							if (ciWidth <= m_config.m_adapMaxError * base)
+								break;
+						}
+					}
+					/* Ensure that a large amounts of samples in one pixel do not
+					   bias neighboring pixels (due to the reconstruction filter) */
+//					Float factor = (Float)samplesPerBin / (Float)sampleCount;
+//					for (int y=0; y<2*borderSize+1; ++y) {
+//						Float *dst = target + ((y+points[i].y)
+//							* block->getBitmap()->getWidth() + points[i].x);
+//						Float *backup = snapshot + y*(2*borderSize+1);
+//
+//						for (int x=0; x<2*borderSize+1; ++x)
+//							dst[x] = backup[x] * (1-factor) + dst[x] * factor;
+//					}
+				}
 			}
 		}
 
@@ -141,14 +321,17 @@ public:
 	}
 
 	/// Evaluate the contributions of the given eye and light paths
-	void evaluate(BDPTWorkResult *wr,
-			Path &emitterSubpath, Path &sensorSubpath, size_t &sampleIndex) {
+	Spectrum evaluate(BDPTWorkResult *wr,
+			Path &emitterSubpath, Path &sensorSubpath, Float &pathLengthTarget) {
 		/* Check if the emitter is laser?*/
 		bool isEmitterLaser = false;
 		const AbstractEmitter *AE = emitterSubpath.vertex(1)->getAbstractEmitter();
 		if (!AE->needsPositionSample() && !AE->needsDirectionSample() ){
 			isEmitterLaser = true;
 		}
+
+		//For adaptive renderer
+		Spectrum meanSpectrum(0.0);
 
 		Point2 initialSamplePos = sensorSubpath.vertex(1)->getSamplePosition();
 		const Scene *scene = m_scene;
@@ -168,12 +351,6 @@ public:
 		bool combine = wr->m_combineBDPTAndElliptic;
 		Float corrWeight = 1.0f; // will hold the f(\|x\|) for the BDPT length also will be equal to BDPT_pdf if BDPT is selected and Elliptic_pdf if Elliptic-BDPT is selected
 
-		/* Sample a random path length between pathMin and PathMax which will be equal to the total path for this path: TODO: Extend to multiple random path lengths? */
-		Float pathLengthTarget;
-		if(!m_config.m_isldSampling)
-			pathLengthTarget = wr->samplePathLengthTarget(m_sampler);
-		else
-			pathLengthTarget = m_config.m_decompositionMinBound + m_config.m_decompositionBinWidth*(sampleIndex%m_config.m_frames) + m_config.m_decompositionBinWidth*m_sampler->nextFloat();
 		/* Compute the combined path lengths of the two subpaths */
 		Float *emitterPathlength = NULL;
 		Float *sensorPathlength = NULL;
@@ -506,7 +683,7 @@ public:
 																			   vtPred, vt, vtEdge,
 																			   emitterSubpath, sensorSubpath, s, t, isEmitterLaser,
 																			   connectionVertex, connectionEdge1, connectionEdge2, PathLengthRemaining, tempPathLength,
-																			   EllipticPathWeight, corrWeight, value, sampleValue,
+																			   EllipticPathWeight, corrWeight, value, sampleValue, meanSpectrum,
 																			   sampleDecompositionValue, l_sampleDecompositionValue, temp, samplePos, m_ellipsoid,
 																			   EImportance, wr);
 							}
@@ -594,7 +771,7 @@ public:
 								miWeight *= wr->correlationFunction(pathLength)*corrWeight;
 						else{
 							size_t binIndex = floor((pathLength - wr->m_decompositionMinBound)/(wr->m_decompositionBinWidth));
-							if ( !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
+							if ( pathLength >= wr->m_decompositionMinBound && pathLength <= wr->m_decompositionMaxBound && !value.isZero() && currentDecompositionType != Film::ESteadyState && binIndex >= 0 && binIndex < wr->m_frames){
 								if(SPECTRUM_SAMPLES == 3)
 									value.toLinearRGB(temp[0],temp[1],temp[2]); // Verify what happens when SPECTRUM_SAMPLES ! = 3
 								else
@@ -639,6 +816,7 @@ public:
 		m_pool.release(connectionEdge1);
 		m_pool.release(connectionEdge2);
 		m_pool.release(connectionVertex);
+		return meanSpectrum;
 	}
 
 	ref<WorkProcessor> clone() const {

@@ -48,7 +48,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 		const Path &emitterSubpath, const Path &sensorSubpath, const size_t &s, const size_t &t, bool &isEmitterLaser,
 		PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
-		Float &EllipticPathWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value,
+		Float &EllipticPathWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value, Spectrum &meanSpectrum,
 		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 		ETransportMode mode, BDPTWorkResult *wr){
 //	Float miWeight;
@@ -175,6 +175,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
 						wr->putLightSample(samplePos, l_sampleDecompositionValue);
+						meanSpectrum += currentValue * miWeight;
 						//reset the l_sampleDecompositionValue
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] = 0;
 						l_sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] = 0;
@@ -194,6 +195,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
 					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+					meanSpectrum += cumulativeValue * miWeight;
 				}else{
 					total_value += cumulativeValue * miWeight * corrWeight;
 				}

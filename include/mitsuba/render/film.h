@@ -91,6 +91,14 @@ public:
 	inline Float getDecompositionMaxBound() const {return m_decompositionMaxBound; }
 	inline Float getDecompositionBinWidth() const {return m_decompositionBinWidth; }
 	inline bool isldSampling() const {return m_isldSampling; }
+
+	inline bool isAdaptive() const {return m_isAdaptive; }
+	inline Float getAdapMaxError() const {return m_adapMaxError; }
+	inline Float getAdapQuantile() const {return m_adapQuantile; }
+	inline Float getAdapPValue() const {return m_adapPValue; }
+	inline Float getAdapAverageLuminance() const {return m_adapAverageLuminance; }
+	inline int getAdapMaxSampleFactor() const {return m_adapMaxSampleFactor; }
+
 	inline size_t getFrames() const {return m_frames; }
 	inline size_t getSubSamples() const {return m_subSamples; }
 
@@ -179,6 +187,11 @@ protected:
 	bool m_isldSampling;
 	size_t m_frames;
 	size_t m_subSamples;
+
+	//FIXME: Probably m_adap_quantile is not needed to be declared here
+	bool m_isAdaptive;
+	Float m_adapMaxError, m_adapQuantile, m_adapPValue, m_adapAverageLuminance;
+	int m_adapMaxSampleFactor;
 
 	// For special case of ToF Renderer
 	ref<PathLengthSampler> m_pathLengthSampler;

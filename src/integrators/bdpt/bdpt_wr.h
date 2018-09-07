@@ -117,6 +117,10 @@ public:
 		return m_lightImage.get();
 	}
 
+	inline Spectrum average() const {
+		return (m_block->average() + m_lightImage->average()) * 0.5;
+	}
+
 	/// Return the number of channels stored by the image block
 	inline int getChannelCount() const { return m_block->getChannelCount(); }
 

@@ -252,7 +252,7 @@ struct MTS_EXPORT_BIDIR PathVertex {
 			const PathVertex *vtPred, PathVertex *vt, const PathEdge *vtEdge,
 			const Path &emitterSubpath, const Path &sensorSubpath, const size_t &s, const size_t &t, bool &isEmitterLaser,
 			PathVertex *connectionVertex, PathEdge *connectionEdge1, PathEdge *connectionEdge2, Float &pathLengthTarget, Float &currentPathLength,
-			Float &EllipticPathWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value,
+			Float &EllipticPathWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value, Spectrum &meanSpectrum,
 			Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 			ETransportMode mode, BDPTWorkResult *wr);
 

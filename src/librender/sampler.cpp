@@ -69,11 +69,21 @@ void Sampler::setSampleIndex(size_t sampleIndex) {
 	m_dimension1DArray = m_dimension2DArray = 0;
 }
 
-Float Sampler::nextFloat(){return 0.0f;}
+Float Sampler::nextFloat(){
+	Log(EError, "%s::nextSize() is not implemented!",
+		getClass()->getName().c_str());
+	return 0.0f;
+}
 
-size_t Sampler::nextSize(size_t n){return 0;}
+size_t Sampler::nextSize(size_t n){
+	Log(EError, "%s::nextFloat() is not implemented!",
+		getClass()->getName().c_str());
+	return 0.0f;
+}
 
 template <typename Iterator> void Sampler::shuffle(Iterator it1, Iterator it2){
+	Log(EError, "%s::shuffle() is not implemented!",
+		getClass()->getName().c_str());
 	return;
 }
 

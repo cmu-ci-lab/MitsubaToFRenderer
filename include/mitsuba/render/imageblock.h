@@ -99,6 +99,11 @@ public:
 	/// Clear everything to zero
 	inline void clear() { m_bitmap->clear(); }
 
+	/// Compute the average of bitmap
+	inline Spectrum average() const {
+		return m_bitmap->average();
+	}
+
 	/// Accumulate another image block into this one
 	inline void put(const ImageBlock *block) {
 		m_bitmap->accumulate(block->getBitmap(),
