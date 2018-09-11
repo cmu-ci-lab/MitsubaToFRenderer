@@ -19,10 +19,10 @@ MTS_NAMESPACE_BEGIN
 template<class T>
 class Aggregate
 {
-protected:
+public:
 	std::vector<const Shape *> m_shapes;
 	std::vector<T> m_triaccels; //triaccels contain shape index from which the mesh (triangles i.e three indices and positions) can be accessed
-
+protected:
 	AABB m_bb;
 	bool m_frozen;
 public:

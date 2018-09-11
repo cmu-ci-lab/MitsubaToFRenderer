@@ -285,10 +285,10 @@ bool ShapeKDTree::ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler>
 			if(nodeState && current->child1 == 0 && current->child2 == 0){ // leaf case
 				//leaf code: Add all the triangles of the leaf to the triangle hash.
 				for(std::vector<int>::iterator it = current->begin; it != current->end; it++){
-					const TriAccel &ta = m_triAccel[*it];
+					const TriAccel &ta = m_bvh->m_triaccels[*it];
 
 					//gather the required data structures
-					const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
+					const TriMesh *mesh = static_cast<const TriMesh *>(m_bvh->m_shapes[ta.shapeIndex]);
 					const Triangle *triangles = mesh->getTriangles();
 					const Point *positions = mesh->getVertexPositions();
 					const Normal *normals = mesh->getVertexNormals();
