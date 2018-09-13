@@ -291,9 +291,6 @@ bool ShapeKDTree::ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler>
 				for(std::vector<int>::iterator it = current->begin; it != current->end; it++){
 					const TriAccel &ta = m_triAccel[*it];
 
-					if(ta.k != KNoTriangleFlag)
-						continue;
-
 					//gather the required data structures
 					const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
 					const Triangle *triangles = mesh->getTriangles();
@@ -484,7 +481,7 @@ bool ShapeKDTree::ellipsoidParseIntersectingTriangles(Ellipsoid* e, Float &value
 		value = value/pdf;
 		return true;
 	}
-	e->cacheSetTriState(x,Cache::EFails); // TODO: (i)  After intersectingTriangles is made as a cache, remove the failed triangles from intersectingTriangles.
+//	e->cacheSetTriState(x,Cache::EFails); // TODO: (i)  After intersectingTriangles is made as a cache, remove the failed triangles from intersectingTriangles.
 										  // 	   (ii) Update the probabilities of the intersecting triangles if importance sampling is enabled.
 										  // 	   (iii)Check how what parameters and how easy it is, to store the intersecting triangles' parameters so that intersection is not required to be calculated again.
 	return false;
