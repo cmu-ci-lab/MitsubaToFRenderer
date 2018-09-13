@@ -109,26 +109,29 @@ void ShapeKDTree::build() {
 	KDAssert(idx == primCount);
 #endif
 	ref<Timer> timerBB = new Timer();
-	cout << "Constructing a Bounding Box Tree\n";
+	Log(EDebug, "Constructing a Bounding Box Tree");
 	size_t maxDepth = getMaxDepth();
 	m_BBTree = new BBTree(maxDepth, primCount);
 	buildBBTree(m_nodes);
-	cout << "Finished -- took " << timerBB->getMilliseconds() << " ms.\n";
+	Log(EDebug, "Finished -- took %i ms", timerBB->getMilliseconds());
 
 	/*
 	 * Create a new BVH tree by first create a vector of triangles
 	 *
 	 * */
 	ref<Timer> timerBVH = new Timer();
-	cout << "Constructing a BVH Tree\n";
+	Log(EDebug, "Constructing a BVH Tree");
 
 	std::vector<TriAccel> triaccels;
 	for(size_t i = 0;i < primCount;i++){
+		//FixME: Optimize instead of copying and creating overhead
 		if(m_triAccel[i].k != KNoTriangleFlag)
 			triaccels.push_back(m_triAccel[i]);
+		else
+			Log(EDebug, "\n\n\n Current implementation with BVH does not allow non-triangular meshes; The results are mostly wrong !! \n\n\n");
 	}
 	m_bvh = new BVH<TriAccel>(m_shapes, triaccels);
-	cout << "Finished -- took " << timerBVH->getMilliseconds() << " ms.\n";
+	Log(EDebug, "Finished -- took %i ms", timerBVH->getMilliseconds());
 
 //	printBBTree(m_nodes, 0);
 //	printAllTriangles();
@@ -268,6 +271,7 @@ bool ShapeKDTree::ellipsoidIntersect(Ellipsoid* e, Float &value, Ray &ray, Inter
 bool ShapeKDTree::ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler> sampler, void *temp) const{
 
 	if(!e->isSubSample()){
+
 		size_t *intersectingTriangles = e->getintersectingTriangleSet();
 		size_t countIntersectingTriangles = 0;
 
@@ -285,10 +289,13 @@ bool ShapeKDTree::ellipsoidParseBVH_DFS(Ellipsoid* e, Float &value, ref<Sampler>
 			if(nodeState && current->child1 == 0 && current->child2 == 0){ // leaf case
 				//leaf code: Add all the triangles of the leaf to the triangle hash.
 				for(std::vector<int>::iterator it = current->begin; it != current->end; it++){
-					const TriAccel &ta = m_bvh->m_triaccels[*it];
+					const TriAccel &ta = m_triAccel[*it];
+
+					if(ta.k != KNoTriangleFlag)
+						continue;
 
 					//gather the required data structures
-					const TriMesh *mesh = static_cast<const TriMesh *>(m_bvh->m_shapes[ta.shapeIndex]);
+					const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);
 					const Triangle *triangles = mesh->getTriangles();
 					const Point *positions = mesh->getVertexPositions();
 					const Normal *normals = mesh->getVertexNormals();
@@ -494,6 +501,9 @@ bool ShapeKDTree::ellipsoidParseKDTreeFlattened(const KDNode* node, size_t& inde
 		Float pdf;
 		for(unsigned int x = 0; x < primCount; x++){
 			const TriAccel &ta = m_triAccel[x];
+
+			if(ta.k == KNoTriangleFlag)
+				continue;
 
 			//gather the required data structures
 			const TriMesh *mesh = static_cast<const TriMesh *>(m_shapes[ta.shapeIndex]);

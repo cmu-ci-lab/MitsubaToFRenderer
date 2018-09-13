@@ -557,10 +557,10 @@ public:
 	}
 
 	inline void reset(){
-		m_isTriangleStateValid.reset();
-		m_triangleState.reset();
-		m_isNodeStateValid.reset();
-		m_nodeState.reset();
+//		m_isTriangleStateValid.reset();
+//		m_triangleState.reset();
+//		m_isNodeStateValid.reset();
+//		m_nodeState.reset();
 
 		std::fill( m_intersectingTriangleSet, m_intersectingTriangleSet + m_primCount, 0 );
 		m_isSubSample = false;
@@ -803,6 +803,7 @@ public:
 
 		//
 		m_ellipsoidCache.reset();
+
 		m_majorAxis = m_tau/2.0;
 		m_centre = (m_f1 + m_f2) * 0.5;
 		m_minorAxis = (m_majorAxis*m_majorAxis-distanceSquared(m_centre, m_f1));
