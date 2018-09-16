@@ -539,9 +539,6 @@ FLOAT TEllipsoid<PointType, LengthType>::ellipticCurveSampling(const FLOAT k, co
 template <typename PointType, typename LengthType>
 bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, const Point &b, const Point &c, const Normal &N, const size_t &shapeIdx, const size_t &primIdx, const AABB &triangleAABB) const{
 
-	if((shapeIdx == m_shapeIndex1 && primIdx == m_primIndex1) || (shapeIdx == m_shapeIndex2 && primIdx == m_primIndex2) )
-		return true;
-
 	Point f1_Float(m_f1.x, m_f1.y, m_f1.z);
 	Point f2_Float(m_f2.x, m_f2.y, m_f2.z);
 	if(epsExclusiveLesserF(dot(N, f1_Float - a), 0) || epsExclusiveLesserF(dot(N, f2_Float - a), 0) )
@@ -551,6 +548,12 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	if(epsExclusiveLesserF(dot(m_f2Normal, a - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, b - f2_Float), 0) && epsExclusiveLesserF(dot(m_f2Normal, c - f2_Float), 0))
 		return true;
 
+	// If the BBox of the triangle is outside the ellipsoid BBox, reject the triangle
+	if(!isBoxCuttingEllipsoid(triangleAABB))
+		return true;
+
+	if((shapeIdx == m_shapeIndex1 && primIdx == m_primIndex1) || (shapeIdx == m_shapeIndex2 && primIdx == m_primIndex2) )
+		return true;
 
 	PointType triA(a.x, a.y, a.z);
 	PointType triB(b.x, b.y, b.z);
@@ -576,10 +579,6 @@ bool TEllipsoid<PointType, LengthType>::earlyTriangleReject(const Point &a, cons
 	if(d > 1){ // ellipsoid does not intersect the plane
 		return true;
 	}
-
-	// If the BBox of the triangle is outside the ellipsoid BBox, reject the triangle
-	if(!isBoxCuttingEllipsoid(triangleAABB))
-		return true;
 
 	return false;
 }

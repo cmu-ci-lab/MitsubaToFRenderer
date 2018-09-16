@@ -182,7 +182,6 @@ public:
 
 				emitterSubpath.release(m_pool);
 				sensorSubpath.release(m_pool);
-
 			}
 
 			// Find average of fakeResult. Note: This is highly inefficient in rendering speed and needs a better way, probably by hacking evaluate to return the spectrum value?
@@ -197,10 +196,11 @@ public:
 			size_t samplesPerBin = m_sampler->getSampleCount()/m_config.m_frames;
 
 			//
-			int borderSize = result->getImageBlock()->getBorderSize();
-			Float *target = (Float *) result->getImageBlock()->getBitmap()->getFloatData();
+			int borderSize 	= result->getImageBlock()->getBorderSize();
+			Float *target 	= (Float *) result->getImageBlock()->getBitmap()->getFloatData();
 			Float *snapshot = (Float *) alloca(sizeof(Float)*
 					3 * (2*borderSize+1)*(2*borderSize+1));
+			int channels  	= result->getImageBlock()->getBitmap()->getChannelCount();
 
 
 			for (size_t i=0; i<m_hilbertCurve.getPointCount(); ++i) {
@@ -209,36 +209,16 @@ public:
 
 				for (size_t j=0; j < m_config.m_frames; j++){
 
-
 					/* Before starting to place samples within the area of a single pixel, the
 					   following takes a snapshot of all surrounding channels+weight+alpha
 					   values. Those are then used later to ensure that adjacent pixels will
 					   not be disproportionately biased by this pixel's contributions. */
-//					for (int y=0; y<2*borderSize+1; ++y) {
-//						Float *src = target + (m_hilbertCurve[i].y * (size_t) size.x + min.x) * channels;
-//
-//
-//						Float *src = target + ((y+points[i].y)
-//							* block->getBitmap()->getWidth() + points[i].x);
-//						SpectrumAlphaWeight *dst = snapshot + y*(2*borderSize+1);
-//						memcpy(dst, src, sizeof(SpectrumAlphaWeight) * (2*borderSize+1));
-//					}
-//
-//					/* Rasterize the filtered sample into the framebuffer */
-//					for (int y=min.y, yr=0; y<=max.y; ++y, ++yr) {
-//						const Float weightY = m_weightsY[yr];
-//						Float *dest = m_bitmap->getFloatData()
-//							+ (y * (size_t) size.x + min.x) * channels;
-//
-//						for (int x=min.x, xr=0; x<=max.x; ++x, ++xr) {
-//							const Float weight = m_weightsX[xr] * weightY;
-//
-//							for (int k=0; k<channels; ++k)
-//								*dest++ += weight * value[k];
-//						}
-//					}
-
-
+					for (int y=0, temp=0; y<2*borderSize+1; ++y) {
+						for (int x=0; x<2*borderSize+1; ++x, ++temp) {
+							Float *src = target + ( (m_hilbertCurve[i].y+y) * (size_t) rect->getSize().x + (m_hilbertCurve[i].x+x)) * channels + j;
+							*(snapshot+temp) = *src;
+						}
+					}
 
 					Float mean = 0, meanSqr = 0.0f;
 					size_t sampleCount = 0;
@@ -299,15 +279,13 @@ public:
 					}
 					/* Ensure that a large amounts of samples in one pixel do not
 					   bias neighboring pixels (due to the reconstruction filter) */
-//					Float factor = (Float)samplesPerBin / (Float)sampleCount;
-//					for (int y=0; y<2*borderSize+1; ++y) {
-//						Float *dst = target + ((y+points[i].y)
-//							* block->getBitmap()->getWidth() + points[i].x);
-//						Float *backup = snapshot + y*(2*borderSize+1);
-//
-//						for (int x=0; x<2*borderSize+1; ++x)
-//							dst[x] = backup[x] * (1-factor) + dst[x] * factor;
-//					}
+					Float factor = (Float)samplesPerBin / (Float)sampleCount;
+					for (int y=0, temp=0; y<2*borderSize+1; ++y) {
+						for (int x=0; x<2*borderSize+1; ++x, ++temp) {
+							Float *src = target + ( (m_hilbertCurve[i].y+y) * (size_t) rect->getSize().x + (m_hilbertCurve[i].x+x)) * channels + j;
+							(*src) = *(snapshot+temp) * (1-factor) + (*src) * factor;
+						}
+					}
 				}
 			}
 		}
