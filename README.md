@@ -18,6 +18,8 @@ git clone https://github.com/cmu-ci-lab/mitsuba_clt.git
 
 To use basic rendering functionality of Mitsuba, you can also look into [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). For the extended functionalities, you can find below instructions on how to use projectors and coded cameras into the scene file. You can also find some example scene files (modified from original Mitsuba scene files to use projectors or coded cameras) in the examples/ directory.  
 
+Note that to use the new projector plugins with bidirectional path tracing, it is necessary to disable the lightImages option.
+
 ### Perspective Projector
 
 A perspective projector constructor uses parameters similar to that of a perspective camera. Specifically, it includes all parameters of perspective camera except for the film. Also, it has extra parameters "filename"(string) and "scale"(float) to specify the image to be projected into the scene and the amount of scale the brightness of the projected image. For details pertaining to scene file creation of perspectiveprojector, please look into the documentation code at the very first few lines of the src/emitters/perspetctiveEmitterImpl.cpp file. 
