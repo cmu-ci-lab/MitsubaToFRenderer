@@ -16,9 +16,14 @@ git clone https://github.com/cmu-ci-lab/mitsuba_clt.git
 
 ## Basic usage
 
-To use basic rendering functionality of Mitsuba, you can also look into [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). For the extended functionalities, you can find below instructions on how to use projectors and coded cameras into the scene file. You can also find some example scene files (modified from original Mitsuba scene files to use projectors or coded cameras) in the examples/ directory.  
+To use basic rendering functionality of Mitsuba, you can look into [Mitsuba documentation](https://www.mitsuba-renderer.org/releases/current/documentation.pdf). For the extended functionalities, you can consult below instructions to use projectors and coded cameras in the scene. You can also find some example scene files for using extended functionalities (modified from original Mitsuba sample scene files) in the examples/ directory.  
 
-Note that to use the new projector plugins with bidirectional path tracing, it is necessary to disable the lightImages option.
+**Note that to use the new projector plugins with bidirectional path tracing, it is necessary to disable the lightImage option.** Below is an example of doing this,
+```
+<integrator type="bdpt">
+    <boolean name="lightImage" value="false"/>
+</integrator>
+```
 
 ### Perspective Projector
 
