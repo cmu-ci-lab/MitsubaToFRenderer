@@ -51,8 +51,8 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 		Float &EllipticPathWeight, Float &corrWeight, const Spectrum &value, Spectrum &total_value, Spectrum &meanSpectrum,
 		Float *sampleDecompositionValue, Float *l_sampleDecompositionValue, Float *temp, Point2 samplePos, Ellipsoid *m_ellipsoid,
 		ETransportMode mode, BDPTWorkResult *wr){
-//	Float miWeight;
-	Float miWeight = 1.0/(s+t-1-isEmitterLaser);
+	Float miWeight;
+//	Float miWeight = 1.0/(s+t-1-isEmitterLaser);
 
 	int subSamples = wr->m_subSamples; //Need to read this part from hdrfilm, just like samples. It can be adaptive in the future based on miWeight
 	Spectrum cumulativeValue(0.0f);
@@ -149,8 +149,9 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 				}else{
 					continue;
 				}
-//				miWeight = Path::miWeightElliptic(scene, emitterSubpath, connectionEdge1, connectionVertex, connectionEdge2,
-//					sensorSubpath, s, t, false, true);
+				miWeight = Path::miWeightElliptic(scene, emitterSubpath, connectionEdge1, connectionVertex, connectionEdge2,
+					sensorSubpath, s, t, false, true, sampler);
+//				cout << "miWeight:" << miWeight << "\n";
 				Spectrum currentValue(value);
 				currentValue *= vs->eval(scene, vsPred, connectionVertex, EImportance) *
 						connectionVertex->eval(scene, vs, vt, ERadiance) *
@@ -184,7 +185,7 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 						wr->putLightSample(samplePos, currentValue * miWeight * corrWeight);
 					}
 				}else{
-					cumulativeValue += currentValue;
+					cumulativeValue += currentValue * miWeight;
 				}
 			}
 			if(!islightSamplePath && !cumulativeValue.isZero()){
@@ -192,9 +193,12 @@ void PathVertex::EllipsoidalSampleBetween(const Scene *scene, ref<Sampler> sampl
 
 				if(wr->getModulationType() == PathLengthSampler::ENone){
 					cumulativeValue.toLinearRGB(temp[0],temp[1],temp[2]);
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
-					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
+					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0];
+					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1];
+					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2];
+//					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+0] += temp[0] * miWeight;
+//					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+1] += temp[1] * miWeight;
+//					sampleDecompositionValue[binIndex*SPECTRUM_SAMPLES+2] += temp[2] * miWeight;
 					meanSpectrum += cumulativeValue * miWeight;
 				}else{
 					total_value += cumulativeValue * miWeight * corrWeight;

@@ -428,6 +428,15 @@ public:
 			const Path &sensorSubpath, int s, int t,
 			bool direct, bool lightImage);
 
+	static Float miWeightElliptic(const Scene *scene,
+			const Path &emitterSubpath,
+			const PathEdge *connectionEdge1,
+			const PathVertex *shadowVertex,
+			const PathEdge *connectionEdge2,
+			const Path &sensorSubpath, int s, int t,
+			bool direct, bool lightImage, Sampler *sampler);
+
+
 	/**
 	 * \brief Collapse a path into an entire edge that summarizes the aggregate
 	 * transport and sampling densities
