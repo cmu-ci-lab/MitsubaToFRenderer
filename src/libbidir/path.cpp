@@ -856,27 +856,33 @@ Float Path::miWeightElliptic(const Scene *scene, const Path &emitterSubpath,
 //	cout << "\n";
 
 	double weight = 1, pdf = initial;
-	double weightNR = 1 + (double) pdfImp[s+1] / (double) pdfRad[s+1];
-	for (int i=s+1; i<k; ++i) {
+	double value  = (double) pdfImp[s+1] / (double) pdfRad[s+1];
+	double weightNR = 1 + value;
+	if (s == 1)
+		weight /= 2.0;
+	for (int i=s+1; i<(k-1); ++i) {
 		double next = pdf * (double) pdfImp[i] / (double) pdfRad[i] ,
 		       value = next;
-
+		if(i== (k-2))
+			value/=2.0;
 		weight += value;
 		pdf = next;
 	}
 
 	pdf = initial;
-	for (int i=s-1; i>=0; --i) {
+	for (int i=s-1; i>=1; --i) {
 		double next = pdf * (double) pdfRad[i+1] / (double) pdfImp[i+1],
 		       value = next;
-
+		if(i==1)
+			value/=2.0;
 		weight += value;
 		pdf = next;
 	}
 
 //	return 0.5f * weightNR/weight * (k)/(s+t-1);
 
-	return 0.5f * weightNR/weight * (k-2)/(s+t-1); // verify me, for some reason, weight for one of the connection is always zero, so
+//	return 0.5f * weightNR/weight * (k-2)/(s+t-1); // verify me, for some reason, weight for one of the connection is always zero, so
+	return 0.5f * weightNR/weight;
 }
 
 
