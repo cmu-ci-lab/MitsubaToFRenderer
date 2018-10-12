@@ -82,7 +82,16 @@ public:
 
 		#if defined(MTS_DEBUG_FP)
 			enableFPExceptions();
-		#endif
+        #endif
+
+        const ref_vector<Emitter> &emitters = m_scene->getEmitters();
+		for(int i =0;i<emitters.size();i++){
+			const Emitter *emitter = emitters[0].get();
+			if (emitter->getType() & (Emitter::EOrthographicEmitter | Emitter::EPerspectiveEmitter)
+				&& m_config.lightImage){
+				Log(EError, "Set lightImage to be false in the integrator for projectors to work");
+			}
+		}
 
 		Path emitterSubpath;
 		Path sensorSubpath;

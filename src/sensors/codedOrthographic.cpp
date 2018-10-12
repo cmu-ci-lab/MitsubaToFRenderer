@@ -1,21 +1,3 @@
-/*
-    This file is part of Mitsuba, a physically based rendering system.
-
-    Copyright (c) 2007-2014 by Wenzel Jakob and others.
-
-    Mitsuba is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License Version 3
-    as published by the Free Software Foundation.
-
-    Mitsuba is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/core/track.h>
@@ -24,7 +6,7 @@
 
 MTS_NAMESPACE_BEGIN
 
-/*!\plugin{orthographic}{Orthographic camera}
+/*!\plugin{codedOrthographic}{Codede orthographic camera}
  * \order{3}
  * \parameters{
  *     \parameter{toWorld}{\Transform\Or\Animation}{
@@ -41,22 +23,23 @@ MTS_NAMESPACE_BEGIN
  *         planes.\default{\code{near\code}-\code{Clip=1e-2} (i.e.
  *         \code{0.01}) and {\code{farClip=1e4} (i.e. \code{10000})}}
  *     }
- * }
- * \renderings{
- * \rendering{The material test ball viewed through an orthographic camera.
- * Note the complete lack of perspective.}{sensor_orthographic}
- * \medrendering{A rendering of the Cornell box}{sensor_orthographic_2}
+ *     \parameter{filename}{\String}{
+ *       Filename of the coded camera mask image to be loaded;
+ *       must be in latitude-longitude format.
+ *     }
  * }
  *
  * This plugin implements a simple orthographic camera, i.e. a sensor
  * based on an orthographic projection without any form of perspective.
  * It can be thought of as a planar sensor that measures the radiance
  * along its normal direction. By default, this is the region $[-1, 1]^2$ inside
- * the XY-plane facing along the positive Z direction. Transformed versions
- * can be instantiated e.g. as follows:
+ * the XY-plane facing along the positive Z direction. The camera's mask is
+ * created by scaling the input image to its film size and currently there is
+ * no default value for the mask so please provide a white mask for default usage.
+ * Transformed versions can be instantiated e.g. as follows:
  *
  * \begin{xml}
- * <sensor type="orthographic">
+ * <sensor type="codedOrthographic">
  *     <transform name="toWorld">
  *         <!-- Resize the sensor plane to 20x20 world space units -->
  *         <scale x="10" y="10"/>
@@ -65,23 +48,24 @@ MTS_NAMESPACE_BEGIN
  *              (1, 1, 1) and faces direction (0, 1, 0) -->
  *         <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
  *     </transform>
+ *     </string name="filename" value="image.png" />
  * </sensor>
  * \end{xml}
  */
-class OrthographicCamera : public ProjectiveCamera {
+class CodedOrthographicCamera : public CodedProjectiveCamera {
 public:
-	OrthographicCamera(const Properties &props)
-			: ProjectiveCamera(props) {
-		m_type |= EDeltaDirection | EOrthographicCamera | EPositionSampleMapsToPixels;
+	CodedOrthographicCamera(const Properties &props)
+			: CodedProjectiveCamera(props) {
+		m_type |= EDeltaDirection | EOrthographicCamera | EPositionSampleMapsToPixels | ECodedOrtho;
 	}
 
-	OrthographicCamera(Stream *stream, InstanceManager *manager)
-			: ProjectiveCamera(stream, manager) {
+	CodedOrthographicCamera(Stream *stream, InstanceManager *manager)
+			: CodedProjectiveCamera(stream, manager) {
 		configure();
 	}
 
 	void configure() {
-		ProjectiveCamera::configure();
+		CodedProjectiveCamera::configure();
 
 		const Vector2i &filmSize   = m_film->getSize();
 		const Vector2i &cropSize   = m_film->getCropSize();
@@ -136,6 +120,7 @@ public:
 			trafo(m_sampleToCamera(Vector(0, 1, 0))).length());
 
 		m_scale = trafo(Vector(0, 0, 1)).length();
+
 	}
 
 	Spectrum sampleRay(Ray &ray, const Point2 &pixelSample,
@@ -149,13 +134,15 @@ public:
 			pixelSample.x * m_invResolution.x,
 			pixelSample.y * m_invResolution.y, 0.0f));
 
+		Point2 uv(pixelSample.x * m_invResolution.x * m_mapRes.x,pixelSample.y * m_invResolution.y * m_mapRes.y);
+
 		ray.setOrigin(trafo.transformAffine(
 				Point(nearP.x, nearP.y, 0.0f)));
 		ray.setDirection(normalize(trafo(Vector(0, 0, 1))));
 		ray.mint = m_nearClip;
 		ray.maxt = m_farClip;
 
-		return Spectrum(1.0f);
+		return Spectrum(m_mipmap->evalTexel(0,math::floorToInt(uv.x),math::floorToInt(uv.y)));
 	}
 
 	Spectrum sampleRayDifferential(RayDifferential &ray, const Point2 &pixelSample,
@@ -170,6 +157,8 @@ public:
 			pixelSample.y * m_invResolution.y, 0.0f));
 		nearP.z = 0.0f;
 
+		Point2 uv(pixelSample.x * m_invResolution.x * m_mapRes.x,pixelSample.y * m_invResolution.y * m_mapRes.y);
+
 		ray.setOrigin(trafo.transformAffine(nearP));
 		ray.setDirection(normalize(trafo(Vector(0, 0, 1))));
 		ray.mint = m_nearClip;
@@ -179,7 +168,7 @@ public:
 		ray.rxDirection = ray.ryDirection = ray.d;
 		ray.hasDifferentials = true;
 
-		return Spectrum(1.0f);
+		return Spectrum(m_mipmap->evalTexel(0,math::floorToInt(uv.x),math::floorToInt(uv.y)));
 	}
 
 	Spectrum samplePosition(PositionSamplingRecord &pRec,
@@ -194,6 +183,8 @@ public:
 			samplePos.y = (extra->y + sample.y) * m_invResolution.y;
 		}
 
+		Point2 uv(samplePos.x * m_mapRes.x,samplePos.y * m_mapRes.y);
+
 		pRec.uv = Point2(samplePos.x * m_resolution.x,
 			samplePos.y * m_resolution.y);
 
@@ -204,11 +195,14 @@ public:
 		pRec.n = trafo(Vector(0.0f, 0.0f, 1.0f));
 		pRec.pdf = m_invSurfaceArea;
 		pRec.measure = EArea;
-		return Spectrum(1.0f);
+
+        return m_mipmap->evalTexel(0,math::floorToInt(uv.x),math::floorToInt(uv.y));
+
 	}
 
 	Spectrum evalPosition(const PositionSamplingRecord &pRec) const {
-		return Spectrum((pRec.measure == EArea) ? m_invSurfaceArea : 0.0f);
+	    Point2 uv(pRec.uv.x * m_invResolution.x * m_mapRes.x, pRec.uv.y * m_invResolution.y * m_mapRes.y);
+		return (pRec.measure == EArea) ? m_mipmap->evalTexel(0,math::floorToInt(uv.x),math::floorToInt(uv.y)) * m_invSurfaceArea : Spectrum(0.0f);
 	}
 
 	Float pdfPosition(const PositionSamplingRecord &pRec) const {
@@ -253,6 +247,8 @@ public:
 			return Spectrum(0.0f);
 		}
 
+		Point2 uv(sample.x * m_mapRes.x,sample.y * m_mapRes.y);
+
 		dRec.p = trafo.transformAffine(Point(localP.x, localP.y, 0.0f));
 		dRec.n /= scale;
 		dRec.d = -dRec.n;
@@ -262,7 +258,7 @@ public:
 		dRec.pdf = 1.0f;
 		dRec.measure = EDiscrete;
 
-		return Spectrum(m_invSurfaceArea);
+		return m_invSurfaceArea * m_mipmap->evalTexel(0,math::floorToInt(uv.x),math::floorToInt(uv.y));
 	}
 
 	Float pdfDirect(const DirectSamplingRecord &dRec) const {
@@ -307,7 +303,7 @@ public:
 
 	std::string toString() const {
 		std::ostringstream oss;
-		oss << "OrthographicCamera[" << endl
+		oss << "CodedOrthographicCamera[" << endl
 			<< "  nearClip = " << m_nearClip << "," << endl
 			<< "  farClip = " << m_farClip << "," << endl
 			<< "  worldTransform = " << indent(m_worldTransform.toString()) << "," << endl
@@ -329,6 +325,6 @@ private:
 	Vector m_dx, m_dy;
 };
 
-MTS_IMPLEMENT_CLASS_S(OrthographicCamera, false, ProjectiveCamera)
-MTS_EXPORT_PLUGIN(OrthographicCamera, "Orthographics camera");
+MTS_IMPLEMENT_CLASS_S(CodedOrthographicCamera, false, CodedProjectiveCamera)
+MTS_EXPORT_PLUGIN(CodedOrthographicCamera, "CodedOrthographics camera");
 MTS_NAMESPACE_END

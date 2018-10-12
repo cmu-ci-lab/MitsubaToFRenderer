@@ -25,6 +25,8 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/cobject.h>
 #include <mitsuba/render/shader.h>
+#include <mitsuba/render/mipmap.h>
+
 
 MTS_NAMESPACE_BEGIN
 
@@ -160,6 +162,7 @@ public:
 		const Point2 &sample,
 		const Point2 *extra = NULL) const;
 
+    //s
 	/**
 	 * \brief \a Direct sampling: given a reference point in the
 	 * scene, sample an emitter position that contributes towards it.
@@ -450,14 +453,38 @@ public:
 	 */
 	enum EEmitterFlags {
 		/// Is this an environment emitter, such as a HDRI map?
-		EEnvironmentEmitter = 0x010
+		EEnvironmentEmitter = 0x010,
+
+		//modified
+		/// Sensor response contains a Dirac delta term with respect to time
+		EDeltaTime = 0x010,
+
+		/// Does the \ref sampleRay() function need an aperture sample?
+		ENeedsApertureSample   = 0x020,
+
+		/// Is the sensor a projective camera?
+		EProjectiveEmitter      = 0x100,
+
+		/// Is the sensor a perspective camera?
+		EPerspectiveEmitter    = 0x200,
+
+		/// Is the sensor an orthographic camera?
+		EOrthographicEmitter    = 0x400,
+
+		/// Does the sample given to \ref samplePosition() determine the pixel coordinates
+		EPositionSampleMapsToPixels  = 0x1000,
+
+		/// Does the sample given to \ref sampleDirection() determine the pixel coordinates
+		EDirectionSampleMapsToPixels = 0x2000
 	};
 
 	// =================================================================
 	//! @{ \name Additional emitter-related sampling and query functions
 	// =================================================================
 
-	/**
+    Emitter();
+
+/**
 	 * \brief Return the radiant emittance for the given surface intersection
 	 *
 	 * This is function is used when an area light source has been hit by a
@@ -637,6 +664,184 @@ protected:
 protected:
 	Float m_samplingWeight;
 };
+
+/**
+ * \brief Projective Emitter interface
+ *
+ * This class provides an abstract interface to several types of sensors that
+ * are commonly used in computer graphics, such as perspective and orthographic
+ * camera models.
+ *
+ * The interface is meant to be implemented by any kind of sensor, whose
+ * world to clip space transformation can be explained using only linear
+ * operations on homogeneous coordinates.
+ *
+ * A useful feature of \ref ProjectiveCamera sensors is that their view can be
+ * rendered using the traditional OpenGL pipeline.
+ *
+ * \ingroup librender
+ */
+
+	class MTS_EXPORT_RENDER ProjectiveEmitter : public Emitter {
+        typedef TSpectrum<half, SPECTRUM_SAMPLES> SpectrumHalf;
+        typedef TMIPMap<Spectrum, SpectrumHalf> MIPMap;
+
+	public:
+		using Emitter::getWorldTransform;
+
+
+		/// Return the world-to-view (aka "view") transformation at time \c t
+		inline const Transform getViewTransform(Float t) const {
+			return getWorldTransform()->eval(t).inverse();
+		}
+
+		/// Return the view-to-world transformation at time \c t
+		inline const Transform getWorldTransform(Float t) const {
+			return getWorldTransform()->eval(t);
+		}
+
+		/**
+         * \brief Overwrite the view-to-world transformation
+         * with a static (i.e. non-animated) transformation.
+         */
+		void setWorldTransform(const Transform &trafo);
+
+		/**
+         * \brief Overwrite the view-to-world transformation
+         * with an animated transformation
+         */
+		void setWorldTransform(AnimatedTransform *trafo);
+
+		/**
+         * \brief Return a projection matrix suitable for rendering the
+         * scene using OpenGL
+         *
+         * For scenes involving a narrow depth of field and antialiasing,
+         * it is necessary to average many separately rendered images using
+         * different pixel offsets and aperture positions.
+         *
+         * \param apertureSample
+         *     Sample for rendering with defocus blur. This should be a
+         *     uniformly distributed random point in [0,1]^2 (or any value
+         *     when \ref needsApertureSample() == \c false)
+         *
+         * \param aaSample
+         *     Sample for antialiasing. This should be a uniformly
+         *     distributed random point in [0,1]^2.
+         */
+		virtual Transform getProjectionTransform(const Point2 &apertureSample,
+												 const Point2 &aaSample) const = 0;
+
+		/// Serialize this camera to a binary data stream
+		virtual void serialize(Stream *stream, InstanceManager *manager) const;
+
+		/// Return the near clip plane distance
+		inline Float getNearClip() const { return m_nearClip; }
+
+		/// Set the near clip plane distance
+		void setNearClip(Float nearClip);
+
+		/// Return the far clip plane distance
+		inline Float getFarClip() const { return m_farClip; }
+
+		/// Set the far clip plane distance
+		void setFarClip(Float farClip);
+
+		/// Return the distance to the focal plane
+		inline Float getFocusDistance() const { return m_focusDistance; }
+
+		/// Set the distance to the focal plane
+		void setFocusDistance(Float focusDistance);
+
+		MTS_DECLARE_CLASS()
+	protected:
+		/// Construct a new camera instance
+		ProjectiveEmitter(const Properties &props);
+
+		/// Unserialize a camera instance from a binary data stream
+		ProjectiveEmitter(Stream *stream, InstanceManager *manager);
+
+		/// Virtual destructor
+		virtual ~ProjectiveEmitter();
+	protected:
+		Float m_aspect;
+		Vector2 m_resolution;
+		Vector2 m_invResolution;
+		Float m_nearClip;
+		Float m_farClip;
+		Float m_focusDistance;
+        fs::path m_filename;
+        MIPMap *m_mipmap;
+        Vector2i m_size;
+		float m_normalSpectrum;
+		float *m_cdfRows, *m_cdfCols;
+		Float *m_rowWeights;
+	};
+
+/**
+ * \brief Perspective camera interface
+ *
+ * This class provides an abstract interface to several types of sensors that
+ * are commonly used in computer graphics, such as perspective and orthographic
+ * camera models.
+ *
+ * The interface is meant to be implemented by any kind of sensor, whose
+ * world to clip space transformation can be explained using only linear
+ * operations on homogeneous coordinates.
+ *
+ * A useful feature of \ref ProjectiveCamera sensors is that their view can be
+ * rendered using the traditional OpenGL pipeline.
+ *
+ * \ingroup librender
+ */
+class MTS_EXPORT_RENDER PerspectiveEmitter : public ProjectiveEmitter {
+	public:
+		// =============================================================
+		//! @{ \name Field of view-related
+		// =============================================================
+
+		/// Return the horizontal field of view in degrees
+		inline Float getXFov() const { return m_xfov; }
+
+		/// Set the horizontal field of view in degrees
+		void setXFov(Float xfov);
+
+		/// Return the vertical field of view in degrees
+		Float getYFov() const;
+
+		/// Set the vertical field of view in degrees
+		void setYFov(Float yfov);
+
+		/// Return the diagonal field of view in degrees
+		Float getDiagonalFov() const;
+
+		/// Set the diagonal field of view in degrees
+		void setDiagonalFov(Float dfov);
+
+		//! @}
+		// =============================================================
+
+		/** \brief Configure the object (called \a once after construction
+           and addition of all child \ref ConfigurableObject instances). */
+		virtual void configure();
+
+		/// Serialize this camera to a binary data stream
+		virtual void serialize(Stream *stream, InstanceManager *manager) const;
+
+		MTS_DECLARE_CLASS()
+	protected:
+		/// Construct a new perspective camera instance
+		PerspectiveEmitter(const Properties &props);
+
+		/// Unserialize a perspective camera instance from a binary data stream
+		PerspectiveEmitter(Stream *stream, InstanceManager *manager);
+
+		/// Virtual destructor
+		virtual ~PerspectiveEmitter();
+	protected:
+		Float m_xfov;
+	};
+
 
 MTS_NAMESPACE_END
 
