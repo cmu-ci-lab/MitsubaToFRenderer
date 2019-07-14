@@ -69,6 +69,12 @@ struct BDPTConfiguration {
 	unsigned int m_sBounces;
 	unsigned int m_tBounces;
 
+	ref<PathLengthSampler> pathLengthSampler;
+
+	bool m_forceBounces;
+	unsigned int m_sBounces;
+	unsigned int m_tBounces;
+
 	inline BDPTConfiguration() { }
 
 	inline BDPTConfiguration(Stream *stream) {

@@ -24,6 +24,7 @@ set(HDRS
   ${INCLUDE_DIR}/particleproc.h
   ${INCLUDE_DIR}/pathlengthsampler.h
   ${INCLUDE_DIR}/phase.h
+  ${INCLUDE_DIR}/pathlengthsampler.h
   ${INCLUDE_DIR}/photon.h
   ${INCLUDE_DIR}/photonmap.h
   ${INCLUDE_DIR}/range.h
@@ -71,6 +72,7 @@ set(SRCS
   pathlengthsampler.cpp
   phase.cpp
   photon.cpp
+  pathlengthsampler.cpp
   photonmap.cpp
   rectwu.cpp
   renderjob.cpp

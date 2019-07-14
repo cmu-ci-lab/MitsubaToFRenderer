@@ -1,0 +1,9 @@
+#!bin/bash
+
+# Please install Matlab, g++ (g++ is mostly preinstalled for ubuntu 16.04)
+ cd <MitsubaToFRenderer>/mfiles
+vi (or nano) matlab.mk 
+# Change MATLABDIR to the installed matlab directory (you can use which matlab to know the matlab path, which probably will be of the format <MATLABDIR>/ bin/matlab)
+cd <MitsubaToFRenderer>/mfiles/exr
+make
+exr2avi(filename, options) from matlab command window 
