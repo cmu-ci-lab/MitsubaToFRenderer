@@ -6,7 +6,7 @@ You can run this renderer on AWS using the pre-configured AMI with ID ami-283089
 # project page:
 http://imaging.cs.cmu.edu/ellipsoidal_connections/
 
-# Credits: 
+# credits: 
 The project is derived from https://www.mitsuba-renderer.org/ and https://github.com/cmu-ci-lab/mitsuba_clt.git (for coded projector and coded camera extension). 
 On top of these, the ToF renderer and ellipsoidal connections for time-gated rendering are added.
 
