@@ -229,14 +229,6 @@ public:
 
 		m_config.pathLengthSampler = film->getPathLengthSampler();
 
-
-		m_config.m_forceBounces = film->getForceBounces();
-		m_config.m_sBounces  	= film->getSBounces();
-		m_config.m_tBounces 	= film->getTBounces();
-
-		m_config.pathLengthSampler = film->getPathLengthSampler();
-
-
 		if (m_config.maxDepth!=-1 && m_config.m_decompositionType == Film::EBounce){
 			if (m_config.maxDepth > m_config.m_decompositionMaxBound)
 				m_config.maxDepth = m_config.m_decompositionMaxBound;

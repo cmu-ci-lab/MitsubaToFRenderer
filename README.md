@@ -3,8 +3,10 @@ Mitsuba renderer with support for time-of-flight rendering. See INSTALL.txt for 
 
 You can run this renderer on AWS using the pre-configured AMI with ID ami-28308957 (N. Virginia US EAST). This AMI is compatible with [CfnCluster](https://cfncluster.readthedocs.io/en/latest/) for easy distributed rendering.
 
+# project page:
+http://imaging.cs.cmu.edu/ellipsoidal_connections/
 
-Credits: 
+# Credits: 
 The project is derived from https://www.mitsuba-renderer.org/ and https://github.com/cmu-ci-lab/mitsuba_clt.git (for coded projector and coded camera extension). 
 On top of these, the ToF renderer and ellipsoidal connections for time-gated rendering are added.
 
@@ -12,3 +14,4 @@ On top of these, the ToF renderer and ellipsoidal connections for time-gated ren
 The scene file can be created by using the mitsuba documentation (https://www.mitsuba-renderer.org/releases/current/documentation.pdf)
 Please refer to https://github.com/cmu-ci-lab/mitsuba_clt/blob/master/README.md for creating scenes with coded projector and coded camera. 
 
+If you have used the renderer, please cite "Adithya Pediredla, Ashok Veeraraghavan, and Ioannis Gkioulekas. "Ellipsoidal Path Connections for Time-gated Rendering", SIGGRAPH 2019 
