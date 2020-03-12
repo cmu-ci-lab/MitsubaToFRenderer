@@ -7,3 +7,11 @@ vi (or nano) matlab.mk
 cd <MitsubaToFRenderer>/mfiles/exr
 make
 exr2avi(filename, options) from matlab command window 
+
+#The procedure is faster if you are going to postprocess the transients in MATLAB but some users found it hard to compile mex files. I wrote a python script to convert exr files to mat files (exrread.py). However, this conversion is slow. If you are going to postprocess transients in python, this won't be a problem though. You can edit exrread python script according to your requirements. 
+
+#For converting exr to mat files using python script, 
+python exr2mat.py inFileName.exr outFileName
+#which will create a outFileName.mat file. 
+#This outFileName contains a variable "I" that can be viewed or saved with displayAndSaveVideo function file in matlab. Syntax: displayAndSaveVideo(I, options)
+
