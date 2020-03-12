@@ -2,11 +2,17 @@ import SCons
 import sys
 import glob
 import os
+import multiprocessing
 
 resources = []
 plugins = []
 stubs = []
 winstubs = []
+
+num_cpu = int(os.environ.get('NUM_CPU', multiprocessing.cpu_count()))
+SetOption('num_jobs', num_cpu)
+print "running with -j", GetOption('num_jobs')
+
 
 Export('SCons', 'sys', 'os', 'glob', 'resources',
 	'plugins', 'stubs', 'winstubs')
