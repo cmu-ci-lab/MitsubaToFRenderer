@@ -2,7 +2,6 @@
 
 <scene version="0.5.0">
 	<integrator type="bdpt">
-		<integer name="maxDepth" value="5"/>
 		<boolean name="sampleDirect" value="false"/>
 	</integrator>
 	<sensor type="perspective">
