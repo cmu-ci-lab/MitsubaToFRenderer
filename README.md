@@ -1,5 +1,11 @@
 # MitsubaToFRenderer
-Mitsuba renderer with support for time-of-flight rendering. See INSTALL.txt for cloning and installation of the MitsubaToFRenderer. See USAGE.txt for running the MitsubaToFRenderer with various settings. See INSTALLEXR2AVI.txt to install exr2avi scripts and view/save the exr output of the MitsubaToFRenderer as an image or video. 
+Mitsuba renderer with support for time-of-flight rendering. 
+
+We recommend using docker: adithyapedireda/mitsubatofrenderer that has preinstalled MitsubaToFRenderer and is tested on windows, mac and ubuntu20.04
+
+For native installation, see INSTALL.txt for installation in ubuntu16.04 and INSTALL_20.04.txt for ubuntu20.04. 
+Please check USAGE.txt for running the MitsubaToFRenderer with various settings. 
+See INSTALLEXR2AVI.txt to install exr2avi scripts and view/save the exr output of the MitsubaToFRenderer as an image or video or process in MATLAB. 
 
 You can run this renderer on AWS using two pre-configured AMIs with ID ami-28308957 (us-east-1, N. Virginia) and ami-00329ef32ac692d6c (us-east-2, Ohio). Both AMIs are compatible with [CfnCluster](https://cfncluster.readthedocs.io/en/latest/) for easy distributed rendering.
 
@@ -14,4 +20,15 @@ On top of these, the ToF renderer and ellipsoidal connections for time-gated ren
 The scene file can be created by using the mitsuba documentation (https://www.mitsuba-renderer.org/releases/current/documentation.pdf)
 Please refer to https://github.com/cmu-ci-lab/mitsuba_clt/blob/master/README.md for creating scenes with coded projector and coded camera. 
 
-If you have used the renderer, please cite "Adithya Pediredla, Ashok Veeraraghavan, and Ioannis Gkioulekas. "Ellipsoidal Path Connections for Time-gated Rendering", SIGGRAPH 2019 
+If you have used the renderer, please cite
+
+@article{pediredla2019ellipsoidal,
+  title={Ellipsoidal path connections for time-gated rendering},
+  author={Pediredla, Adithya and Veeraraghavan, Ashok and Gkioulekas, Ioannis},
+  journal={ACM Transactions on Graphics (TOG)},
+  volume={38},
+  number={4},
+  pages={1--12},
+  year={2019},
+  publisher={ACM New York, NY, USA}
+}
