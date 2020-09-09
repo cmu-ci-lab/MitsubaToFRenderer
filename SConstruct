@@ -11,7 +11,7 @@ winstubs = []
 
 num_cpu = int(os.environ.get('NUM_CPU', multiprocessing.cpu_count()))
 SetOption('num_jobs', num_cpu)
-print "running with -j", GetOption('num_jobs')
+print("running with -j", GetOption('num_jobs'))
 
 
 Export('SCons', 'sys', 'os', 'glob', 'resources',
