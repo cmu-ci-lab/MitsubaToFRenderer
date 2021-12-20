@@ -1,4 +1,4 @@
-function I = exr2avi(file, display, saveAvi, scaling)
+function I = exr2avi(file, display, saveAvi, scaling, gamma)
 % exr2avi(file, display, saveAvi, scaling)
 % Inputs:  
 % file    -> file name of the input exr file (if saved, the output will have same name as input, with extension replaced by avi)
@@ -39,18 +39,18 @@ end
 
 I = double(I);
 
-if(display)
-    if(~isempty(r{1}))
-        fileName = strrep(file,'exr','avi');
-    else
-        fileName = strrep(file,'exr','png');
-    end
-    if(nargin <= 2)
-        displayAndSaveVideo( I, fileName); 
-    elseif(nargin == 3)
-        displayAndSaveVideo( I, fileName, saveAvi);
-    elseif(nargin == 4)
-        displayAndSaveVideo( I, fileName, saveAvi, scaling );
-    end
+if(~isempty(r{1}))
+    fileName = strrep(file,'exr','avi');
+else
+    fileName = strrep(file,'exr','png');
 end
 
+if(nargin <= 2)        
+    displayAndSaveVideo( I, fileName, display);
+elseif(nargin == 3)
+    displayAndSaveVideo( I, fileName, display, saveAvi);
+elseif(nargin == 4)
+    displayAndSaveVideo( I, fileName, display, saveAvi, scaling );
+elseif(nargin == 5)
+    displayAndSaveVideo( I, fileName, display, saveAvi, scaling, gamma );
+end

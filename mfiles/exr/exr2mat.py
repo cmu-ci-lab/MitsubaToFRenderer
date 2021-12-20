@@ -22,15 +22,29 @@ else:
     tmp = np.array(tmp)
     tmp[0], tmp[2] = tmp[2], tmp[0]
 
-video = np.zeros((imgSize[1],imgSize[0],len(tmp)))
-
-index = 0
-print(len(tmp))
-
-for x in np.nditer(tmp): 
-    print(index)
-    imageStr = inputFile.channel(str(x),pixelType)
-    image = np.reshape(np.frombuffer(imageStr, dtype=np.float16), imgSize)
-    video[:,:,index] = image
-    index+=1
+video = inputFile.channels(tmp, pixelType)
+video = [np.reshape(np.frombuffer(video[i], dtype=np.float16), imgSize) for i in range(len(video))]
+video = np.stack(video, axis=2)
 savemat(sys.argv[2]+'.mat',{'I':video})
+
+## Takes more ram
+#A = inputFile.channels(tmp, pixelType)
+#video = np.zeros((imgSize[1],imgSize[0],len(tmp)))
+#for index in range(len(A)):
+#    image = np.reshape(np.frombuffer(A[index], dtype=np.float16), imgSize)
+#    video[:,:,index] = image
+#savemat(sys.argv[2]+'.mat',{'I':video})
+
+## reads one frame at a time. super slow, but could be useful if only a few frames are required 
+#video = np.zeros((imgSize[1],imgSize[0],len(tmp)))
+#
+#index = 0
+#print(len(tmp))
+#
+#for x in np.nditer(tmp): 
+#    print(index)
+#    imageStr = inputFile.channel(str(x),pixelType)
+#    image = np.reshape(np.frombuffer(imageStr, dtype=np.float16), imgSize)
+#    video[:,:,index] = image
+#    index+=1
+#savemat(sys.argv[2]+'.mat',{'I':video})
