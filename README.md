@@ -1,7 +1,7 @@
 # MitsubaToFRenderer
 Mitsuba renderer with support for time-of-flight rendering. 
 
-We recommend using docker: adithyapedireda/mitsubatofrenderer that has preinstalled MitsubaToFRenderer and is tested on windows, mac and ubuntu20.04
+**We recommend using docker**: adithyapedireda/mitsubatofrenderer that has preinstalled MitsubaToFRenderer and exr2mat.py and is tested on windows, mac and ubuntu20.04
 
 For native installation, see INSTALL.txt for installation in ubuntu16.04 and INSTALL_20.04.txt for ubuntu20.04. 
 Please check USAGE.txt for running the MitsubaToFRenderer with various settings. 
