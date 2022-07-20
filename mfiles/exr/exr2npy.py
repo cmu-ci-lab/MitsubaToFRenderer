@@ -7,6 +7,7 @@ from PIL import Image
 from scipy.io import savemat
 import sys
 import cv2
+import imageio
 
 # Reset to false if using google colab to avoid opencv window imshow call
 viz_output = True
@@ -56,9 +57,11 @@ output_path = sys.argv[1][:-4]
 if(len(tmp) == 3):
     tonemapDurand = cv2.createTonemapReinhard(1.5, 1.0,0.5,0.2)
 else:
-    tonemapDurand = cv2.createTonemapReinhard(0.2, 0.0,0,0)
+    tonemapDurand = cv2.createTonemapReinhard(0.1, 0.0,0,0)
 
 all_transients = []
+all_transients_uint = []
+
 for frame in video_rgb:
     if tone_map:
         frame = tonemapDurand.process(frame)
@@ -66,6 +69,9 @@ for frame in video_rgb:
         cv2.imshow("img", frame/frame.max())
         cv2.waitKey(0)
     all_transients.append(frame/frame.max())
+    all_transients_uint.append((frame/frame.max()*255).astype(np.uint8)[:,:,::-1])
 
+
+imageio.mimsave(output_path+"_all_transients.gif", all_transients_uint[len(all_transients_uint)//2:], fps=20)
 all_transients = np.array(all_transients)
 np.save(output_path+"_all_transients.npy", all_transients)
