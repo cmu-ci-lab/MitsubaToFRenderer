@@ -22,13 +22,13 @@ Please refer to https://github.com/cmu-ci-lab/mitsuba_clt/blob/master/README.md 
 
 If you have used the renderer, please cite
 
-@article{pediredla2019ellipsoidal,
-  title={Ellipsoidal path connections for time-gated rendering},
-  author={Pediredla, Adithya and Veeraraghavan, Ashok and Gkioulekas, Ioannis},
-  journal={ACM Transactions on Graphics (TOG)},
-  volume={38},
-  number={4},
-  pages={1--12},
-  year={2019},
-  publisher={ACM New York, NY, USA}
+@article{pediredla2019ellipsoidal, <br>
+  title={Ellipsoidal path connections for time-gated rendering},<br>
+  author={Pediredla, Adithya and Veeraraghavan, Ashok and Gkioulekas, Ioannis},<br>
+  journal={ACM Transactions on Graphics (TOG)},<br>
+  volume={38},<br>
+  number={4},<br>
+  pages={1--12},<br>
+  year={2019},<br>
+  publisher={ACM New York, NY, USA}<br>
 }
