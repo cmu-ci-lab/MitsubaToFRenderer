@@ -16,7 +16,14 @@ http://imaging.cs.cmu.edu/ellipsoidal_connections/
 The project is derived from https://www.mitsuba-renderer.org/ and https://github.com/cmu-ci-lab/mitsuba_clt.git (for coded projector and coded camera extension). 
 On top of these, the ToF renderer and ellipsoidal connections for time-gated rendering are added.
 
+# license: 
+As the project is derived from mitsuba-renderer, the same license is applicable here. Quoting verbatim from original mitsuba: 
 
+It is free software and can be redistributed and modified under the terms of the GNU General Public License (Version 3) (https://www.gnu.org/licenses/gpl-3.0.html) as provided by the Free Software Foundation.
+
+Remark: Being a "viral" license, the GPL automatically applies to all derivative work. Amongst other things, this means that without express permission, Mitsuba's source code is off-limits to those who develop rendering software not distributed under a compatible license.
+
+# more info: 
 The scene file can be created by using the mitsuba documentation (https://www.mitsuba-renderer.org/releases/current/documentation.pdf)
 Please refer to https://github.com/cmu-ci-lab/mitsuba_clt/blob/master/README.md for creating scenes with coded projector and coded camera. 
 
